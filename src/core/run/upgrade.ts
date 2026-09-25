@@ -144,7 +144,7 @@ export function applyChooseUnlock(
 ): UpgradeState {
   const what = `chooseUnlock ${optionId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
-  if (upgrade.unlocked[heroIdValue] !== undefined) throw new IllegalActionError(`${what}: already chosen`);
+  // Choosing again replaces the earlier choice; nothing is final until endUpgrade.
   if (!(upgrade.unlocks[heroIdValue]?.options ?? []).includes(optionId)) {
     throw new IllegalActionError(`${what}: not among the options`);
   }
@@ -169,7 +169,7 @@ export function applyChoosePerk(
 ): UpgradeState {
   const what = `choosePerk ${perkId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
-  if (upgrade.chosen[heroIdValue] !== undefined) throw new IllegalActionError(`${what}: already chosen`);
+  // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
   if (!(upgrade.offers[heroIdValue] ?? []).includes(perkId)) {
     throw new IllegalActionError(`${what}: not among the offers`);
   }

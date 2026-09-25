@@ -7,7 +7,7 @@
     },
     "id": "rogue_backstab",
     "name": "Подлый удар",
-    "description": "Наносит {0} физического урона, шанс крита этого удара выше на 30%.",
+    "description": "Наносит {0} физического урона, шанс крита этого удара выше на 40%.",
     "icon": "/assets/game-icons/lorc/backstab.svg",
     "tier": 1,
     "ap": 2,

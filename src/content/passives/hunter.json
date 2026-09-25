@@ -13,7 +13,7 @@
     "triggers": [],
     "id": "hunter_passive_distance",
     "name": "Дистанция",
-    "description": "+20% урона по целям дальше 3 гексов.",
+    "description": "+10% урона по целям дальше 3 гексов.",
     "tier": 2
   },
   {
@@ -41,7 +41,7 @@
     "triggers": [],
     "id": "hunter_passive_instinct",
     "name": "Инстинкт",
-    "description": "Начинает бой с 30 очками на шкале инициативы.",
+    "description": "Начинает бой с 20 очками на шкале инициативы.",
     "tier": 1
   }
 ]

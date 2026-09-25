@@ -666,11 +666,6 @@ button {
   box-shadow: 0 0 0 1px var(--active);
 }
 
-.perk-dim {
-  opacity: 0.45;
-  cursor: default;
-}
-
 .perk-abilities {
   display: flex;
   flex-wrap: wrap;

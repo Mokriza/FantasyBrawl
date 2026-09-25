@@ -13,7 +13,7 @@
     "triggers": [],
     "id": "mage_passive_elements",
     "name": "Сила стихий",
-    "description": "+20% урона по целям под дебаффом.",
+    "description": "+15% урона по целям под дебаффом.",
     "tier": 2
   },
   {

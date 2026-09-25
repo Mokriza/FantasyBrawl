@@ -304,7 +304,7 @@ describe('the upgrade phase', () => {
     }
   });
 
-  it('refuses a perk that was not offered, a second pick, and moving on too early', () => {
+  it('refuses a perk that was not offered, a hero of the other side, and moving on too early', () => {
     const run = afterFirstMatch(4);
     const id = run.draft.picks.A[0];
     if (id === undefined) throw new Error('setup');
@@ -318,6 +318,34 @@ describe('the upgrade phase', () => {
     expect(() =>
       applyRunAction(run, { type: 'choosePerk', side: 'B', heroId: id, perkId: offered[0] ?? '' }, content),
     ).toThrow(IllegalActionError);
+  });
+
+  it('a perk or an unlock may be chosen again until the phase ends: the new choice replaces the old', () => {
+    let run = afterFirstMatch(4);
+    const id = run.draft.picks.A[0];
+    if (id === undefined) throw new Error('setup');
+    // Two plain perks, so neither asks for an ability.
+    const plain = (run.upgrade?.offers[id] ?? []).filter((p) => content.perks[p]?.abilityMod === undefined);
+    const options = run.upgrade?.unlocks[id]?.options ?? [];
+    const [first, second] = plain;
+    const [optionA, optionB] = options;
+    if (first === undefined || second === undefined || optionA === undefined || optionB === undefined) {
+      throw new Error('setup: needs two plain perks and two unlock options');
+    }
+
+    run = applyRunAction(run, { type: 'choosePerk', side: 'A', heroId: id, perkId: first }, content);
+    run = applyRunAction(run, { type: 'choosePerk', side: 'A', heroId: id, perkId: second }, content);
+    expect(run.upgrade?.chosen[id]).toEqual({ perkId: second });
+
+    run = applyRunAction(run, { type: 'chooseUnlock', side: 'A', heroId: id, optionId: optionA }, content);
+    run = applyRunAction(run, { type: 'chooseUnlock', side: 'A', heroId: id, optionId: optionB }, content);
+    expect(run.upgrade?.unlocked[id]).toBe(optionB);
+
+    // Only the last choice reaches the hero.
+    run = placeAll(upgradeAll(run));
+    const hero = run.draft.pool.find((h) => h.id === id);
+    expect(hero?.perks.map((p) => p.perkId)).toEqual([second]);
+    expect(hero?.passive).toBe(optionB);
   });
 
   it('an ability perk needs one of the abilities it can change', () => {

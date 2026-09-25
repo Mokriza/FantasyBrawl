@@ -51,43 +51,44 @@ function LevelGain({ hero, level, content }: { hero: HeroTemplate; level: number
   );
 }
 
+/**
+ * One perk on offer. A pick can be changed until the phase ends: clicking another
+ * card replaces it, and an ability perk may be moved to another ability.
+ */
 function PerkCard({
   perk,
   hero,
   content,
   chosen,
-  locked,
 }: {
   perk: Perk;
   hero: HeroTemplate;
   content: ContentRegistry;
   chosen: boolean;
-  locked: boolean;
 }): JSX.Element {
   const [asking, setAsking] = useState(false);
   const targets = perk.abilityMod === undefined ? [] : perkTargets(hero, perk, content);
 
   function pick(): void {
-    if (locked) return;
     if (perk.abilityMod === undefined) takePerk(hero.id, perk.id);
     else setAsking(true);
   }
 
+  function takeOn(abilityIdValue: string): void {
+    takePerk(hero.id, perk.id, abilityIdValue);
+    setAsking(false);
+  }
+
   return (
-    <div
-      className={['perk-card', chosen ? 'perk-chosen' : '', locked && !chosen ? 'perk-dim' : '']
-        .filter(Boolean)
-        .join(' ')}
-      onClick={asking ? undefined : pick}
-    >
+    <div className={['perk-card', chosen ? 'perk-chosen' : ''].filter(Boolean).join(' ')} onClick={asking ? undefined : pick}>
       <span className="perk-category dim">{UI.upgrade.categories[perk.category]}</span>
       <strong>{perk.name}</strong>
       <span className="perk-text">{perk.description}</span>
-      {asking && !locked ? (
+      {asking ? (
         <div className="perk-abilities">
           <span className="dim">{UI.upgrade.chooseAbility}</span>
           {targets.map((id) => (
-            <button key={id} type="button" onClick={() => takePerk(hero.id, perk.id, id)}>
+            <button key={id} type="button" onClick={() => takeOn(id)}>
               {getAbility(content, id).name}
             </button>
           ))}
@@ -126,10 +127,8 @@ function UnlockRow({ ui, run, hero }: { ui: UiState; run: RunState; hero: HeroTe
           return (
             <div
               key={id}
-              className={['perk-card', 'unlock-card', chosen ? 'perk-chosen' : '', taken !== undefined && !chosen ? 'perk-dim' : '']
-                .filter(Boolean)
-                .join(' ')}
-              onClick={taken === undefined ? () => takeUnlock(hero.id, id) : undefined}
+              className={['perk-card', 'unlock-card', chosen ? 'perk-chosen' : ''].filter(Boolean).join(' ')}
+              onClick={() => takeUnlock(hero.id, id)}
             >
               {ability === undefined ? (
                 <span className="perk-category dim">{UI.passive}</span>
@@ -189,7 +188,6 @@ function HeroUpgrade({ ui, run, hero }: { ui: UiState; run: RunState; hero: Hero
               hero={hero}
               content={content}
               chosen={pick?.perkId === id}
-              locked={pick !== undefined}
             />
           );
         })}
