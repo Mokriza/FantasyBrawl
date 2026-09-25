@@ -18,7 +18,7 @@ import { basicAttackOf } from './opportunity.js';
 import { isPassable, reachableHexes } from './pathing.js';
 import type { Reachable } from './pathing.js';
 import { activeHero, heroAt } from './query.js';
-import { ROOT, SILENCE, hasStatus, hasStatusFlag } from './statuses.js';
+import { ROOT, SILENCE, hasStatus, hasStatusFlag, hiddenFrom } from './statuses.js';
 import { firstMoveDiscount, rangeBonus } from './modifiers.js';
 import { hasLineOfSight } from './targeting.js';
 
@@ -123,13 +123,11 @@ function targetKindOk(
   content: ContentRegistry,
 ): boolean {
   const occupant = heroAt(state, target);
-  // Stealth: an enemy cannot be the single target of an ability; areas still land.
-  const hidden =
-    occupant !== null &&
-    occupant.side !== hero.side &&
-    ability.shape.type === 'single' &&
-    hasStatusFlag(occupant, content, 'untargetable');
-  if (hidden) return false;
+  // Stealth: an enemy cannot be chosen. An ability aimed at an enemy chooses one, and
+  // so does any single-target ability aimed at its hex; an area aimed at the ground
+  // does not, and still lands on whoever it covers.
+  const choosesOccupant = ability.targets === 'enemy' || ability.shape.type === 'single';
+  if (occupant !== null && choosesOccupant && hiddenFrom(hero.side, occupant, content)) return false;
   switch (ability.targets) {
     case 'self':
       return hexEquals(target, hero.hex);

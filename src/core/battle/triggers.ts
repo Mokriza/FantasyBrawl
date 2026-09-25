@@ -23,6 +23,7 @@ import { killAtb } from '../arena/modifiers.js';
 import { traitsOf } from './modifiers.js';
 import type { Trait } from './modifiers.js';
 import { heroById, livingHeroes, updateHero } from './query.js';
+import { hiddenFrom } from './statuses.js';
 
 export interface Reaction {
   readonly state: BattleState;
@@ -195,9 +196,11 @@ function partiesOf(
 }
 
 /** The heroes a firing's effects land on. */
-function targetsOf(state: BattleState, firing: Firing): BattleHero[] {
+function targetsOf(state: BattleState, firing: Firing, content: ContentRegistry): BattleHero[] {
   const { owner, trigger } = firing;
   const enemies = livingHeroes(state).filter((h) => h.side !== owner.side);
+  // A passive picking an enemy by itself cannot pick one in stealth either.
+  const visible = enemies.filter((h) => !hiddenFrom(owner.side, h, content));
   switch (trigger.to ?? 'self') {
     case 'self':
       return [heroById(state, owner.id)];
@@ -207,7 +210,7 @@ function targetsOf(state: BattleState, firing: Firing): BattleHero[] {
       return isAlive(other) ? [other] : [];
     }
     case 'nearestEnemy': {
-      const sorted = [...enemies].sort(
+      const sorted = [...visible].sort(
         (a, b) => distance(owner.hex, a.hex) - distance(owner.hex, b.hex) || (a.id < b.id ? -1 : 1),
       );
       return sorted.slice(0, 1);
@@ -259,7 +262,7 @@ function runFiring(
     return rerun(current, firing.owner.id, firing.ability.id, firing.ability.target, echo.mul, mode);
   }
 
-  for (const target of targetsOf(current, firing)) {
+  for (const target of targetsOf(current, firing, content)) {
     let ctx: EffectContext = {
       state: current,
       casterId: firing.owner.id,

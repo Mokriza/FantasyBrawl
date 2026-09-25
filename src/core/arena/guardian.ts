@@ -61,13 +61,16 @@ export function guardianHero(content: ContentRegistry, rules: GuardianRules, hex
 }
 
 /**
- * Whom the guardian strikes: the living neighbour with the least health, of either
- * side, summons included; ties go to the lower id. Null when nobody stands next to it.
+ * Whom the guardian strikes: the living unit it may strike (a neighbour it can see)
+ * with the least health, of either side, summons included; ties go to the lower id.
+ * Null when there is nobody.
  */
-export function guardianTarget(state: BattleState, guardian: BattleHero, near: (a: Hex, b: Hex) => boolean): BattleHero | null {
-  const around = Object.values(state.heroes).filter(
-    (h) => h.id !== guardian.id && isAlive(h) && near(h.hex, guardian.hex),
-  );
+export function guardianTarget(
+  state: BattleState,
+  guardian: BattleHero,
+  canStrike: (h: BattleHero) => boolean,
+): BattleHero | null {
+  const around = Object.values(state.heroes).filter((h) => h.id !== guardian.id && isAlive(h) && canStrike(h));
   around.sort((a, b) => a.hp - b.hp || (a.id < b.id ? -1 : 1));
   return around[0] ?? null;
 }

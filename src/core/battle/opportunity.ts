@@ -22,7 +22,7 @@ import type { Hex } from '../hex.js';
 import type { BattleHero, BattleState, HeroId } from '../types.js';
 import { abilityId } from '../types.js';
 import { enemiesOf } from './query.js';
-import { STUN, hasStatus } from './statuses.js';
+import { STUN, hasStatus, hasStatusFlag } from './statuses.js';
 import { freeDisengage } from './modifiers.js';
 
 /** A hero holds a zone of control only if it can actually punish the hex next to it. */
@@ -52,6 +52,8 @@ export function reactorsForStep(
 ): BattleHero[] {
   if (!content.config.battle.opportunityAttack.enabled) return [];
   if (freeDisengage(state, mover, content)) return [];
+  // "Невидимость": nobody can pick the mover out to swing at.
+  if (hasStatusFlag(mover, content, 'untargetable')) return [];
   const oncePerTurn = content.config.battle.opportunityAttack.oncePerEnemyPerTurn;
 
   return enemiesOf(state, mover).filter((enemy) => {

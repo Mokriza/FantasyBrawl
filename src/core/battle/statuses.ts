@@ -36,6 +36,15 @@ export function hasAnyBuff(hero: BattleHero, content: ContentRegistry): boolean 
 }
 
 /** Hit points the barrier can still soak up. Stacks are summed into one number. */
+/**
+ * "Невидимость": whether this hero is hidden from someone of the given side. An enemy
+ * in stealth cannot be chosen as a target by anyone, by hand or by an automatic
+ * choice; its own side still sees it.
+ */
+export function hiddenFrom(viewerSide: BattleHero['side'], hero: BattleHero, content: ContentRegistry): boolean {
+  return hero.side !== viewerSide && hasStatusFlag(hero, content, 'untargetable');
+}
+
 /** Whether any status on the hero carries this flag, such as ignoresLos or untargetable. */
 export function hasStatusFlag(
   hero: BattleHero,

@@ -44,7 +44,7 @@ import {
 import { basicAttackOf, reactorsForStep } from './opportunity.js';
 import { pitImmune, stepCost } from './pathing.js';
 import { heroById, livingHeroes, updateHero } from './query.js';
-import { DOT, ROOT, STUN, hasStatus, statusesOf, tickHeroAtTurnEnd } from './statuses.js';
+import { DOT, ROOT, STUN, hasStatus, hiddenFrom, statusesOf, tickHeroAtTurnEnd } from './statuses.js';
 import { MOVES_THIS_TURN, firstMoveDiscount, freeDisengage, modifierSum, startAtbBonus } from './modifiers.js';
 import { reactTo } from './triggers.js';
 import type { Reaction, Rerun } from './triggers.js';
@@ -335,7 +335,7 @@ function summonsStrike(
     if (!isAlive(self) || self.summon === null) continue;
     const reach = self.summon.attack.radius;
     const target = livingHeroes(run.state)
-      .filter((h) => h.side !== self.side && distance(h.hex, self.hex) <= reach)
+      .filter((h) => h.side !== self.side && distance(h.hex, self.hex) <= reach && !hiddenFrom(self.side, h, content))
       .sort(
         (a, b) => distance(a.hex, self.hex) - distance(b.hex, self.hex) || (a.id < b.id ? -1 : 1),
       )[0];
@@ -358,7 +358,7 @@ function guardianStrikes(state: BattleState, id: HeroId, content: ContentRegistr
   const run: EffectRun = { state, events: [] };
   const rules = guardianRules(state, content);
   const self = heroById(state, id);
-  const target = guardianTarget(state, self, (a, b) => distance(a, b) === 1);
+  const target = guardianTarget(state, self, (h) => distance(h.hex, self.hex) === 1 && !hiddenFrom(self.side, h, content));
   if (rules === undefined || target === null) return run;
   const hit = runBare(
     bareContext(run.state, self.id, target.id, content, mode),

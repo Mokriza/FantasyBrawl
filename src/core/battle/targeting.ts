@@ -15,6 +15,7 @@ import type { BattleHero, BattleState } from '../types.js';
 import { assertNever } from '../types.js';
 import { alliesOf, enemiesOf, heroAt, livingHeroes } from './query.js';
 import { zoneGrowth } from './modifiers.js';
+import { hiddenFrom } from './statuses.js';
 
 /**
  * Only the hexes between the two ends are checked. Heroes never block sight
@@ -126,6 +127,8 @@ function chainHits(
   falloff: number,
   jumpRange: number,
   filter: Filter,
+  /** Whom a jump may not pick: an enemy in stealth. */
+  hidden: (h: BattleHero) => boolean,
 ): ShapeHit[] {
   const first = heroAt(state, target);
   if (first === null) return [];
@@ -136,7 +139,7 @@ function chainHits(
 
   for (let jump = 1; jump <= jumps; jump++) {
     const next = livingHeroes(state)
-      .filter((h) => !used.has(h.id) && matchesFilter(caster, h, filter))
+      .filter((h) => !used.has(h.id) && matchesFilter(caster, h, filter) && !hidden(h))
       .filter((h) => distance(from.hex, h.hex) <= jumpRange)
       .sort(byDistanceThenId(from.hex))[0];
     if (next === undefined) break;
@@ -147,7 +150,14 @@ function chainHits(
   return hits;
 }
 
-function shapeHexes(state: BattleState, caster: BattleHero, target: Hex, shape: Shape, filter: Filter): ShapeHit[] {
+function shapeHexes(
+  state: BattleState,
+  caster: BattleHero,
+  target: Hex,
+  shape: Shape,
+  filter: Filter,
+  hidden: (h: BattleHero) => boolean,
+): ShapeHit[] {
   switch (shape.type) {
     case 'single':
       return [{ hex: target, mul: 1 }];
@@ -178,7 +188,7 @@ function shapeHexes(state: BattleState, caster: BattleHero, target: Hex, shape: 
       return coneHexes(caster.hex, target).map((h) => ({ hex: h, mul: 1 }));
 
     case 'chain':
-      return chainHits(state, caster, target, shape.jumps, shape.falloff, shape.jumpRange ?? 2, filter);
+      return chainHits(state, caster, target, shape.jumps, shape.falloff, shape.jumpRange ?? 2, filter, hidden);
 
     case 'allAllies':
       return alliesOf(state, caster).map((h) => ({ hex: h.hex, mul: 1 }));
@@ -225,7 +235,14 @@ export function resolveShape(
   ability: Ability,
   content: ContentRegistry,
 ): ShapeHit[] {
-  const hits = shapeHexes(state, caster, target, grown(ability.shape, zoneGrowth(state, caster, content)), filterOf(ability));
+  const hits = shapeHexes(
+    state,
+    caster,
+    target,
+    grown(ability.shape, zoneGrowth(state, caster, content)),
+    filterOf(ability),
+    (h) => hiddenFrom(caster.side, h, content),
+  );
   const seen = new Set<string>();
   const out: ShapeHit[] = [];
   for (const hit of hits) {
