@@ -13,6 +13,7 @@ import { chance, nextFloatBetween } from '../rng.js';
 import { critMultiplier, dealtFactor, healFactor, modifierSum, statInBattle, takenFactor } from './modifiers.js';
 import { barrierAmount } from './statuses.js';
 import { distance } from '../hex.js';
+import { healMultiplier } from '../arena/modifiers.js';
 
 /** Turns the fixed roll off for the AI, which must not peek at the real dice. */
 export interface RollMode {
@@ -167,21 +168,23 @@ export function computeHeal(
   mode: RollMode = RANDOM_ROLLS,
 ): HealResult {
   const missing = target.base.maxHp - target.hp;
+  // "Кровавая жатва" weakens every heal, a full one included.
+  const arena = healMultiplier(state, content);
 
   if (effect.full === true) {
-    return { amount: missing, rng };
+    return { amount: roundHalfUp(missing * arena), rng };
   }
   if (effect.flat !== undefined) {
     // A fixed amount: no stat, no spread, nothing to scale.
-    return { amount: Math.min(missing, effect.flat), rng };
+    return { amount: Math.min(missing, roundHalfUp(effect.flat * arena)), rng };
   }
   if (effect.pctMaxHp !== undefined) {
     // A share of maximum health, no roll ("Талисман жизни").
-    return { amount: Math.min(missing, roundHalfUp((target.base.maxHp * effect.pctMaxHp) / 100)), rng };
+    return { amount: Math.min(missing, roundHalfUp(((target.base.maxHp * effect.pctMaxHp) / 100) * arena)), rng };
   }
   if (effect.missingHpPct !== undefined) {
     // A share of what is missing, so it does not roll: its value is its predictability.
-    return { amount: Math.min(missing, roundHalfUp((missing * effect.missingHpPct) / 100)), rng };
+    return { amount: Math.min(missing, roundHalfUp(((missing * effect.missingHpPct) / 100) * arena)), rng };
   }
 
   const scale = effect.scale ?? 'magic';
@@ -198,7 +201,7 @@ export function computeHeal(
     dice = next;
   }
 
-  return { amount: Math.min(missing, roundHalfUp(raw * spread)), rng: dice };
+  return { amount: Math.min(missing, roundHalfUp(raw * spread * arena)), rng: dice };
 }
 
 /** Barrier hit points an ability grants. No roll: a barrier of 40 is always 40. */

@@ -525,6 +525,36 @@ export const itemSchema = z
 
 export type Item = z.infer<typeof itemSchema>;
 
+/**
+ * An arena modifier: one rule set for a whole match. The kind says which rule in
+ * core/arena/modifiers.ts reads it; the numbers are the content's.
+ */
+export const arenaModifierRulesSchema = z.discriminatedUnion('kind', [
+  z
+    .object({ kind: z.literal('shrink'), everyRounds: z.number().int().positive(), ringDamage: z.number().int().nonnegative() })
+    .strict(),
+  z
+    .object({ kind: z.literal('manaStorm'), cooldownBonus: z.number().int().nonnegative(), dotMultiplier: z.number().positive() })
+    .strict(),
+  z
+    .object({ kind: z.literal('bloodHarvest'), healMultiplier: z.number().nonnegative(), killAtb: z.number().int().nonnegative() })
+    .strict(),
+  z.object({ kind: z.literal('fog'), sightRange: z.number().int().positive() }).strict(),
+]);
+
+export type ArenaModifierRules = z.infer<typeof arenaModifierRulesSchema>;
+
+export const arenaModifierSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_]+$/),
+    name: z.string().min(1),
+    description: z.string().min(1),
+    rules: arenaModifierRulesSchema,
+  })
+  .strict();
+
+export type ArenaModifier = z.infer<typeof arenaModifierSchema>;
+
 /** The seven stats a race changes at generation; anything else acts in battle. */
 export const BASE_STAT_NAMES: readonly string[] = baseStatNames;
 
@@ -810,6 +840,8 @@ export const configSchema = z
         /** After which finished match the passive is chosen, and after which tier IV. */
         passiveAfterMatch: z.number().int().positive(),
         ultimateAfterMatch: z.number().int().positive(),
+        /** The matches played with an arena modifier, announced in the upgrade phase before. */
+        modifierMatches: z.array(z.number().int().positive()),
         /** Candidates each side is offered to swap one hero for, once per upgrade phase. */
         swapChoices: z.number().int().nonnegative(),
         /** A side this many wins behind sees extraChoices more perks and rewards. */
@@ -837,6 +869,7 @@ export const configSchema = z
             summonDamage: z.number(),
             trapNearEnemy: z.number(),
             highGround: z.number(),
+            onCollapse: z.number(),
           })
           .strict(),
         profiles: z.record(
@@ -922,6 +955,7 @@ export interface ContentRegistry {
   readonly races: Readonly<Record<string, Race>>;
   readonly perks: Readonly<Record<string, Perk>>;
   readonly items: Readonly<Record<string, Item>>;
+  readonly arenaModifiers: Readonly<Record<string, ArenaModifier>>;
 }
 
 export interface RawContent {
@@ -935,6 +969,7 @@ export interface RawContent {
   readonly races: unknown;
   readonly perks: unknown;
   readonly items: unknown;
+  readonly arenaModifiers: unknown;
 }
 
 export class ContentError extends Error {
@@ -1047,7 +1082,8 @@ export function buildRegistry(raw: RawContent): ContentRegistry {
     for (const trigger of item.triggers) checkEffectRefs(trigger.effects, `Item ${item.id}`, statuses);
   }
 
-  return { config, classes, abilities, statuses, names, passives, races, perks, items };
+  const arenaModifiers = byId(z.array(arenaModifierSchema).parse(raw.arenaModifiers), 'arena modifier');
+  return { config, classes, abilities, statuses, names, passives, races, perks, items, arenaModifiers };
 }
 
 export function getAbility(content: ContentRegistry, id: AbilityId): Ability {

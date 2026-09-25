@@ -89,6 +89,7 @@
     "unlockChoices": 2,
     "passiveAfterMatch": 1,
     "ultimateAfterMatch": 2,
+    "modifierMatches": [3, 5],
     "swapChoices": 3,
     "catchUp": { "deficit": 2, "extraChoices": 1 }
   },
@@ -108,7 +109,8 @@
       "focusBonus": 10,
       "summonDamage": 0.6,
       "trapNearEnemy": 8,
-      "highGround": 8
+      "highGround": 8,
+      "onCollapse": -15
     },
     "profiles": {
       "novice": {

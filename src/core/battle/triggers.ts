@@ -18,6 +18,7 @@ import { isAlive } from '../types.js';
 import { applyEffect } from './effects/index.js';
 import type { EffectContext } from './effects/index.js';
 import type { RollMode } from './formulas.js';
+import { killAtb } from '../arena/modifiers.js';
 import { traitsOf } from './modifiers.js';
 import type { Trait } from './modifiers.js';
 import { heroById, livingHeroes, updateHero } from './query.js';
@@ -313,6 +314,20 @@ export function reactTo(
 
   for (const event of events) {
     if (event.type === 'damaged' && event.sourceId !== null) lastHitter.set(event.targetId, event.sourceId);
+
+    // "Кровавая жатва": a hero's death moves the killer up the bar. Summons are not
+    // heroes, so neither killing one nor a kill by one counts.
+    const harvest = killAtb(current, content);
+    if (event.type === 'died' && harvest > 0) {
+      const killerId = lastHitter.get(event.heroId);
+      const killer = killerId === undefined ? undefined : current.heroes[killerId];
+      const victim = current.heroes[event.heroId];
+      if (killer !== undefined && killer.id !== event.heroId && isAlive(killer) && killer.summon === null && victim?.summon === null) {
+        const atb = killer.atb + harvest;
+        current = updateHero(current, killer.id, (h) => ({ ...h, atb }));
+        out.push({ type: 'atbChanged', heroId: killer.id, delta: harvest, atb });
+      }
+    }
 
     for (const party of partiesOf(current, event, lastHitter)) {
       const owner = current.heroes[party.ownerId];

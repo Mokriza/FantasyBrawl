@@ -20,6 +20,8 @@ const PROPS: Record<TerrainId, TerrainProps> = {
   pit: { blocksMovement: false, blocksLos: false },
   // "Возвышенность": ordinary ground to walk on; its bonus is in battle/modifiers.ts.
   high: { blocksMovement: false, blocksLos: false },
+  // "Сужающаяся арена": the fallen edge. No way in; whoever is left on it takes damage.
+  collapse: { blocksMovement: true, blocksLos: false },
   // "Стена льда": impassable, but it is ice, so you can see through it.
   ice: { blocksMovement: true, blocksLos: false },
   // "Дымовая завеса": walk through it, see nothing through it.

@@ -36,6 +36,13 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
         </span>
       )}
 
+      {/* The arena modifier of this match, or of the next one while it is announced. */}
+      {run === null || run.modifier === null || run.phase === 'matchOver' || run.phase === 'finished' ? null : (
+        <span className="modifier-chip" title={ui.content.arenaModifiers[run.modifier]?.description}>
+          {UI.modifier}: {ui.content.arenaModifiers[run.modifier]?.name ?? run.modifier}
+        </span>
+      )}
+
       {status === undefined ? null : (
         <span className={`turn-indicator${busy === true ? ' busy' : ''}`}>{status}</span>
       )}

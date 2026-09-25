@@ -61,6 +61,15 @@ h2 {
   font-weight: 600;
 }
 
+.modifier-chip {
+  padding: 2px 9px;
+  border: 1px solid #b0412e;
+  border-radius: 12px;
+  color: #f0a58f;
+  font-size: 12px;
+  cursor: help;
+}
+
 .turn-indicator.busy {
   color: var(--dim);
 }
@@ -390,6 +399,11 @@ button.primary:hover {
 .legend-high {
   background: #8a6d3b;
   border: 2px solid #d9b25f;
+}
+
+.legend-collapse {
+  background: #2a0f0f;
+  border: 2px solid #b0412e;
 }
 
 .legend-thicket {

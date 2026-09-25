@@ -167,7 +167,7 @@ export function abilityLegality(
     ability.targets !== 'self' &&
     ability.targets !== 'ally' &&
     !hasStatusFlag(hero, content, 'ignoresLos');
-  if (needsLos && !hasLineOfSight(state, hero.hex, target)) return { ok: false, reason: 'no_los' };
+  if (needsLos && !hasLineOfSight(state, hero.hex, target, content)) return { ok: false, reason: 'no_los' };
 
   const pull = ability.effects.find((e) => e.type === 'move');
   if (pull !== undefined && pull.type === 'move' && pull.to === 'adjacentToTarget') {
@@ -235,7 +235,7 @@ export function abilityReach(
 
   return allHexes(state.arena).filter((h) => {
     if (distance(hero.hex, h) > reach) return false;
-    return !needsLos || hasLineOfSight(state, hero.hex, h);
+    return !needsLos || hasLineOfSight(state, hero.hex, h, content);
   });
 }
 

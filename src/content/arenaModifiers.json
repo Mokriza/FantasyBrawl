@@ -1,0 +1,26 @@
+[
+  {
+    "id": "mod_shrinking_arena",
+    "name": "Сужающаяся арена",
+    "description": "Каждые 4 раунда внешнее кольцо гексов обрушивается: пройти нельзя, а кто на нём остался, получает 15 урона в начале своего хода.",
+    "rules": { "kind": "shrink", "everyRounds": 4, "ringDamage": 15 }
+  },
+  {
+    "id": "mod_mana_storm",
+    "name": "Шторм маны",
+    "description": "Все кулдауны тикают на 1 быстрее, урон со временем удвоен.",
+    "rules": { "kind": "manaStorm", "cooldownBonus": 1, "dotMultiplier": 2 }
+  },
+  {
+    "id": "mod_blood_harvest",
+    "name": "Кровавая жатва",
+    "description": "Лечение на 50% слабее. Убийство даёт убийце +30 инициативы.",
+    "rules": { "kind": "bloodHarvest", "healMultiplier": 0.5, "killAtb": 30 }
+  },
+  {
+    "id": "mod_thick_fog",
+    "name": "Густой туман",
+    "description": "Никто не видит дальше 3 гексов, даже на открытом месте: по врагу дальше не ударить способностью, которой нужен обзор.",
+    "rules": { "kind": "fog", "sightRange": 3 }
+  }
+]

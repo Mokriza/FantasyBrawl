@@ -122,6 +122,17 @@ function drawColumn(layer: Container, hex: Hex, arena: Arena): void {
   layer.addChild(g);
 }
 
+/** "Сужающаяся арена": the fallen edge, a dark red chasm with cracks. */
+function drawCollapse(layer: Container, hex: Hex, arena: Arena): void {
+  const { x, y } = centreOf(hex, arena);
+  const g = new Graphics();
+  const inner = polygonPoints(hex, arena, 3);
+  g.poly(inner).fill({ color: COLORS.collapseFill, alpha: 0.95 });
+  g.moveTo(x - 16, y - 10).lineTo(x - 4, y - 2).lineTo(x - 8, y + 12).stroke({ width: 2, color: COLORS.collapseEdge });
+  g.moveTo(x + 14, y - 12).lineTo(x + 4, y + 2).lineTo(x + 12, y + 14).stroke({ width: 2, color: COLORS.collapseEdge });
+  layer.addChild(g);
+}
+
 /** "Возвышенность": a raised plateau, a smaller hex with a bright rim and a chevron. */
 function drawHigh(layer: Container, hex: Hex, arena: Arena): void {
   const { x, y } = centreOf(hex, arena);
@@ -422,6 +433,7 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     if (terrain === 'rock') drawRock(layer, hex, arena);
     else if (terrain === 'column') drawColumn(layer, hex, arena);
     else if (terrain === 'high') drawHigh(layer, hex, arena);
+    else if (terrain === 'collapse') drawCollapse(layer, hex, arena);
     else if (terrain === 'thicket') drawThicket(layer, hex, arena);
     else if (terrain === 'pit') drawPit(layer, hex, arena);
     else if (terrain === 'ice') drawIce(layer, hex, arena);

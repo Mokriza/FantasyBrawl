@@ -72,6 +72,7 @@ export function eventText(
     case 'cooldownsChanged':
       return `${heroName(state, event.heroId)}: ${event.mode === 'double' ? 'перезарядка удвоена' : 'перезарядка сброшена'}`;
     case 'terrainChanged':
+      if (event.terrain === 'collapse') return 'Край арены обрушивается';
       return event.terrain === null ? null : `На поле появляется: ${terrainName(event.terrain).toLowerCase()}`;
     case 'summoned':
       return `${heroName(state, event.ownerId)} призывает: ${heroName(state, event.heroId)}`;
@@ -129,7 +130,11 @@ export function BattleLog({ log, battle, content }: Props): JSX.Element {
   const lines: Array<{ key: number; text: string; kind: BattleEvent['type'] }> = [];
   log.forEach((event, index) => {
     const text = eventText(event, battle, content);
-    if (text !== null) lines.push({ key: index, text, kind: event.type });
+    if (text === null) return;
+    // A wall of ice or a whole ring of the arena changes many hexes in one go: one line.
+    const previous = lines[lines.length - 1];
+    if (event.type === 'terrainChanged' && previous?.kind === 'terrainChanged' && previous.text === text) return;
+    lines.push({ key: index, text, kind: event.type });
   });
 
   return (

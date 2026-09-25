@@ -214,6 +214,16 @@ function validateGeneration(content: ContentRegistry): void {
   if (arena.obstacles.min > arena.obstacles.max || arena.obstacles.max > room / 2) {
     fail(`config.arena.obstacles: ${arena.obstacles.min}–${arena.obstacles.max} при ${room} свободных гексах — больше половины`);
   }
+  // Rule 19: a modifier match must be one a series can reach, and there must be a
+  // modifier to play it with.
+  for (const match of content.config.run.modifierMatches) {
+    if (match < 1 || match > content.config.run.maxMatches) {
+      fail(`config.run.modifierMatches: матча ${match} в серии из ${content.config.run.maxMatches} не бывает`);
+    }
+  }
+  if (content.config.run.modifierMatches.length > 0 && Object.keys(content.arenaModifiers).length === 0) {
+    fail('config.run.modifierMatches задан, а arenaModifiers.json пуст');
+  }
   if (arena.high.maxCount > 2) {
     fail(`config.arena.high.maxCount: ${arena.high.maxCount}, GDD допускает не больше двух возвышенностей`);
   }

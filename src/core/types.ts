@@ -55,7 +55,7 @@ export interface Stats {
  * Rock, thicket and pit are generated with the arena. Ice, smoke and trap only ever
  * appear for a while, from an ability. Elevation and Column are stage 4.
  */
-export type TerrainId = 'rock' | 'column' | 'thicket' | 'pit' | 'high' | 'ice' | 'smoke' | 'trap';
+export type TerrainId = 'rock' | 'column' | 'thicket' | 'pit' | 'high' | 'collapse' | 'ice' | 'smoke' | 'trap';
 
 /** Terrain an ability put down for a while, and what the hex was before. */
 export interface TemporaryTerrain {
@@ -183,6 +183,7 @@ export interface BattleState {
   readonly heroes: Readonly<Record<string, BattleHero>>;
   readonly activeHeroId: HeroId | null;
   readonly apLeft: number;
+  /** Arena modifier ids this match runs with, see core/arena/modifiers.ts. */
   readonly modifiers: readonly string[];
   readonly outcome: BattleOutcome | null;
   /** The hero whose turn ended most recently, for modifiers such as "Напор". */
@@ -367,6 +368,8 @@ export interface MatchRecord {
   readonly winner: Side;
   readonly reason: VictoryReason;
   readonly rounds: number;
+  /** The arena modifier the match was played with, if any. */
+  readonly modifier: string | null;
 }
 
 /** Perks on offer between matches, and what has been taken so far. */
@@ -432,6 +435,11 @@ export interface RunState {
   readonly placement: PlacementState | null;
   /** The perk offers of the current upgrade phase; null outside it. */
   readonly upgrade: UpgradeState | null;
+  /**
+   * The arena modifier of the current match, or of the next one during its upgrade
+   * phase, where it is announced. Null for a match without one.
+   */
+  readonly modifier: string | null;
 }
 
 export type RunAction =

@@ -17,6 +17,7 @@ import {
 
   isHigh,
   livingHeroes,
+  terrainAt,
 } from '../core/index.js';
 import { threatAgainst } from './threat.js';
 
@@ -92,6 +93,13 @@ function trapsNearEnemies(state: BattleState, side: Side, content: ContentRegist
   return count;
 }
 
+/** My heroes left on the fallen edge of a shrinking arena, which hurts every turn. */
+function onCollapse(state: BattleState, side: Side): number {
+  return livingHeroes(state).filter(
+    (h) => h.side === side && h.summon === null && terrainAt(state.arena, h.hex) === 'collapse',
+  ).length;
+}
+
 /** My heroes standing on high ground, where they reach further and hit harder. */
 function onHighGround(state: BattleState, side: Side): number {
   return livingHeroes(state).filter((h) => h.side === side && h.summon === null && isHigh(state.arena, h.hex)).length;
@@ -152,7 +160,8 @@ export function evaluate(
     w.ultimateSaved * ultimatesHeld(after, side, content) +
     w.summonDamage * summonValue(after, side) +
     w.trapNearEnemy * trapsNearEnemies(after, side, content) +
-    w.highGround * onHighGround(after, side);
+    w.highGround * onHighGround(after, side) +
+    w.onCollapse * onCollapse(after, side);
 
   // Control is close to a kill: a hero that cannot act deals no damage either.
   for (const hero of livingHeroes(after)) {

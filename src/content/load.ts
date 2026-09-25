@@ -14,6 +14,7 @@ import names from './names.json' with { type: 'json' };
 import races from './races.json' with { type: 'json' };
 import perks from './perks.json' with { type: 'json' };
 import items from './items.json' with { type: 'json' };
+import arenaModifiers from './arenaModifiers.json' with { type: 'json' };
 import basicAbilities from './abilities/basic.json' with { type: 'json' };
 import warriorAbilities from './abilities/warrior.json' with { type: 'json' };
 import paladinAbilities from './abilities/paladin.json' with { type: 'json' };
@@ -66,6 +67,7 @@ export function loadContent(): ContentRegistry {
     races,
     perks,
     items,
+    arenaModifiers,
   });
 }
 

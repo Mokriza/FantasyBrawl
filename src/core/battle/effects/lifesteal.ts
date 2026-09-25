@@ -4,6 +4,7 @@
  * heals 10% of whatever hit just landed.
  */
 
+import { healMultiplier } from '../../arena/modifiers.js';
 import type { LifestealEffect } from '../../content.js';
 import { isAlive } from '../../types.js';
 import { heroById } from '../query.js';
@@ -14,7 +15,8 @@ export function applyLifesteal(ctx: EffectContext, effect: LifestealEffect): Eff
   const caster = heroById(ctx.state, ctx.casterId);
   if (!isAlive(caster) || ctx.lastDamage <= 0) return NO_CHANGE(ctx);
 
-  const amount = Math.floor(ctx.lastDamage * effect.pct + 0.5);
+  // "Кровавая жатва" weakens it like any heal.
+  const amount = Math.floor(ctx.lastDamage * effect.pct * healMultiplier(ctx.state, ctx.content) + 0.5);
   const applied = healHero(ctx.state, ctx.casterId, amount);
   if (applied.healed === 0) return { state: applied.state, events: [] };
   return {

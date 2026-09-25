@@ -421,6 +421,12 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
         </h2>
         <span className="dim">{UI.upgrade.hint}</span>
         {trailing === you ? <span className="catch-up">{UI.upgrade.catchUp}</span> : null}
+        {run.modifier === null ? null : (
+          <span className="catch-up">
+            {UI.upgrade.modifierNext(run.match)} <b>{ui.content.arenaModifiers[run.modifier]?.name}</b> —{' '}
+            {ui.content.arenaModifiers[run.modifier]?.description}
+          </span>
+        )}
         <button
           type="button"
           className="primary upgrade-done"

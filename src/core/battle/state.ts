@@ -20,6 +20,8 @@ export interface CreateBattleOptions {
   readonly content: ContentRegistry;
   /** Supply an arena to pin it in a test; otherwise one is generated from the seed. */
   readonly arena?: Arena;
+  /** Arena modifier ids for this match; none when absent. */
+  readonly modifiers?: readonly string[];
 }
 
 /** One roster entry as a hero on the field, at full health and an empty gauge. */
@@ -77,7 +79,7 @@ export function createBattle(options: CreateBattleOptions): BattleState {
     heroes,
     activeHeroId: null,
     apLeft: 0,
-    modifiers: [],
+    modifiers: options.modifiers ?? [],
     outcome: null,
     lastActedHeroId: null,
     temporaryTerrain: [],

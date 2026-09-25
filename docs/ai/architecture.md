@@ -56,7 +56,7 @@ interface BattleState {
   readonly heroes: Readonly<Record<HeroId, BattleHero>>;
   readonly activeHeroId: HeroId | null;
   readonly apLeft: number;
-  readonly modifiers: readonly ArenaModifierId[];
+  readonly modifiers: readonly string[];      // модификаторы арены этого матча, см. core/arena/modifiers.ts
   readonly outcome: BattleOutcome | null;
 }
 ```

@@ -696,3 +696,27 @@ describe('catch-up', () => {
     expect(run.upgrade?.rewards.A).toHaveLength(content.config.run.rewardChoices);
   });
 });
+
+describe('arena modifiers in a run', () => {
+  it('matches 3 and 5 get one, announced in the upgrade phase before; the others none', () => {
+    let run = placeAll(draftAll(createRun({ seed: 12, content })));
+    expect(run.modifier).toBeNull();
+    const seen: (string | null)[] = [];
+    // A, B, A, B: the series goes the full five matches.
+    for (const winner of ['A', 'B', 'A', 'B'] as const) {
+      run = applyRunAction(win(run, winner), { type: 'nextMatch' }, content);
+      expect(run.phase).toBe('upgrade');
+      const due = content.config.run.modifierMatches.includes(run.match);
+      if (due) expect(content.arenaModifiers[run.modifier ?? '']).toBeDefined();
+      else expect(run.modifier).toBeNull();
+      seen.push(run.modifier);
+      run = placeAll(upgradeAll(run));
+      expect(createRunBattle(run, content).modifiers).toEqual(run.modifier === null ? [] : [run.modifier]);
+    }
+    run = win(run, 'A');
+    expect(run.history.map((m) => m.modifier)).toEqual([null, ...seen]);
+    const rolled = seen.filter((m) => m !== null);
+    expect(rolled).toHaveLength(2);
+    expect(new Set(rolled).size).toBe(2);
+  });
+});

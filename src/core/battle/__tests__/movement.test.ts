@@ -103,21 +103,21 @@ describe('line of sight', () => {
     const state = walker((s) => {
       s.obstacle('rock', [3, 2]);
     });
-    expect(hasLineOfSight(state, at(3, 3), at(3, 1))).toBe(false);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 1), content)).toBe(false);
   });
 
   it('thicket blocks it', () => {
     const state = walker((s) => {
       s.obstacle('thicket', [3, 2]);
     });
-    expect(hasLineOfSight(state, at(3, 3), at(3, 1))).toBe(false);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 1), content)).toBe(false);
   });
 
   it('a thicket the target stands in does not hide it', () => {
     const state = walker((s) => {
       s.obstacle('thicket', [3, 2]);
     });
-    expect(hasLineOfSight(state, at(3, 3), at(3, 2))).toBe(true);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 2), content)).toBe(true);
   });
 
   it('heroes never block sight', () => {
@@ -127,6 +127,6 @@ describe('line of sight', () => {
       .hero('target', { cls: 'mage', side: 'B', at: [3, 1] })
       .active('h', { ap: 4 })
       .build();
-    expect(hasLineOfSight(state, at(3, 3), at(3, 1))).toBe(true);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 1), content)).toBe(true);
   });
 });

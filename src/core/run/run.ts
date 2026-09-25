@@ -79,7 +79,23 @@ export function createRun(options: CreateRunOptions): RunState {
     history: [],
     placement: null,
     upgrade: null,
+    modifier: null,
   };
+}
+
+/**
+ * The arena modifier for the match about to be prepared: one of those not yet played
+ * in this run, from the run stream, if the match is one of config.run.modifierMatches.
+ * [decision] No repeats within a run while there are others to choose from.
+ */
+function rollModifier(run: RunState, upcoming: number, content: ContentRegistry): [string | null, RngState] {
+  if (!content.config.run.modifierMatches.includes(upcoming)) return [null, run.rng];
+  const played = new Set(run.history.map((m) => m.modifier));
+  const all = Object.keys(content.arenaModifiers).sort();
+  const fresh = all.filter((id) => !played.has(id));
+  const pool = fresh.length > 0 ? fresh : all;
+  if (pool.length === 0) return [null, run.rng];
+  return pick(run.rng, pool);
 }
 
 /** Every hero gains a level after every match, so the level is the match number. */
@@ -158,7 +174,7 @@ export function applyRunAction(
       const wins = { ...run.wins, [winner]: run.wins[winner] + 1 };
       const history = [
         ...run.history,
-        { match: run.match, winner, reason: action.outcome.reason, rounds: action.rounds },
+        { match: run.match, winner, reason: action.outcome.reason, rounds: action.rounds, modifier: run.modifier },
       ];
       const over =
         wins[winner] >= content.config.run.winsToFinish ||
@@ -169,8 +185,10 @@ export function applyRunAction(
     case 'nextMatch': {
       // A new level for everyone, then the perks that go with it.
       requirePhase(run, 'matchOver', 'nextMatch');
-      const [upgrade, rng] = createUpgrade(run.draft, content, run.rng, run.match, run.wins);
-      return { ...run, rng, match: run.match + 1, phase: 'upgrade', upgrade };
+      const [upgrade, afterUpgrade] = createUpgrade(run.draft, content, run.rng, run.match, run.wins);
+      // Announced now, before the upgrade phase, so both sides can prepare for it.
+      const [modifier, rng] = rollModifier({ ...run, rng: afterUpgrade }, run.match + 1, content);
+      return { ...run, rng, match: run.match + 1, phase: 'upgrade', upgrade, modifier };
     }
 
     case 'choosePerk': {
@@ -280,6 +298,7 @@ export function createRunBattle(run: RunState, content: ContentRegistry): Battle
     teams: { heroes },
     content,
     arena: requirePlacement(run).arena,
+    modifiers: run.modifier === null ? [] : [run.modifier],
   });
 }
 
@@ -322,7 +341,13 @@ export function placementPreview(run: RunState, content: ContentRegistry): Battl
     if (hero === undefined) throw new Error(`Placed hero ${spot.heroId} is not in the pool`);
     return toTeamHero(hero, spot.side, run, content);
   });
-  return createBattle({ seed: battleSeed(run), teams: { heroes }, content, arena: placement.arena });
+  return createBattle({
+    seed: battleSeed(run),
+    teams: { heroes },
+    content,
+    arena: placement.arena,
+    modifiers: run.modifier === null ? [] : [run.modifier],
+  });
 }
 
 /**

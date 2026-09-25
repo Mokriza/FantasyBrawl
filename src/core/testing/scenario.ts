@@ -42,6 +42,10 @@ export interface Scenario {
   hero(id: string, spec: ScenarioHero): Scenario;
   obstacle(kind: TerrainId, at: [number, number]): Scenario;
   active(id: string, options?: { ap?: number }): Scenario;
+  /** Start in this round, as if the clock had run that far. */
+  round(value: number): Scenario;
+  /** Run with this arena modifier. */
+  modifier(id: string): Scenario;
   build(): BattleState;
 }
 
@@ -59,6 +63,8 @@ export function scenario(content: ContentRegistry): Scenario {
   let seedValue = 1;
   let activeId: string | null = null;
   let ap = 4;
+  let round = 1;
+  const modifiers: string[] = [];
   const heroes: Record<string, BattleHero> = {};
   const terrain: Record<string, TerrainId> = {};
 
@@ -112,6 +118,16 @@ export function scenario(content: ContentRegistry): Scenario {
       return self;
     },
 
+    round(value) {
+      round = value;
+      return self;
+    },
+
+    modifier(id) {
+      modifiers.push(id);
+      return self;
+    },
+
     active(id, options) {
       activeId = id;
       if (options?.ap !== undefined) ap = options.ap;
@@ -127,13 +143,13 @@ export function scenario(content: ContentRegistry): Scenario {
       return {
         seed: seedValue,
         rng: createRng(seedValue),
-        tick: 0,
-        round: 1,
+        tick: (round - 1) * content.config.battle.ticksPerRound,
+        round,
         arena,
         heroes,
         activeHeroId: activeId === null ? null : heroId(activeId),
         apLeft: activeId === null ? 0 : ap,
-        modifiers: [],
+        modifiers: [...modifiers],
         outcome: null,
         lastActedHeroId: null,
         temporaryTerrain: [],

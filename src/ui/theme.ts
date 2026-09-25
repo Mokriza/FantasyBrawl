@@ -35,6 +35,8 @@ export const COLORS = {
   thicketEdge: 0x1b4027,
   columnFill: 0xc9c2ae,
   columnEdge: 0x6f6856,
+  collapseFill: 0x2a0f0f,
+  collapseEdge: 0xb0412e,
   highFill: 0x8a6d3b,
   highEdge: 0xd9b25f,
   pitFill: 0x05070a,

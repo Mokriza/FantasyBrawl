@@ -6,7 +6,8 @@
  * to the player.
  */
 
-import { isPit } from '../arena/terrain.js';
+import { collapseDamage, cooldownBonus, dotMultiplier, hexesToCollapse } from '../arena/modifiers.js';
+import { isPit, terrainAt } from '../arena/terrain.js';
 import type { Ability, ContentRegistry, Effect } from '../content.js';
 import { getAbility } from '../content.js';
 import type { Hex } from '../hex.js';
@@ -448,6 +449,22 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
 
   let next = state;
   const rest: BattleEvent[] = [];
+
+  // "Сужающаяся арена": a ring whose time has come falls before anyone acts. What an
+  // ability laid there goes with it, so its expiry cannot bring the ground back.
+  const fallen = hexesToCollapse(next, content);
+  if (fallen.length > 0) {
+    const keys = new Set(fallen.map(hexKey));
+    const terrain = { ...next.arena.terrain };
+    for (const key of keys) terrain[key] = 'collapse';
+    next = {
+      ...next,
+      arena: { ...next.arena, terrain },
+      temporaryTerrain: next.temporaryTerrain.filter((t) => !keys.has(hexKey(t.hex))),
+    };
+    for (const hex of fallen) rest.push({ type: 'terrainChanged', hex, terrain: 'collapse' });
+  }
+
   // "Неудержимость" adds, "Оглушающий удар" takes away: statuses and perks that move
   // apPerTurn, never below zero.
   let ap = Math.max(
@@ -463,9 +480,11 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
     const entry = bySource.get(key) ?? { sourceId: stack.sourceId ?? null, amount: 0 };
     bySource.set(key, { ...entry, amount: entry.amount + stack.value });
   }
+  const dotMul = dotMultiplier(next, content);
   for (const { sourceId, amount } of bySource.values()) {
     if (!isAlive(heroById(next, id))) break;
-    const hurt = damageHero(next, id, 0, amount, content);
+    // "Шторм маны" doubles it.
+    const hurt = damageHero(next, id, 0, Math.round(amount * dotMul), content);
     next = hurt.state;
     rest.push({
       type: 'damaged',
@@ -486,6 +505,23 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
   }, 0);
   if (drain > 0 && isAlive(heroById(next, id))) {
     const hurt = damageHero(next, id, 0, drain, content);
+    next = hurt.state;
+    rest.push({
+      type: 'damaged',
+      targetId: id,
+      sourceId: null,
+      amount: hurt.dealt,
+      crit: false,
+      school: 'pure',
+      periodic: true,
+    });
+    rest.push(...hurt.events);
+  }
+
+  // "Сужающаяся арена": standing on the fallen edge hurts, every turn.
+  const ring = collapseDamage(next, content);
+  if (ring > 0 && isAlive(heroById(next, id)) && terrainAt(next.arena, heroById(next, id).hex) === 'collapse') {
+    const hurt = damageHero(next, id, 0, ring, content);
     next = hurt.state;
     rest.push({
       type: 'damaged',
@@ -543,7 +579,8 @@ function finishTurn(state: BattleState, content: ContentRegistry, mode: RollMode
   run.events.push(...reacted.events);
 
   const ending = heroById(run.state, id);
-  const recovery = modifierSum(run.state, ending, 'cooldownRecovery', content).add;
+  // "Отчаяние" and the like, plus "Шторм маны" for everyone.
+  const recovery = modifierSum(run.state, ending, 'cooldownRecovery', content).add + cooldownBonus(run.state, content);
   const ticked = tickHeroAtTurnEnd(ending, recovery);
   run.state = updateHero(run.state, id, () => ticked.hero);
   run.events.push(...ticked.events);

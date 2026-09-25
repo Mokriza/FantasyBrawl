@@ -168,6 +168,8 @@ function simulateRuns(args: Args): void {
   // Catch-up check from the design document: after 0-2, how often the side behind
   // takes the third match. Below 35% the compensation needs strengthening.
   let behindAtTwo = 0;
+  // Matches by arena modifier: how long, and how often to the round limit.
+  const byModifier: Record<string, { matches: number; rounds: number; limit: number }> = {};
   let behindWonThird = 0;
 
   for (let i = 0; i < args.runs; i++) {
@@ -189,6 +191,10 @@ function simulateRuns(args: Args): void {
       matchWins[record.winner] = (matchWins[record.winner] ?? 0) + 1;
       if (record.reason === 'roundLimit') roundLimit++;
       (roundsByMatch[record.match] ??= []).push(record.rounds);
+      const mod = (byModifier[record.modifier ?? 'none'] ??= { matches: 0, rounds: 0, limit: 0 });
+      mod.matches++;
+      mod.rounds += record.rounds;
+      if (record.reason === 'roundLimit') mod.limit++;
     }
     for (const side of ['A', 'B'] as const) {
       for (const id of run.draft.picks[side]) {
@@ -225,6 +231,10 @@ function simulateRuns(args: Args): void {
   console.log(`Матчей по лимиту раундов: ${percent(roundLimit, matches)} (цель < 3%)`);
   console.log(`Отстающий при 0–2 берёт 3-й матч: ${percent(behindWonThird, behindAtTwo)} из ${behindAtTwo} (цель ≥ 35%)`);
   console.log(`Замен героя: ${percent(swaps, upgradePhases)} фаз усиления одной стороны`);
+  console.log('Модификаторы арены: матчей · раундов в среднем · по лимиту');
+  for (const [id, m] of Object.entries(byModifier).sort()) {
+    console.log(`  мод ${id} ${m.matches} · ${(m.rounds / m.matches).toFixed(1)} · ${percent(m.limit, m.matches)}`);
+  }
 
   console.log('\nКлассы в драфте: доля пиков · винрейт забега · первым пиком');
   const totalPicks = Object.values(picksByClass).reduce((s, x) => s + x, 0);
@@ -237,7 +247,7 @@ function simulateRuns(args: Args): void {
   }
 
   if (args.out !== null) {
-    const report = { runs, matches, seed: args.seed, profile: args.profile, runWins, matchWins, lengths, roundsByMatch, picksByClass, runWinsByClass, roundLimit, behindAtTwo, behindWonThird, swaps, upgradePhases };
+    const report = { runs, matches, seed: args.seed, profile: args.profile, runWins, matchWins, lengths, roundsByMatch, picksByClass, runWinsByClass, roundLimit, behindAtTwo, behindWonThird, swaps, upgradePhases, byModifier };
     writeFileSync(args.out, JSON.stringify(report, null, 2), 'utf8');
     console.log(`\nОтчёт записан в ${args.out}`);
   }

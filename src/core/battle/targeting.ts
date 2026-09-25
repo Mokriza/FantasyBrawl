@@ -6,6 +6,7 @@
  * tie breaks by distance first and by DIRECTIONS order or hero id second.
  */
 
+import { sightRange } from '../arena/modifiers.js';
 import { blocksLos, blocksMovement, inBounds } from '../arena/terrain.js';
 import type { Ability, ContentRegistry, Shape } from '../content.js';
 import { DIRECTIONS, distance, hexAdd, hexEquals, hexKey, hexLine, hexesInRange, nearestDirection, neighbors } from '../hex.js';
@@ -20,7 +21,10 @@ import { zoneGrowth } from './modifiers.js';
  * (game-rules.md section 5), and neither does the terrain the target itself stands on,
  * so an enemy in a thicket can still be hit.
  */
-export function hasLineOfSight(state: BattleState, from: Hex, to: Hex): boolean {
+export function hasLineOfSight(state: BattleState, from: Hex, to: Hex, content: ContentRegistry): boolean {
+  // "Густой туман": past this distance nobody sees, open ground or not.
+  const fog = sightRange(state, content);
+  if (fog !== null && distance(from, to) > fog) return false;
   const line = hexLine(from, to);
   return line.slice(1, -1).every((h) => !blocksLos(state.arena, h));
 }

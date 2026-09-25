@@ -37,7 +37,7 @@ describe('the column', () => {
     });
     const reach = reachableHexes(state, heroById(state, heroId('h')), 4, content);
     expect(reach.has(hexKey(at(3, 2)))).toBe(false);
-    expect(hasLineOfSight(state, at(3, 3), at(3, 1))).toBe(true);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 1), content)).toBe(true);
   });
 });
 
@@ -48,7 +48,7 @@ describe('high ground', () => {
     });
     const reach = reachableHexes(state, heroById(state, heroId('h')), 4, content);
     expect(reach.get(hexKey(at(3, 2)))?.cost).toBe(1);
-    expect(hasLineOfSight(state, at(3, 3), at(3, 1))).toBe(true);
+    expect(hasLineOfSight(state, at(3, 3), at(3, 1), content)).toBe(true);
   });
 
   it('adds range to abilities that reach past the next hex, and none to melee ones', () => {
