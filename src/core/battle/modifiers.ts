@@ -10,7 +10,7 @@
  * the result is (value + Σ add) × (1 + Σ mul). Stats go through statuses first.
  */
 
-import type { ContentRegistry, Modifier, ModifierCondition, ModifierStat, Race, Trigger } from '../content.js';
+import type { ContentRegistry, HeroClass, Modifier, ModifierCondition, ModifierStat, Race, Trigger } from '../content.js';
 import { BASE_STAT_NAMES } from '../content.js';
 import { pointBonus } from '../arena/modifiers.js';
 import { isHigh } from '../arena/terrain.js';
@@ -53,6 +53,18 @@ function modifiersByStat(traitId: string, trait: Trait, content: ContentRegistry
   return byStat;
 }
 
+const CLASS_TRAITS = new WeakMap<HeroClass, Trait>();
+
+/** A class as a battle trait: the modifiers every hero of it carries. */
+function classTrait(heroClass: HeroClass): Trait {
+  let trait = CLASS_TRAITS.get(heroClass);
+  if (trait === undefined) {
+    trait = { id: `class:${heroClass.id}`, modifiers: heroClass.modifiers ?? [], triggers: [] };
+    CLASS_TRAITS.set(heroClass, trait);
+  }
+  return trait;
+}
+
 const RACE_TRAITS = new WeakMap<Race, Trait>();
 
 /**
@@ -71,9 +83,11 @@ function raceTrait(race: Race): Trait {
   return trait;
 }
 
-/** Every trait a hero carries, in a fixed order: passive, race, perks as taken, artifact. */
+/** Every trait a hero carries, in a fixed order: class, passive, race, perks as taken, artifact. */
 export function traitsOf(hero: BattleHero, content: ContentRegistry): Trait[] {
   const out: Trait[] = [];
+  const heroClass = content.classes[hero.classId];
+  if (heroClass?.modifiers !== undefined && heroClass.modifiers.length > 0) out.push(classTrait(heroClass));
   if (hero.passive !== null) {
     const passive = content.passives[hero.passive];
     if (passive !== undefined) out.push(passive);

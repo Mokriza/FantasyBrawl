@@ -714,6 +714,8 @@ export const heroClassSchema = z
     secondaryStats: z.array(z.enum(['maxHp', 'attack', 'magic', 'armor', 'resist', 'speed', 'critChance'])),
     baseAttack: z.string(),
     statGrowth: z.object({ hp: z.number(), primary: z.number(), secondary: z.number() }).strict(),
+    /** Battle modifiers every hero of the class carries, like a passive nobody chooses. */
+    modifiers: z.array(modifierSchema).optional(),
     portrait: z.string(),
     color: z.string(),
     /** A class only summons use: never drafted, never generated, no pool rules. */

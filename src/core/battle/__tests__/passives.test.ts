@@ -407,3 +407,17 @@ describe('perks in battle', () => {
     expect(withPerkHealth(base, [], content, 'item_hunter_vest').maxHp).toBe(118);
   });
 });
+
+describe('class traits', () => {
+  it('a class may carry modifiers of its own, which act like any other trait', () => {
+    const warrior = content.classes.warrior;
+    if (warrior === undefined) throw new Error('content');
+    const withTrait: ContentRegistry = {
+      ...content,
+      classes: { ...content.classes, warrior: { ...warrior, modifiers: [{ stat: 'speed', add: 3 }] } },
+    };
+    const state = board(undefined, {}, { cls: 'warrior', speed: 10 });
+    expect(statsInBattle(state, heroById(state, heroId('c')), content).speed).toBe(10);
+    expect(statsInBattle(state, heroById(state, heroId('c')), withTrait).speed).toBe(13);
+  });
+});
