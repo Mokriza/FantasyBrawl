@@ -6,7 +6,7 @@
 
 import { useEffect } from 'react';
 import type { BattleState } from '../../core/index.js';
-import { abilitiesOf, heroById } from '../../core/index.js';
+import { abilitiesOf, heroById, otherSide } from '../../core/index.js';
 import { BoardCanvas } from '../board/BoardCanvas.js';
 import { AbilityBar } from '../panels/AbilityBar.js';
 import { BattleLog } from '../panels/BattleLog.js';
@@ -61,9 +61,13 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
     return () => window.removeEventListener('keydown', onKey);
   }, [playable, active, content]);
 
-  // Summons stand on the board only; the side columns are for the three heroes.
+  // Summons stand on the board only; the side columns are for the three heroes. A
+  // neutral monster ("Древний страж") goes under the opponent's, after them.
   const ours = Object.values(battle.heroes).filter((h) => h.summon === null && h.side === ui.playerSide);
-  const theirs = Object.values(battle.heroes).filter((h) => h.summon === null && h.side !== ui.playerSide);
+  const theirs = [
+    ...Object.values(battle.heroes).filter((h) => h.summon === null && h.side === otherSide(ui.playerSide)),
+    ...Object.values(battle.heroes).filter((h) => h.side === 'N'),
+  ];
 
   const status =
     battle.outcome !== null

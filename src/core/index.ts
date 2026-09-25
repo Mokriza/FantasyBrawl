@@ -6,6 +6,8 @@ export * from './types.js';
 export * from './content.js';
 
 export { allHexes, blocksLos, blocksMovement, inBounds, isHigh, isPit, terrainAt } from './arena/terrain.js';
+export { centreHex, holdToWin } from './arena/modifiers.js';
+export { GUARDIAN_ID } from './arena/guardian.js';
 export { emptyArena, generateArena } from './arena/generate.js';
 
 export { createBattle } from './battle/state.js';

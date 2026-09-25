@@ -110,7 +110,10 @@
       "summonDamage": 0.6,
       "trapNearEnemy": 8,
       "highGround": 8,
-      "onCollapse": -15
+      "onCollapse": -15,
+      "powerPoint": 30,
+      "neutralDamage": 0.5,
+      "guardianKill": 60
     },
     "profiles": {
       "novice": {

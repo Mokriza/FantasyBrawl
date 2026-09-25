@@ -52,7 +52,7 @@ describe('a whole run, AI against AI', () => {
     for (const { result } of results) {
       for (const [i, match] of result.matches.entries()) {
         // Summons join mid-battle; the drafted six are the heroes proper.
-        const heroes = Object.values(match.state.heroes).filter((h) => h.summon === null);
+        const heroes = Object.values(match.state.heroes).filter((h) => h.summon === null && h.side !== 'N');
         expect(heroes).toHaveLength(6);
         expect(heroes.filter((h) => h.side === 'A')).toHaveLength(3);
         // Levels only ever add: Health at match i+1 is above the generated number. A

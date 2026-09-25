@@ -15,6 +15,8 @@ import {
 
   getAbility,
 
+  centreHex,
+  holdToWin,
   isHigh,
   livingHeroes,
   terrainAt,
@@ -86,7 +88,7 @@ function trapsNearEnemies(state: BattleState, side: Side, content: ContentRegist
     const owner = state.heroes[laid.ownerId];
     if (owner === undefined || owner.side !== side) continue;
     const near = livingHeroes(state).some(
-      (h) => h.side !== side && h.summon === null && distance(h.hex, laid.hex) <= reach,
+      (h) => h.side !== side && h.side !== 'N' && h.summon === null && distance(h.hex, laid.hex) <= reach,
     );
     if (near) count++;
   }
@@ -98,6 +100,15 @@ function onCollapse(state: BattleState, side: Side): number {
   return livingHeroes(state).filter(
     (h) => h.side === side && h.summon === null && terrainAt(state.arena, h.hex) === 'collapse',
   ).length;
+}
+
+/** "Точка силы": +1 when one of mine stands on the centre, −1 when one of theirs does. */
+function onPowerPoint(state: BattleState, side: Side, content: ContentRegistry): number {
+  if (holdToWin(state, content) === null) return 0;
+  const centre = centreHex(state.arena);
+  const holder = livingHeroes(state).find((h) => h.summon === null && h.hex.q === centre.q && h.hex.r === centre.r);
+  if (holder === undefined) return 0;
+  return holder.side === side ? 1 : -1;
 }
 
 /** My heroes standing on high ground, where they reach further and hit harder. */
@@ -122,6 +133,8 @@ export function evaluate(
   let hpLost = 0;
   let healing = 0;
   let focus = 0;
+  let neutralDamage = 0;
+  let guardianKills = 0;
 
   for (const hero of allHeroes(after)) {
     const was = hpBefore.get(hero.id) ?? hero.hp;
@@ -131,6 +144,13 @@ export function evaluate(
     if (hero.side === side) {
       if (delta > 0) hpLost += delta;
       else healing += -delta;
+      continue;
+    }
+
+    // "Древний страж": worth less than the enemy team, but its artifact is worth a lot.
+    if (hero.side === 'N') {
+      if (delta > 0) neutralDamage += Math.min(delta, was);
+      if (was > 0 && now <= 0) guardianKills++;
       continue;
     }
 
@@ -161,7 +181,10 @@ export function evaluate(
     w.summonDamage * summonValue(after, side) +
     w.trapNearEnemy * trapsNearEnemies(after, side, content) +
     w.highGround * onHighGround(after, side) +
-    w.onCollapse * onCollapse(after, side);
+    w.onCollapse * onCollapse(after, side) +
+    w.neutralDamage * neutralDamage +
+    w.guardianKill * guardianKills +
+    w.powerPoint * onPowerPoint(after, side, content);
 
   // Control is close to a kill: a hero that cannot act deals no damage either.
   for (const hero of livingHeroes(after)) {

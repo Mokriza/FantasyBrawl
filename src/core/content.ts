@@ -540,6 +540,23 @@ export const arenaModifierRulesSchema = z.discriminatedUnion('kind', [
     .object({ kind: z.literal('bloodHarvest'), healMultiplier: z.number().nonnegative(), killAtb: z.number().int().nonnegative() })
     .strict(),
   z.object({ kind: z.literal('fog'), sightRange: z.number().int().positive() }).strict(),
+  z
+    .object({ kind: z.literal('powerPoint'), damageBonus: z.number().nonnegative(), holdRounds: z.number().int().positive() })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('guardian'),
+      /** A class with summonOnly, so it is never drafted; it gives the figure and the name. */
+      classId: z.string(),
+      maxHp: z.number().int().positive(),
+      attack: z.number().nonnegative(),
+      armor: z.number().nonnegative(),
+      resist: z.number().nonnegative(),
+      speed: z.number().positive(),
+      /** The guardian's strike: k × Attack, physical. */
+      k: z.number().positive(),
+    })
+    .strict(),
 ]);
 
 export type ArenaModifierRules = z.infer<typeof arenaModifierRulesSchema>;
@@ -870,6 +887,9 @@ export const configSchema = z
             trapNearEnemy: z.number(),
             highGround: z.number(),
             onCollapse: z.number(),
+            powerPoint: z.number(),
+            neutralDamage: z.number(),
+            guardianKill: z.number(),
           })
           .strict(),
         profiles: z.record(
@@ -1083,6 +1103,11 @@ export function buildRegistry(raw: RawContent): ContentRegistry {
   }
 
   const arenaModifiers = byId(z.array(arenaModifierSchema).parse(raw.arenaModifiers), 'arena modifier');
+  for (const modifier of Object.values(arenaModifiers)) {
+    if (modifier.rules.kind === 'guardian' && classes[modifier.rules.classId]?.summonOnly !== true) {
+      throw new ContentError(`Arena modifier ${modifier.id} needs a summonOnly class, not ${modifier.rules.classId}`);
+    }
+  }
   return { config, classes, abilities, statuses, names, passives, races, perks, items, arenaModifiers };
 }
 

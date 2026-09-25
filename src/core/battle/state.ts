@@ -6,6 +6,8 @@
  */
 
 import { generateArena } from '../arena/generate.js';
+import { GUARDIAN_ID, guardianHero } from '../arena/guardian.js';
+import { centreHex } from '../arena/modifiers.js';
 import type { ContentRegistry, TeamHero, Teams } from '../content.js';
 import { getClass } from '../content.js';
 import { offsetToAxial } from '../hex.js';
@@ -70,6 +72,13 @@ export function createBattle(options: CreateBattleOptions): BattleState {
     heroes[entry.id] = toBattleHero(entry, content);
   }
 
+  // "Древний страж" starts in the centre, which the generator always leaves clear.
+  const modifiers = options.modifiers ?? [];
+  for (const id of modifiers) {
+    const rules = content.arenaModifiers[id]?.rules;
+    if (rules?.kind === 'guardian') heroes[GUARDIAN_ID] = guardianHero(content, rules, centreHex(arena));
+  }
+
   return {
     seed,
     rng: createRng(seed),
@@ -79,7 +88,9 @@ export function createBattle(options: CreateBattleOptions): BattleState {
     heroes,
     activeHeroId: null,
     apLeft: 0,
-    modifiers: options.modifiers ?? [],
+    modifiers,
+    hold: { A: 0, B: 0, round: 1 },
+    loot: [],
     outcome: null,
     lastActedHeroId: null,
     temporaryTerrain: [],

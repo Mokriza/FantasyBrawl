@@ -170,12 +170,20 @@ function simulateRuns(args: Args): void {
   let behindAtTwo = 0;
   // Matches by arena modifier: how long, and how often to the round limit.
   const byModifier: Record<string, { matches: number; rounds: number; limit: number }> = {};
+  let holdWins = 0;
+  let guardianMatches = 0;
+  let guardianKills = 0;
   let behindWonThird = 0;
 
   for (let i = 0; i < args.runs; i++) {
     const seed = args.seed + i;
     const { run, matches: played, swaps: swapped } = playRun({ seed, content, profileA: profile, profileB: profile });
     swaps += swapped;
+    for (const match of played) {
+      if (match.state.heroes.guardian === undefined) continue;
+      guardianMatches++;
+      if (match.state.loot.length > 0) guardianKills++;
+    }
     upgradePhases += 2 * Math.max(0, run.history.length - 1);
     const [m1, m2, m3] = run.history;
     if (m1 !== undefined && m2 !== undefined && m3 !== undefined && m1.winner === m2.winner) {
@@ -195,6 +203,7 @@ function simulateRuns(args: Args): void {
       mod.matches++;
       mod.rounds += record.rounds;
       if (record.reason === 'roundLimit') mod.limit++;
+      if (record.reason === 'hold') holdWins++;
     }
     for (const side of ['A', 'B'] as const) {
       for (const id of run.draft.picks[side]) {
@@ -231,6 +240,7 @@ function simulateRuns(args: Args): void {
   console.log(`Матчей по лимиту раундов: ${percent(roundLimit, matches)} (цель < 3%)`);
   console.log(`Отстающий при 0–2 берёт 3-й матч: ${percent(behindWonThird, behindAtTwo)} из ${behindAtTwo} (цель ≥ 35%)`);
   console.log(`Замен героя: ${percent(swaps, upgradePhases)} фаз усиления одной стороны`);
+  console.log(`Побед удержанием точки: ${holdWins} · страж убит в ${guardianKills} из ${guardianMatches} матчей`);
   console.log('Модификаторы арены: матчей · раундов в среднем · по лимиту');
   for (const [id, m] of Object.entries(byModifier).sort()) {
     console.log(`  мод ${id} ${m.matches} · ${(m.rounds / m.matches).toFixed(1)} · ${percent(m.limit, m.matches)}`);

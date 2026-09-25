@@ -6,7 +6,7 @@
 
 import type { ArenaModifierRules, ContentRegistry } from '../content.js';
 import type { Arena, BattleState } from '../types.js';
-import { axialToOffset, hexKey } from '../hex.js';
+import { axialToOffset, hexKey, offsetToAxial } from '../hex.js';
 import type { Hex } from '../hex.js';
 import { allHexes } from './terrain.js';
 
@@ -75,4 +75,21 @@ export function hexesToCollapse(state: BattleState, content: ContentRegistry): H
   return allHexes(state.arena).filter(
     (h) => ringOf(h, state.arena) < rings && state.arena.terrain[hexKey(h)] !== 'collapse',
   );
+}
+
+/** The centre of the board: where "Точка силы" and "Древний страж" stand. */
+export function centreHex(arena: Arena): Hex {
+  return offsetToAxial(Math.floor(arena.cols / 2), Math.floor(arena.rows / 2));
+}
+
+/** "Точка силы": the damage share whoever stands on the centre adds, else 0. */
+export function pointBonus(state: BattleState, at: Hex, content: ContentRegistry): number {
+  const point = find(state, content, 'powerPoint');
+  if (point === undefined) return 0;
+  return hexKey(at) === hexKey(centreHex(state.arena)) ? point.damageBonus : 0;
+}
+
+/** "Точка силы": rounds of holding that win, or null without the modifier. */
+export function holdToWin(state: BattleState, content: ContentRegistry): number | null {
+  return find(state, content, 'powerPoint')?.holdRounds ?? null;
 }

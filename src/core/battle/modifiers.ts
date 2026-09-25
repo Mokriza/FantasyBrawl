@@ -12,6 +12,7 @@
 
 import type { ContentRegistry, Modifier, ModifierCondition, ModifierStat, Race, Trigger } from '../content.js';
 import { BASE_STAT_NAMES } from '../content.js';
+import { pointBonus } from '../arena/modifiers.js';
 import { isHigh } from '../arena/terrain.js';
 import { distance } from '../hex.js';
 import type { BattleHero, BattleState, StatName, Stats } from '../types.js';
@@ -306,7 +307,9 @@ export function dealtFactor(
 ): number {
   // "Возвышенность": whoever stands on it hits harder, whoever is hit there does not care.
   const high = isHigh(state.arena, attacker.hex) ? content.config.arena.high.damage : 0;
-  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target, abilityTier).mul + high);
+  // "Точка силы": the same for whoever stands on the centre.
+  const point = pointBonus(state, attacker.hex, content);
+  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target, abilityTier).mul + high + point);
 }
 
 /** 1 + every damageTaken share of the target against this attacker. */

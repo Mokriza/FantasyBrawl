@@ -17,7 +17,7 @@ import type {
   Reachable,
   Side,
 } from '../../core/index.js';
-import { allHexes, blocksLos, getClass, hexKey, resolveShape, terrainAt } from '../../core/index.js';
+import { allHexes, blocksLos, centreHex, getClass, hexKey, holdToWin, resolveShape, terrainAt } from '../../core/index.js';
 import { COLORS, HEX_SIZE, classColor, sideColor } from '../theme.js';
 import type { DisplayHero, FloatingText } from '../store.js';
 import { FLOAT_MS } from '../config.js';
@@ -442,6 +442,14 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
 
     // Rock, thicket and smoke stop sight; the dashed ring says so without a legend.
     if (terrain !== null && blocksLos(arena, hex)) drawSightBlockedMark(layer, hex, arena);
+  }
+
+  // "Точка силы": a golden ring round the centre hex, so the goal is on the board.
+  if (holdToWin(battle, content) !== null) {
+    const ring = new Graphics();
+    ring.poly(polygonPoints(centreHex(arena), arena, 4)).stroke({ width: 4, color: COLORS.powerPoint, alpha: 0.9 });
+    ring.poly(polygonPoints(centreHex(arena), arena, 10)).stroke({ width: 1.5, color: COLORS.powerPoint, alpha: 0.6 });
+    layer.addChild(ring);
   }
 
   for (const pending of battle.pending) {

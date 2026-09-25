@@ -75,7 +75,7 @@ export function playRun(options: RunOptions): RunResult {
         if (outcome === null) throw new Error(`match ${run.match} of run ${seed} did not finish`);
         run = applyRunAction(
           run,
-          { type: 'matchEnded', outcome, rounds: result.state.round },
+          { type: 'matchEnded', outcome, rounds: result.state.round, loot: result.state.loot },
           content,
         );
         break;

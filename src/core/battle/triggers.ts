@@ -18,6 +18,7 @@ import { isAlive } from '../types.js';
 import { applyEffect } from './effects/index.js';
 import type { EffectContext } from './effects/index.js';
 import type { RollMode } from './formulas.js';
+import { lootGuardian } from '../arena/guardian.js';
 import { killAtb } from '../arena/modifiers.js';
 import { traitsOf } from './modifiers.js';
 import type { Trait } from './modifiers.js';
@@ -314,6 +315,16 @@ export function reactTo(
 
   for (const event of events) {
     if (event.type === 'damaged' && event.sourceId !== null) lastHitter.set(event.targetId, event.sourceId);
+
+    // "Древний страж": its killer takes a legendary artifact on the spot.
+    if (event.type === 'died' && current.heroes[event.heroId]?.side === 'N') {
+      const killerId = lastHitter.get(event.heroId);
+      const looted = killerId === undefined ? null : lootGuardian(current, killerId, content);
+      if (looted !== null) {
+        current = looted.state;
+        out.push(...looted.events);
+      }
+    }
 
     // "Кровавая жатва": a hero's death moves the killer up the bar. Summons are not
     // heroes, so neither killing one nor a kill by one counts.

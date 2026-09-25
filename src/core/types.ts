@@ -123,10 +123,17 @@ export interface PerkPick {
   readonly abilityId?: AbilityId;
 }
 
+/**
+ * The sides a unit on the field can take: a team, or 'N' for a neutral monster such as
+ * "Древний страж", an enemy of both. Comparing sides then works as it reads: the
+ * neutral is never on anyone's side.
+ */
+export type BattleSide = Side | 'N';
+
 export interface BattleHero {
   readonly id: HeroId;
   readonly name: string;
-  readonly side: Side;
+  readonly side: BattleSide;
   readonly classId: ClassId;
   /** Stats before statuses and modifiers. Final values come from statsInBattle(), never stored. */
   readonly base: Stats;
@@ -166,7 +173,13 @@ export function isAlive(hero: BattleHero): boolean {
 
 // --- state -------------------------------------------------------------------
 
-export type VictoryReason = 'elimination' | 'roundLimit';
+export type VictoryReason = 'elimination' | 'roundLimit' | 'hold';
+
+/** An artifact a hero won during a match ("Древний страж"); the run keeps it after. */
+export interface LootPick {
+  readonly heroId: HeroId;
+  readonly itemId: string;
+}
 
 export interface BattleOutcome {
   readonly winner: Side;
@@ -185,6 +198,10 @@ export interface BattleState {
   readonly apLeft: number;
   /** Arena modifier ids this match runs with, see core/arena/modifiers.ts. */
   readonly modifiers: readonly string[];
+  /** "Точка силы": rounds each side has held the centre, and the last round credited. */
+  readonly hold: { readonly A: number; readonly B: number; readonly round: number };
+  /** Artifacts won in this match, for the run to keep. */
+  readonly loot: readonly LootPick[];
   readonly outcome: BattleOutcome | null;
   /** The hero whose turn ended most recently, for modifiers such as "Напор". */
   readonly lastActedHeroId: HeroId | null;
@@ -300,7 +317,8 @@ export type BattleEvent =
       readonly target: Hex;
       readonly turns: number;
     }
-  | { readonly type: 'matchEnded'; readonly winner: Side; readonly reason: VictoryReason };
+  | { readonly type: 'matchEnded'; readonly winner: Side; readonly reason: VictoryReason }
+  | { readonly type: 'itemGained'; readonly heroId: HeroId; readonly itemId: string };
 
 export interface ApplyResult {
   readonly state: BattleState;
@@ -447,7 +465,13 @@ export type RunAction =
   /** The pick timer ran out: a random hero from the pool, from the run stream. */
   | { readonly type: 'autoPick'; readonly side: Side }
   | { readonly type: 'place'; readonly side: Side; readonly heroId: HeroId; readonly hex: Hex }
-  | { readonly type: 'matchEnded'; readonly outcome: BattleOutcome; readonly rounds: number }
+  | {
+      readonly type: 'matchEnded';
+      readonly outcome: BattleOutcome;
+      readonly rounds: number;
+      /** Artifacts heroes won during the match; they keep them. */
+      readonly loot?: readonly LootPick[];
+    }
   | { readonly type: 'nextMatch' }
   | { readonly type: 'chooseUnlock'; readonly side: Side; readonly heroId: HeroId; readonly optionId: string }
   | { readonly type: 'chooseReward'; readonly side: Side; readonly itemId: string; readonly heroId: HeroId }

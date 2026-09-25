@@ -139,6 +139,16 @@
           2
         ]
       ]
+    },
+    "guardian": {
+      "_note": "Циклоп из Tiny Dungeon — «Древний страж»",
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          9,
+          1
+        ]
+      ]
     }
   }
 }

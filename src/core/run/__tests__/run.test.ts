@@ -720,3 +720,26 @@ describe('arena modifiers in a run', () => {
     expect(new Set(rolled).size).toBe(2);
   });
 });
+
+describe('loot from a match', () => {
+  it('an artifact won in battle stays with the hero for the rest of the run', () => {
+    const run = placeAll(draftAll(createRun({ seed: 12, content })));
+    const heroIdValue = run.draft.picks.A[0];
+    const hero = run.draft.pool.find((h) => h.id === heroIdValue);
+    const legendary = Object.values(content.items).find(
+      (i) => i.tier === 'legendary' && hero !== undefined && itemFits(i, hero.classId, content),
+    );
+    if (heroIdValue === undefined || legendary === undefined) throw new Error('setup');
+    const after = applyRunAction(
+      run,
+      {
+        type: 'matchEnded',
+        outcome: { winner: 'A', reason: 'elimination' },
+        rounds: 7,
+        loot: [{ heroId: heroIdValue, itemId: legendary.id }],
+      },
+      content,
+    );
+    expect(after.draft.pool.find((h) => h.id === heroIdValue)?.item).toBe(legendary.id);
+  });
+});

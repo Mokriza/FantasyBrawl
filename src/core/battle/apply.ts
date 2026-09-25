@@ -6,7 +6,8 @@
  * to the player.
  */
 
-import { collapseDamage, cooldownBonus, dotMultiplier, hexesToCollapse } from '../arena/modifiers.js';
+import { guardianRules, guardianTarget } from '../arena/guardian.js';
+import { centreHex, collapseDamage, cooldownBonus, dotMultiplier, hexesToCollapse, holdToWin } from '../arena/modifiers.js';
 import { isPit, terrainAt } from '../arena/terrain.js';
 import type { Ability, ContentRegistry, Effect } from '../content.js';
 import { getAbility } from '../content.js';
@@ -352,6 +353,24 @@ function summonsStrike(
   return run;
 }
 
+/** "Древний страж" strikes one neighbour; see arena/guardian.ts for whom. */
+function guardianStrikes(state: BattleState, id: HeroId, content: ContentRegistry, mode: RollMode): EffectRun {
+  const run: EffectRun = { state, events: [] };
+  const rules = guardianRules(state, content);
+  const self = heroById(state, id);
+  const target = guardianTarget(state, self, (a, b) => distance(a, b) === 1);
+  if (rules === undefined || target === null) return run;
+  const hit = runBare(
+    bareContext(run.state, self.id, target.id, content, mode),
+    [{ type: 'damage', school: 'physical', scale: 'attack', k: rules.k }],
+    content,
+    mode,
+  );
+  run.state = hit.state;
+  run.events.push(...hit.events);
+  return run;
+}
+
 function restoreTerrain(terrain: Record<string, TerrainId>, laid: TemporaryTerrain): void {
   const key = hexKey(laid.hex);
   if (laid.previous === null) delete terrain[key];
@@ -449,6 +468,19 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
 
   let next = state;
   const rest: BattleEvent[] = [];
+
+  // "Точка силы": a new round credits the side standing on the centre with the last one.
+  if (holdToWin(next, content) !== null && next.round > next.hold.round) {
+    const holder = livingHeroes(next).find(
+      (h) => h.summon === null && hexKey(h.hex) === hexKey(centreHex(next.arena)),
+    );
+    const side = holder?.side;
+    const hold =
+      side === 'A' || side === 'B'
+        ? { ...next.hold, [side]: next.hold[side] + 1, round: next.round }
+        : { ...next.hold, round: next.round };
+    next = { ...next, hold };
+  }
 
   // "Сужающаяся арена": a ring whose time has come falls before anyone acts. What an
   // ability laid there goes with it, so its expiry cannot bring the ground back.
@@ -550,6 +582,17 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
     rest.push(...struck.events);
   }
 
+  // "Древний страж" plays its own turn: one strike at the most hurt neighbour, then
+  // it passes. Nobody controls it, so it never waits for an action.
+  if (heroById(next, id).side === 'N') {
+    if (isAlive(heroById(next, id)) && !hasStatus(heroById(next, id), STUN)) {
+      const struck = guardianStrikes(next, id, content, mode);
+      next = struck.state;
+      rest.push(...struck.events);
+    }
+    ap = 0;
+  }
+
   // Died to poison or to a passive: no action points, and section 3.1 ends the turn.
   if (!isAlive(heroById(next, id))) ap = 0;
 
@@ -622,6 +665,15 @@ function beginNextTurn(state: BattleState, content: ContentRegistry, mode: RollM
     const started = startTurn(run.state, content, mode);
     run.state = started.state;
     run.events.push(...started.events);
+
+    // The start of a turn can decide the match by itself: a round of "Точка силы"
+    // credited, or the last enemy felled by a passive.
+    const decided = checkOutcome(run.state, content);
+    if (decided !== null) {
+      run.state = { ...run.state, outcome: decided, activeHeroId: null, apLeft: 0 };
+      run.events.push({ type: 'matchEnded', winner: decided.winner, reason: decided.reason });
+      return run;
+    }
 
     if (run.state.apLeft > 0) return run;
 

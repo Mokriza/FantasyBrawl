@@ -6,7 +6,7 @@
  * change of difficulty would shift every crit in the match.
  */
 
-import type { Action, BattleState, ContentRegistry, RngState, Side } from '../core/index.js';
+import type { Action, BattleState, ContentRegistry, RngState } from '../core/index.js';
 import { nextFloatBetween } from '../core/index.js';
 import type { AiProfile } from './evaluate.js';
 import { evaluate } from './evaluate.js';
@@ -45,7 +45,9 @@ export function chooseActions(
     return { actions: [], rng };
   }
 
-  const side: Side = state.heroes[activeId]?.side ?? 'B';
+  // A neutral monster plays its own turn inside core; there is nothing to choose.
+  const side = state.heroes[activeId]?.side ?? 'B';
+  if (side === 'N') return { actions: [], rng };
   const plans = generatePlans(state, content, profile.allowUltimates);
 
   let bestScore = -Infinity;

@@ -57,6 +57,8 @@ interface BattleState {
   readonly activeHeroId: HeroId | null;
   readonly apLeft: number;
   readonly modifiers: readonly string[];      // модификаторы арены этого матча, см. core/arena/modifiers.ts
+  readonly hold: { A: number; B: number; round: number }; // «Точка силы»: раунды удержания
+  readonly loot: readonly LootPick[];         // артефакты, выигранные в бою («Древний страж»)
   readonly outcome: BattleOutcome | null;
 }
 ```

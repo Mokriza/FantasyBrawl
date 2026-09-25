@@ -161,5 +161,24 @@
     "portrait": "portraits/imp.png",
     "color": "#e0603a",
     "summonOnly": true
+  },
+  {
+    "id": "guardian",
+    "name": "Древний страж",
+    "role": "tank",
+    "primaryStat": "attack",
+    "secondaryStats": [
+      "maxHp",
+      "armor"
+    ],
+    "baseAttack": "basic_melee_physical",
+    "statGrowth": {
+      "hp": 0,
+      "primary": 0,
+      "secondary": 0
+    },
+    "portrait": "portraits/guardian.png",
+    "color": "#c9a227",
+    "summonOnly": true
   }
 ]

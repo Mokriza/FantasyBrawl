@@ -207,6 +207,8 @@ function playEvent(event: BattleEvent): void {
 
 function durationOf(event: BattleEvent): number {
   if (state.speed === 0) return 0;
+  // A wall of ice or a collapsing ring changes many hexes at once: they show together.
+  if (event.type === 'terrainChanged' && state.queue[0]?.type === 'terrainChanged') return 0;
   return EVENT_MS[event.type] / state.speed;
 }
 
@@ -239,7 +241,7 @@ function pump(): void {
     set({ busy: false, floats: [] });
     // In a run the result goes back to core, which decides whether the series is over.
     if (state.mode === 'run' && state.run?.phase === 'battle') {
-      applyRun({ type: 'matchEnded', outcome: battle.outcome, rounds: battle.round });
+      applyRun({ type: 'matchEnded', outcome: battle.outcome, rounds: battle.round, loot: battle.loot });
     }
     return;
   }

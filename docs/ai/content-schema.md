@@ -243,6 +243,8 @@ src/content/
 | `manaStorm` | `cooldownBonus` (1), `dotMultiplier` (2) | Шторм маны |
 | `bloodHarvest` | `healMultiplier` (0.5), `killAtb` (30) | Кровавая жатва |
 | `fog` | `sightRange` (3) | Густой туман |
+| `powerPoint` | `damageBonus` (0.2), `holdRounds` (5) | Точка силы |
+| `guardian` | `classId` (класс с `summonOnly`), `maxHp`, `attack`, `armor`, `resist`, `speed`, `k` | Древний страж |
 
 Каждый `kind` понимает одна функция в `core/arena/modifiers.ts`; бой спрашивает там, а не читает id сам. Модификаторы — единственное место, где новый контент требует нового кода, поэтому их мало. Какие матчи идут с модификатором — `config.run.modifierMatches`.
 

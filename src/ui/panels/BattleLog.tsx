@@ -78,6 +78,8 @@ export function eventText(
       return `${heroName(state, event.ownerId)} призывает: ${heroName(state, event.heroId)}`;
     case 'abilityDelayed':
       return `${heroName(state, event.heroId)}: «${getAbility(content, event.abilityId).name}» обрушится через ${event.turns} х.`;
+    case 'itemGained':
+      return `${heroName(state, event.heroId)} получает легендарный артефакт «${content.items[event.itemId]?.name ?? event.itemId}»`;
     // Movement and turn ends are visible on the board; in text they are noise.
     case 'moved':
     case 'turnEnded':

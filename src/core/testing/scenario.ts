@@ -150,6 +150,8 @@ export function scenario(content: ContentRegistry): Scenario {
         activeHeroId: activeId === null ? null : heroId(activeId),
         apLeft: activeId === null ? 0 : ap,
         modifiers: [...modifiers],
+        hold: { A: 0, B: 0, round },
+        loot: [],
         outcome: null,
         lastActedHeroId: null,
         temporaryTerrain: [],

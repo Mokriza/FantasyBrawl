@@ -179,7 +179,19 @@ export function applyRunAction(
       const over =
         wins[winner] >= content.config.run.winsToFinish ||
         history.length >= content.config.run.maxMatches;
-      return { ...run, wins, history, phase: over ? 'finished' : 'matchOver' };
+      // Artifacts won in the match ("Древний страж") stay with their heroes.
+      const loot = action.loot ?? [];
+      const draft =
+        loot.length === 0
+          ? run.draft
+          : {
+              ...run.draft,
+              pool: run.draft.pool.map((hero) => {
+                const won = loot.find((l) => l.heroId === hero.id);
+                return won === undefined ? hero : { ...hero, item: won.itemId };
+              }),
+            };
+      return { ...run, draft, wins, history, phase: over ? 'finished' : 'matchOver' };
     }
 
     case 'nextMatch': {

@@ -142,6 +142,10 @@ button.primary:hover {
   border-color: var(--side-b);
 }
 
+.queue-item.side-N {
+  border-color: #d9b25f;
+}
+
 .queue-now {
   outline: 2px solid var(--active);
 }
@@ -229,6 +233,10 @@ button.primary:hover {
 
 .hero-card.side-B {
   border-left-color: var(--side-b);
+}
+
+.hero-card.side-N {
+  border-left-color: #d9b25f;
 }
 
 .hero-active {

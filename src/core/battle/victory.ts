@@ -1,13 +1,15 @@
 /**
  * End of match. See docs/ai/game-rules.md section 1.
  *
- * A side loses when none of its heroes are standing. If the round limit runs out
+ * A side loses when none of its heroes are standing; with "Точка силы" a side also
+ * wins by holding the centre long enough. If the round limit runs out
  * first, the side with the larger sum of hp/maxHp wins; an exact tie goes to side B.
  * There are no draws.
  */
 
 import type { ContentRegistry } from '../content.js';
 import type { BattleOutcome, BattleState, Side } from '../types.js';
+import { holdToWin } from '../arena/modifiers.js';
 import { heroesOfSide } from './query.js';
 
 /** The heroes that count: a summon neither wins nor loses a match. */
@@ -32,6 +34,14 @@ export function checkOutcome(state: BattleState, content: ContentRegistry): Batt
   }
   if (aliveA === 0) return { winner: 'B', reason: 'elimination' };
   if (aliveB === 0) return { winner: 'A', reason: 'elimination' };
+
+  // "Точка силы": enough rounds held in total win outright. Both cannot get there on
+  // the same round: a round is credited to one side only.
+  const need = holdToWin(state, content);
+  if (need !== null) {
+    if (state.hold.A >= need) return { winner: 'A', reason: 'hold' };
+    if (state.hold.B >= need) return { winner: 'B', reason: 'hold' };
+  }
 
   if (state.round > content.config.battle.maxRounds) {
     const shareA = healthShare(state, 'A');

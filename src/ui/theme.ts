@@ -52,6 +52,9 @@ export const COLORS = {
   /** The player's team is always blue and the opponent always red, whichever letter. */
   ours: 0x5aa9f0,
   theirs: 0xf0705a,
+  neutral: 0xd9b25f,
+  /** "Точка силы": the ring round the centre hex. */
+  powerPoint: 0xf0c04a,
   active: 0xf0c04a,
 
   hpGood: 0x4bbd7f,
@@ -87,7 +90,9 @@ export function classColor(id: string): number {
  * A side's colour as the player sees it. The player can draft as either A or B, so
  * the colour follows whose team it is rather than the letter.
  */
-export function sideColor(side: 'A' | 'B', playerSide: 'A' | 'B'): number {
+/** Blue for the player's team, red for the opponent's, gold for a neutral monster. */
+export function sideColor(side: 'A' | 'B' | 'N', playerSide: 'A' | 'B'): number {
+  if (side === 'N') return COLORS.neutral;
   return side === playerSide ? COLORS.ours : COLORS.theirs;
 }
 

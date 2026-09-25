@@ -3,24 +3,64 @@
     "id": "mod_shrinking_arena",
     "name": "Сужающаяся арена",
     "description": "Каждые 4 раунда внешнее кольцо гексов обрушивается: пройти нельзя, а кто на нём остался, получает 15 урона в начале своего хода.",
-    "rules": { "kind": "shrink", "everyRounds": 4, "ringDamage": 15 }
+    "rules": {
+      "kind": "shrink",
+      "everyRounds": 4,
+      "ringDamage": 15
+    }
   },
   {
     "id": "mod_mana_storm",
     "name": "Шторм маны",
     "description": "Все кулдауны тикают на 1 быстрее, урон со временем удвоен.",
-    "rules": { "kind": "manaStorm", "cooldownBonus": 1, "dotMultiplier": 2 }
+    "rules": {
+      "kind": "manaStorm",
+      "cooldownBonus": 1,
+      "dotMultiplier": 2
+    }
   },
   {
     "id": "mod_blood_harvest",
     "name": "Кровавая жатва",
     "description": "Лечение на 50% слабее. Убийство даёт убийце +30 инициативы.",
-    "rules": { "kind": "bloodHarvest", "healMultiplier": 0.5, "killAtb": 30 }
+    "rules": {
+      "kind": "bloodHarvest",
+      "healMultiplier": 0.5,
+      "killAtb": 30
+    }
   },
   {
     "id": "mod_thick_fog",
     "name": "Густой туман",
     "description": "Никто не видит дальше 3 гексов, даже на открытом месте: по врагу дальше не ударить способностью, которой нужен обзор.",
-    "rules": { "kind": "fog", "sightRange": 3 }
+    "rules": {
+      "kind": "fog",
+      "sightRange": 3
+    }
+  },
+  {
+    "id": "mod_power_point",
+    "name": "Точка силы",
+    "description": "Кто стоит на центральном гексе, наносит на 20% больше урона. Сторона, чей герой стоит на точке в начале нового раунда, получает раунд удержания; 5 раундов в сумме — победа.",
+    "rules": {
+      "kind": "powerPoint",
+      "damageBonus": 0.2,
+      "holdRounds": 5
+    }
+  },
+  {
+    "id": "mod_ancient_guardian",
+    "name": "Древний страж",
+    "description": "В центре стоит нейтральный монстр с 200 здоровья, враг обеим сторонам. В свой ход он бьёт самого раненого соседа. Убивший получает случайный легендарный артефакт сразу и навсегда.",
+    "rules": {
+      "kind": "guardian",
+      "classId": "guardian",
+      "maxHp": 200,
+      "attack": 22,
+      "armor": 20,
+      "resist": 20,
+      "speed": 10,
+      "k": 1
+    }
   }
 ]

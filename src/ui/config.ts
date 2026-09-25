@@ -35,6 +35,7 @@ export const EVENT_MS: Record<BattleEvent['type'], number> = {
   summoned: 380,
   abilityDelayed: 360,
   matchEnded: 300,
+  itemGained: 700,
 };
 
 /** How long a damage or healing number stays on the board. */

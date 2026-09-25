@@ -1,6 +1,6 @@
 /** The strip across the top: where the run stands, the seed, playback speed, the way out. */
 
-import { heroLevel, otherSide } from '../../core/index.js';
+import { heroLevel, holdToWin, otherSide } from '../../core/index.js';
 import { setSpeed, toMenu } from '../store.js';
 import type { Speed, UiState } from '../store.js';
 import { UI, matchTitle } from '../strings.ru.js';
@@ -40,6 +40,13 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
       {run === null || run.modifier === null || run.phase === 'matchOver' || run.phase === 'finished' ? null : (
         <span className="modifier-chip" title={ui.content.arenaModifiers[run.modifier]?.description}>
           {UI.modifier}: {ui.content.arenaModifiers[run.modifier]?.name ?? run.modifier}
+        </span>
+      )}
+
+      {/* "Точка силы": how many rounds each side has held the centre. */}
+      {ui.battle === null || holdToWin(ui.battle, ui.content) === null ? null : (
+        <span className="modifier-chip" title={UI.holdHint}>
+          {UI.hold}: {ui.battle.hold[you]} : {ui.battle.hold[otherSide(you)]} / {holdToWin(ui.battle, ui.content)}
         </span>
       )}
 
