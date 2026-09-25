@@ -741,6 +741,8 @@ export const configSchema = z
         ticksPerRound: z.number().int().positive(),
         atbThreshold: z.number().positive(),
         moveCost: z.number().int().positive(),
+        /** The most range any mix of passives, artifacts, perks and high ground adds. */
+        maxRangeBonus: z.number().int().nonnegative(),
         playerSide: z.enum(['A', 'B']),
         /** Zone of control is a free basic attack, not an AP tax. See the plan. */
         /** How deep one trigger may set off another before the chain is cut. */
@@ -892,6 +894,8 @@ export const configSchema = z
             powerPoint: z.number(),
             neutralDamage: z.number(),
             guardianKill: z.number(),
+            dotDamage: z.number(),
+            debuffTurn: z.number(),
           })
           .strict(),
         profiles: z.record(

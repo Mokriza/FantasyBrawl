@@ -45,8 +45,9 @@
         "to": "self",
         "effects": [
           {
-            "type": "status",
-            "status": "ward",
+            "type": "barrier",
+            "scale": "magic",
+            "k": 1.5,
             "turns": 99
           }
         ]
@@ -54,7 +55,7 @@
     ],
     "id": "mage_passive_arcane_shield",
     "name": "Арканный щит",
-    "description": "Первый полученный за бой удар поглощается полностью.",
+    "description": "В начале боя получает барьер 1,5 × Магия до конца боя.",
     "tier": 2
   }
 ]

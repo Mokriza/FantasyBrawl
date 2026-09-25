@@ -44,7 +44,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 0.8
+        "k": 1.1
       },
       {
         "type": "push",
@@ -124,7 +124,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1.1
+        "k": 1.3
       },
       {
         "type": "atb",

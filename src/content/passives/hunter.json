@@ -35,13 +35,13 @@
     "modifiers": [
       {
         "stat": "startAtb",
-        "add": 20
+        "add": 40
       }
     ],
     "triggers": [],
     "id": "hunter_passive_instinct",
     "name": "Инстинкт",
-    "description": "Начинает бой с 20 очками на шкале инициативы.",
+    "description": "Начинает бой с 40 очками на шкале инициативы.",
     "tier": 1
   }
 ]

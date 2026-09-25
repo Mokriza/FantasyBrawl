@@ -191,7 +191,11 @@ export function evaluate(
     if (hero.side === side) continue;
     for (const status of hero.statuses) {
       if (status.status === 'stun') score += w.stunTurn * status.turns;
-      if (status.status === 'silence') score += w.silenceTurn * status.turns;
+      else if (status.status === 'silence') score += w.silenceTurn * status.turns;
+      // Damage over time is damage still to come: each stack ticks its value every turn.
+      else if (status.status === 'dot') score += w.dotDamage * status.value * status.turns;
+      // Any other debuff (weaken, vulnerable, mark, blind, slow...) is worth its turns.
+      else if (content.statuses[status.status]?.kind === 'debuff') score += w.debuffTurn * status.turns;
     }
   }
 

@@ -7,6 +7,7 @@
     "moveCost": 1,
     "playerSide": "A",
     "maxTriggerDepth": 3,
+    "maxRangeBonus": 2,
     "opportunityAttack": {
       "enabled": true,
       "meleeOnly": true,
@@ -114,7 +115,9 @@
       "onCollapse": -15,
       "powerPoint": 30,
       "neutralDamage": 0.5,
-      "guardianKill": 60
+      "guardianKill": 60,
+      "dotDamage": 0.8,
+      "debuffTurn": 5
     },
     "profiles": {
       "novice": {

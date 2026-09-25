@@ -173,12 +173,12 @@
   {
     "id": "perk_head_start",
     "name": "Фора",
-    "description": "Начинает бой с 25 очками на шкале инициативы.",
+    "description": "Начинает бой с 50 очками на шкале инициативы.",
     "category": "rules",
     "modifiers": [
       {
         "stat": "startAtb",
-        "add": 25
+        "add": 50
       }
     ]
   },

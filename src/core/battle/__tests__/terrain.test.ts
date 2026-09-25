@@ -84,3 +84,25 @@ describe('high ground', () => {
     expect(dealt(targetHigh, 'h', 'foe')).toBe(dealt(flat, 'h', 'foe'));
   });
 });
+
+describe('range bonuses', () => {
+  it('add up to config.battle.maxRangeBonus and no further', () => {
+    const ranged = ability((a) => a.class === 'hunter' && a.range > 1);
+    const plain = scenario(content)
+      .hero('h', { cls: 'hunter', side: 'A', at: [3, 3] })
+      .hero('foe', { cls: 'warrior', side: 'B', at: [7, 7] })
+      .active('h')
+      .build();
+    // Keen eye, the marksman's lens and high ground: three +1s.
+    const stacked = scenario(content)
+      .hero('h', { cls: 'hunter', side: 'A', at: [3, 3], passive: 'hunter_passive_keen_eye', item: 'item_marksman_lens' })
+      .hero('foe', { cls: 'warrior', side: 'B', at: [7, 7] })
+      .obstacle('high', [3, 3])
+      .active('h')
+      .build();
+    const base = abilityRange(plain, heroById(plain, heroId('h')), ranged, content);
+    expect(abilityRange(stacked, heroById(stacked, heroId('h')), ranged, content)).toBe(
+      base + content.config.battle.maxRangeBonus,
+    );
+  });
+});

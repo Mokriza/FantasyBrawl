@@ -45,7 +45,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1
+        "k": 1.2
       },
       {
         "type": "status",
@@ -134,7 +134,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1.2
+        "k": 1.5
       }
     ]
   },
@@ -185,7 +185,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 2.2,
+        "k": 3,
         "bonusVsLowHp": {
           "belowPct": 35,
           "mul": 2
@@ -213,7 +213,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1.1
+        "k": 1.6
       },
       {
         "type": "ap",
@@ -241,7 +241,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1.4
+        "k": 1.8
       },
       {
         "type": "status",
