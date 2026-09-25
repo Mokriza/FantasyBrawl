@@ -728,7 +728,17 @@ export const configSchema = z
         startColumnsA: z.array(z.number().int().nonnegative()),
         startColumnsB: z.array(z.number().int().nonnegative()),
         obstacles: z.object({ min: z.number().int(), max: z.number().int() }).strict(),
-        weights: z.object({ rock: z.number(), thicket: z.number(), pit: z.number() }).strict(),
+        weights: z
+          .object({ rock: z.number(), column: z.number(), thicket: z.number(), pit: z.number() })
+          .strict(),
+        /** "Возвышенность": how many at most, and what standing on one gives. */
+        high: z
+          .object({
+            maxCount: z.number().int().nonnegative(),
+            range: z.number().int().nonnegative(),
+            damage: z.number().nonnegative(),
+          })
+          .strict(),
         maxGenerationAttempts: z.number().int().positive(),
         pit: z.object({ damage: z.number().int(), extraApCost: z.number().int() }).strict(),
       })
@@ -826,6 +836,7 @@ export const configSchema = z
             focusBonus: z.number(),
             summonDamage: z.number(),
             trapNearEnemy: z.number(),
+            highGround: z.number(),
           })
           .strict(),
         profiles: z.record(

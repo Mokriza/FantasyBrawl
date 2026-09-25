@@ -62,8 +62,10 @@ export const UI = {
   },
   terrainLegend: [
     { key: 'rock', name: 'Скала', short: 'стена', movement: 'не пройти', sight: 'закрывает обзор' },
+    { key: 'column', name: 'Колонна', short: 'стена, видно', movement: 'не пройти', sight: 'обзор свободен' },
     { key: 'thicket', name: 'Заросли', short: 'укрытие', movement: 'проходимо', sight: 'закрывает обзор' },
     { key: 'pit', name: 'Яма', short: '+1 ОД, 10 урона', movement: '+1 ОД и 10 урона', sight: 'обзор свободен' },
+    { key: 'high', name: 'Высота', short: '+1 дальн., +10% ур.', movement: 'проходимо; стоящему +1 к дальности дальних способностей и +10% урона', sight: 'обзор свободен' },
     { key: 'ice', name: 'Лёд', short: 'стена, видно', movement: 'не пройти', sight: 'обзор свободен' },
     { key: 'smoke', name: 'Дым', short: 'укрытие', movement: 'проходимо', sight: 'закрывает обзор' },
     { key: 'trap', name: 'Капкан', short: 'кольцо — чей', movement: 'врагу: урон и обездвиживание', sight: 'цвет кольца — чей' },
@@ -214,7 +216,9 @@ export function reasonText(reason: IllegalReason): string {
 
 const TERRAIN: Record<TerrainId, string> = {
   rock: 'Скала',
+  column: 'Колонна',
   thicket: 'Заросли',
+  high: 'Возвышенность',
   pit: 'Яма',
   ice: 'Лёд',
   smoke: 'Дым',

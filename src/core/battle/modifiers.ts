@@ -12,6 +12,7 @@
 
 import type { ContentRegistry, Modifier, ModifierCondition, ModifierStat, Race, Trigger } from '../content.js';
 import { BASE_STAT_NAMES } from '../content.js';
+import { isHigh } from '../arena/terrain.js';
 import { distance } from '../hex.js';
 import type { BattleHero, BattleState, StatName, Stats } from '../types.js';
 import { isAlive, statusId } from '../types.js';
@@ -303,7 +304,9 @@ export function dealtFactor(
   content: ContentRegistry,
   abilityTier: number | null = null,
 ): number {
-  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target, abilityTier).mul);
+  // "Возвышенность": whoever stands on it hits harder, whoever is hit there does not care.
+  const high = isHigh(state.arena, attacker.hex) ? content.config.arena.high.damage : 0;
+  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target, abilityTier).mul + high);
 }
 
 /** 1 + every damageTaken share of the target against this attacker. */
@@ -342,7 +345,9 @@ export function critMultiplier(
  */
 export function rangeBonus(state: BattleState, hero: BattleHero, baseRange: number, content: ContentRegistry): number {
   if (baseRange <= 1) return 0;
-  return modifierSum(state, hero, 'range', content).add;
+  // "Возвышенность" reaches the same abilities, by the same limit.
+  const high = isHigh(state.arena, hero.hex) ? content.config.arena.high.range : 0;
+  return modifierSum(state, hero, 'range', content).add + high;
 }
 
 /** How much cheaper (negative) the first move of this turn is. */

@@ -5,7 +5,7 @@ export * from './rng.js';
 export * from './types.js';
 export * from './content.js';
 
-export { allHexes, blocksLos, blocksMovement, inBounds, isPit, terrainAt } from './arena/terrain.js';
+export { allHexes, blocksLos, blocksMovement, inBounds, isHigh, isPit, terrainAt } from './arena/terrain.js';
 export { emptyArena, generateArena } from './arena/generate.js';
 
 export { createBattle } from './battle/state.js';

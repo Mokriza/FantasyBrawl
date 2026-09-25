@@ -1,7 +1,6 @@
 /**
- * Terrain properties. The arena generator lays Rock, Thicket and Pit; abilities lay
- * Ice (a wall), Smoke (a cloud) and a Trap for a while. Column and Elevation are
- * stage 4, see docs/ai/roadmap.md.
+ * Terrain properties. The arena generator lays Rock, Column, Thicket, Pit and
+ * Elevation; abilities lay Ice (a wall), Smoke (a cloud) and a Trap for a while.
  */
 
 import { axialToOffset, hexKey, offsetToAxial } from '../hex.js';
@@ -15,8 +14,12 @@ interface TerrainProps {
 
 const PROPS: Record<TerrainId, TerrainProps> = {
   rock: { blocksMovement: true, blocksLos: true },
+  // "Колонна": in the way of feet, not of arrows.
+  column: { blocksMovement: true, blocksLos: false },
   thicket: { blocksMovement: false, blocksLos: true },
   pit: { blocksMovement: false, blocksLos: false },
+  // "Возвышенность": ordinary ground to walk on; its bonus is in battle/modifiers.ts.
+  high: { blocksMovement: false, blocksLos: false },
   // "Стена льда": impassable, but it is ice, so you can see through it.
   ice: { blocksMovement: true, blocksLos: false },
   // "Дымовая завеса": walk through it, see nothing through it.
@@ -51,6 +54,10 @@ export function blocksLos(arena: Arena, h: Hex): boolean {
 
 export function isPit(arena: Arena, h: Hex): boolean {
   return terrainAt(arena, h) === 'pit';
+}
+
+export function isHigh(arena: Arena, h: Hex): boolean {
+  return terrainAt(arena, h) === 'high';
 }
 
 /** Every hex of the board, in a fixed column-major order. */

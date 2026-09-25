@@ -59,11 +59,18 @@ function upgradeAll(run: RunState): RunState {
   let current = run;
   for (const side of ['A', 'B'] as const) {
     if (current.upgrade !== null && awaitingReward(current.upgrade, current.draft, side, content)) {
-      const itemId = current.upgrade.rewards[side][0];
-      const item = itemId === undefined ? undefined : content.items[itemId];
-      const hero = teamAfterSwap(current.upgrade, current.draft, side).find(
-        (h) => item !== undefined && itemFits(item, h.classId, content),
-      );
+      // The first offered artifact someone in the team (after a swap) can carry.
+      const team = teamAfterSwap(current.upgrade, current.draft, side);
+      let itemId: string | undefined;
+      let hero: HeroTemplate | undefined;
+      for (const id of current.upgrade.rewards[side]) {
+        const item = content.items[id];
+        hero = item === undefined ? undefined : team.find((h) => itemFits(item, h.classId, content));
+        if (hero !== undefined) {
+          itemId = id;
+          break;
+        }
+      }
       if (itemId === undefined || hero === undefined) throw new Error('no reward to take');
       current = applyRunAction(current, { type: 'chooseReward', side, itemId, heroId: hero.id }, content);
     }

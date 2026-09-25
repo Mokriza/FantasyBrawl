@@ -112,6 +112,27 @@ function drawRock(layer: Container, hex: Hex, arena: Arena): void {
   layer.addChild(g);
 }
 
+/** "Колонна": a pale pillar seen from above. Solid, but see-through, so no sight ring. */
+function drawColumn(layer: Container, hex: Hex, arena: Arena): void {
+  const { x, y } = centreOf(hex, arena);
+  const g = new Graphics();
+  g.circle(x, y, 17).fill({ color: COLORS.columnFill });
+  g.circle(x, y, 17).stroke({ width: 2.5, color: COLORS.columnEdge });
+  g.circle(x, y, 10).stroke({ width: 1.5, color: COLORS.columnEdge, alpha: 0.7 });
+  layer.addChild(g);
+}
+
+/** "Возвышенность": a raised plateau, a smaller hex with a bright rim and a chevron. */
+function drawHigh(layer: Container, hex: Hex, arena: Arena): void {
+  const { x, y } = centreOf(hex, arena);
+  const g = new Graphics();
+  const inner = polygonPoints(hex, arena, 9);
+  g.poly(inner).fill({ color: COLORS.highFill, alpha: 0.85 });
+  g.poly(inner).stroke({ width: 2.5, color: COLORS.highEdge });
+  g.moveTo(x - 9, y + 5).lineTo(x, y - 5).lineTo(x + 9, y + 5).stroke({ width: 3, color: COLORS.highEdge });
+  layer.addChild(g);
+}
+
 function drawThicket(layer: Container, hex: Hex, arena: Arena): void {
   const { x, y } = centreOf(hex, arena);
   const g = new Graphics();
@@ -399,6 +420,8 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     layer.addChild(g);
 
     if (terrain === 'rock') drawRock(layer, hex, arena);
+    else if (terrain === 'column') drawColumn(layer, hex, arena);
+    else if (terrain === 'high') drawHigh(layer, hex, arena);
     else if (terrain === 'thicket') drawThicket(layer, hex, arena);
     else if (terrain === 'pit') drawPit(layer, hex, arena);
     else if (terrain === 'ice') drawIce(layer, hex, arena);

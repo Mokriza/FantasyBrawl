@@ -55,7 +55,7 @@ export interface Stats {
  * Rock, thicket and pit are generated with the arena. Ice, smoke and trap only ever
  * appear for a while, from an ability. Elevation and Column are stage 4.
  */
-export type TerrainId = 'rock' | 'thicket' | 'pit' | 'ice' | 'smoke' | 'trap';
+export type TerrainId = 'rock' | 'column' | 'thicket' | 'pit' | 'high' | 'ice' | 'smoke' | 'trap';
 
 /** Terrain an ability put down for a while, and what the hex was before. */
 export interface TemporaryTerrain {

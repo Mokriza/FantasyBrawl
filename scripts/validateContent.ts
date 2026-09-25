@@ -197,16 +197,25 @@ function validateGeneration(content: ContentRegistry): void {
     fail(`config.draft: ${draft.order.length} пиков из пула в ${draft.poolSize} героев`);
   }
 
-  // Rule 15: the arena generator mirrors across the columns, which keeps the odd-q
-  // layout intact only for an odd column count. Start zones must lie on the board.
+  // Rule 15: the arena generator twins every obstacle across a centre column that
+  // belongs to nobody, so the column count must be odd. Start zones must lie on the
+  // board, the obstacles must fit between them, and the GDD allows two elevations.
   const arena = content.config.arena;
   if (arena.cols % 2 === 0) {
-    fail(`config.arena: ${arena.cols} столбцов — нужно нечётное число для зеркальной симметрии`);
+    fail(`config.arena: ${arena.cols} столбцов — генератору нужен центральный столбец, число должно быть нечётным`);
   }
-  for (const col of [...arena.startColumnsA, ...arena.startColumnsB]) {
+  const zones = [...arena.startColumnsA, ...arena.startColumnsB];
+  for (const col of zones) {
     if (col < 0 || col >= arena.cols) {
       fail(`config.arena: стартовый столбец ${col} за пределами поля в ${arena.cols} столбцов`);
     }
+  }
+  const room = (arena.cols - new Set(zones).size) * arena.rows - 3;
+  if (arena.obstacles.min > arena.obstacles.max || arena.obstacles.max > room / 2) {
+    fail(`config.arena.obstacles: ${arena.obstacles.min}–${arena.obstacles.max} при ${room} свободных гексах — больше половины`);
+  }
+  if (arena.high.maxCount > 2) {
+    fail(`config.arena.high.maxCount: ${arena.high.maxCount}, GDD допускает не больше двух возвышенностей`);
   }
 }
 

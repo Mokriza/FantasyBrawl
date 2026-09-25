@@ -79,10 +79,13 @@ export function playBattle(
     }
 
     if (state.activeHeroId === activeId && state.outcome === null) {
-      // The plan ran out without ending the turn; close it so the clock moves on.
-      const applied = applyAction(state, { type: 'endTurn', heroId: activeId }, content);
+      // The plan ran out without ending the turn; close it so the clock moves on. It is
+      // an action like any other, so a recording must see it too.
+      const close: Action = { type: 'endTurn', heroId: activeId };
+      const applied = applyAction(state, close, content);
       state = applied.state;
       events.push(...applied.events);
+      options.onAction?.(close, state);
       step++;
     }
   }

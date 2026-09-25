@@ -381,6 +381,17 @@ button.primary:hover {
   outline-offset: -1px;
 }
 
+.legend-column {
+  background: #c9c2ae;
+  border: 2px solid #6f6856;
+  border-radius: 50%;
+}
+
+.legend-high {
+  background: #8a6d3b;
+  border: 2px solid #d9b25f;
+}
+
 .legend-thicket {
   background: #2e6b40;
   outline: 2px dashed #f0c04a;

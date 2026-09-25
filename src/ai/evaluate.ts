@@ -15,6 +15,7 @@ import {
 
   getAbility,
 
+  isHigh,
   livingHeroes,
 } from '../core/index.js';
 import { threatAgainst } from './threat.js';
@@ -91,6 +92,11 @@ function trapsNearEnemies(state: BattleState, side: Side, content: ContentRegist
   return count;
 }
 
+/** My heroes standing on high ground, where they reach further and hit harder. */
+function onHighGround(state: BattleState, side: Side): number {
+  return livingHeroes(state).filter((h) => h.side === side && h.summon === null && isHigh(state.arena, h.hex)).length;
+}
+
 export function evaluate(
   before: BattleState,
   after: BattleState,
@@ -145,7 +151,8 @@ export function evaluate(
     w.distanceToTarget * reachPenalty(after, side, content) +
     w.ultimateSaved * ultimatesHeld(after, side, content) +
     w.summonDamage * summonValue(after, side) +
-    w.trapNearEnemy * trapsNearEnemies(after, side, content);
+    w.trapNearEnemy * trapsNearEnemies(after, side, content) +
+    w.highGround * onHighGround(after, side);
 
   // Control is close to a kill: a hero that cannot act deals no damage either.
   for (const hero of livingHeroes(after)) {
