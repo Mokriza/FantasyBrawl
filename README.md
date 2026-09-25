@@ -6,11 +6,14 @@
 Собери команду из трёх героев на драфте, расставь их на гексагональной арене
 и выиграй серию матчей до трёх побед.
 
+[![CI](https://github.com/Mokriza/FantasyBrawl/actions/workflows/deploy.yml/badge.svg)](https://github.com/Mokriza/FantasyBrawl/actions/workflows/deploy.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![PixiJS](https://img.shields.io/badge/PixiJS-8-E72264)
 ![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
 ![Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)
+
+**[▶ Играть в браузере](https://mokriza.github.io/FantasyBrawl/)**
 
 ![Бой на арене](docs/images/battle.png)
 
@@ -99,6 +102,10 @@ npm run validate-content  # проверить весь JSON контента п
 npm run sim -- --matches 1000 --seed 42          # балансная симуляция боёв в Node
 npm run sim -- --mode draft --runs 100 --seed 1  # целые забеги ИИ против ИИ
 ```
+
+## CI и деплой
+
+Каждый push и pull request проходит [CI](.github/workflows/ci.yml): typecheck, lint, проверка контента, тесты и сборка. Push в `master` после зелёного CI публикует игру на GitHub Pages ([deploy.yml](.github/workflows/deploy.yml)). Сайт живёт в подпапке `/FantasyBrawl/`: сборка получает её через переменную `BASE_PATH`, а пути к картинкам из контента дополняет `src/ui/assets/url.ts`.
 
 ## Архитектура
 

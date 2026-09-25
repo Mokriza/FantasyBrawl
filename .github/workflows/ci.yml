@@ -1,0 +1,47 @@
+# Every check a change must pass before it counts as done (see CLAUDE.md):
+# types, lint, content validation, tests and a production build.
+#
+# Runs on pull requests and on pushes to any branch but master. Master is covered by
+# deploy.yml, which calls this workflow first, so a push there runs it only once.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [master]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Typecheck, lint, content, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Validate content
+        run: npm run validate-content
+
+      # Includes the simulation tests that play whole runs AI against AI, so this is
+      # the slow step: a few minutes.
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

@@ -27,6 +27,7 @@ import {
 import { UI, reasonText } from '../strings.ru.js';
 import { canAct, dispatch, selectAbility, useUi } from '../store.js';
 import type { UiState } from '../store.js';
+import { assetUrl } from '../assets/url.js';
 
 interface Props {
   readonly hero: BattleHero;
@@ -123,7 +124,7 @@ export function AbilityBar({ hero, battle, content }: Props): JSX.Element {
                 <span
                   className="ability-icon"
                   aria-hidden="true"
-                  style={{ maskImage: `url(${ability.icon})`, WebkitMaskImage: `url(${ability.icon})` }}
+                  style={{ maskImage: `url(${assetUrl(ability.icon)})`, WebkitMaskImage: `url(${assetUrl(ability.icon)})` }}
                 />
                 <span className="ability-name">{ability.name}</span>
               </span>

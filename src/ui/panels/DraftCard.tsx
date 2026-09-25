@@ -20,6 +20,7 @@ import {
 import { UI } from '../strings.ru.js';
 import { ClassIcon } from './ClassIcon.js';
 import { statRows } from './statRows.js';
+import { assetUrl } from '../assets/url.js';
 
 interface Props {
   readonly hero: HeroTemplate;
@@ -138,7 +139,7 @@ export function DraftCard({
                 <span
                   className="ability-icon"
                   aria-hidden="true"
-                  style={{ maskImage: `url(${ability.icon})`, WebkitMaskImage: `url(${ability.icon})` }}
+                  style={{ maskImage: `url(${assetUrl(ability.icon)})`, WebkitMaskImage: `url(${assetUrl(ability.icon)})` }}
                 />
                 <strong>{ability.name}</strong>
               </div>

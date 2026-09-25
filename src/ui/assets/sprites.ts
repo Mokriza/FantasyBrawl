@@ -11,6 +11,7 @@
  */
 
 import manifest from './manifest.json' with { type: 'json' };
+import { assetUrl } from './url.js';
 
 export interface SheetInfo {
   readonly url: string;
@@ -40,7 +41,9 @@ interface RawEntry {
   readonly tint?: string;
 }
 
-const SHEETS: Record<string, SheetInfo> = manifest.sheets;
+const SHEETS: Record<string, SheetInfo> = Object.fromEntries(
+  Object.entries(manifest.sheets).map(([id, sheet]) => [id, { ...sheet, url: assetUrl(sheet.url) }]),
+);
 const FIGURES = manifest.classSprites as unknown as Record<string, RawEntry>;
 
 /** The figure for a class, or null when the manifest has nothing for it. */
