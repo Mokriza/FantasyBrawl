@@ -6,10 +6,11 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { loadContent } from '../../../content/load.js';
-import type { ContentRegistry } from '../../content.js';
+import type { ContentRegistry, DamageEffect } from '../../content.js';
 import { at, scenario } from '../../testing/scenario.js';
 import type { ScenarioHero } from '../../testing/scenario.js';
 import { applyAction, startBattle } from '../apply.js';
+import { FIXED_ROLLS, computeDamage } from '../formulas.js';
 import { abilityApCost, abilityCooldown, abilityRange } from '../legal.js';
 import { withPerkHealth } from '../../run/upgrade.js';
 import { critMultiplier, statsInBattle } from '../modifiers.js';
@@ -111,14 +112,19 @@ describe('modifiers', () => {
     expect(magic()).toBe(24);
   });
 
-  it('Зоркость: +1 range to abilities that reach further than one hex, and only those', () => {
-    const state = board('hunter_passive_keen_eye', {}, { cls: 'hunter' });
-    const hunter = heroById(state, heroId('c'));
+  it('Зоркость: +10% damage to targets further than two hexes, no extra range', () => {
+    const far = board('hunter_passive_keen_eye', { e: enemy([6, 3]) }, { cls: 'hunter' });
+    const near = board('hunter_passive_keen_eye', { e: enemy([5, 3]) }, { cls: 'hunter' });
+    const plain = board(undefined, { e: enemy([6, 3]) }, { cls: 'hunter' });
+    const hit = { type: 'damage', school: 'physical', scale: 'attack', k: 1 } as DamageEffect;
+    const dealt = (state: BattleState) =>
+      computeDamage(state, heroById(state, heroId('c')), heroById(state, heroId('e')), hit, content, state.rng, FIXED_ROLLS)
+        .preDefense;
+    expect(dealt(far)).toBeCloseTo(dealt(plain) * 1.1, 6);
+    expect(dealt(near)).toBe(dealt(board(undefined, { e: enemy([5, 3]) }, { cls: 'hunter' })));
     const aimed = content.abilities.hunter_aimed_shot;
-    const basicMelee = content.abilities.basic_melee_physical;
-    if (aimed === undefined || basicMelee === undefined) throw new Error('content');
-    expect(abilityRange(state, hunter, aimed, content)).toBe(aimed.range + 1);
-    expect(abilityRange(state, hunter, basicMelee, content)).toBe(1);
+    if (aimed === undefined) throw new Error('content');
+    expect(abilityRange(far, heroById(far, heroId('c')), aimed, content)).toBe(aimed.range);
   });
 
   it('Инстинкт: a head start of 30 on the initiative bar', () => {
@@ -223,19 +229,21 @@ describe('triggers', () => {
     expect(dealt(events, 'far')).toBe(0);
   });
 
-  it('Арканный щит: the first hit of the battle is swallowed whole, the second lands', () => {
+  it('Арканный щит: a barrier of k × Magic from the start of the battle, which a hit eats first', () => {
     const state = scenario(content)
-      .hero('m', { cls: 'mage', side: 'B', at: [3, 2], passive: 'mage_passive_arcane_shield', speed: 1 })
-      .hero('c', { cls: 'warrior', side: 'A', at: [3, 3], speed: 18 })
+      .hero('m', { cls: 'mage', side: 'B', at: [3, 2], passive: 'mage_passive_arcane_shield', speed: 1, magic: 30 })
+      .hero('c', { cls: 'warrior', side: 'A', at: [3, 3], speed: 18, attack: 40 })
       .build();
     const started = startBattle(state, content).state;
     expect(started.activeHeroId).toBe('c');
-    const first = cast(started, 'basic_melee_physical', at(3, 2));
-    expect(dealt(first.events, 'm')).toBe(0);
-    expect(first.events.some((e) => e.type === 'barrierAbsorbed' && e.targetId === 'm')).toBe(true);
-    const second = cast({ ...first.state, activeHeroId: heroId('c'), apLeft: 4 }, 'basic_melee_physical', at(3, 2));
-    expect(dealt(second.events, 'm')).toBeGreaterThan(0);
-    expect(barrierAmount(heroById(second.state, heroId('m')))).toBe(0);
+    const passive = content.passives.mage_passive_arcane_shield;
+    const barrier = passive?.triggers[0]?.effects[0];
+    if (barrier?.type !== 'barrier') throw new Error('content');
+    const shield = Math.round(barrier.k * 30);
+    expect(barrierAmount(heroById(started, heroId('m')))).toBe(shield);
+    const hit = cast(started, 'basic_melee_physical', at(3, 2));
+    expect(hit.events.some((e) => e.type === 'barrierAbsorbed' && e.targetId === 'm')).toBe(true);
+    expect(barrierAmount(heroById(hit.state, heroId('m')))).toBeLessThan(shield);
   });
 
   it('Эхо: every fourth ability runs again at half strength; basic attacks do not count', () => {

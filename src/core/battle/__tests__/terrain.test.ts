@@ -93,9 +93,15 @@ describe('range bonuses', () => {
       .hero('foe', { cls: 'warrior', side: 'B', at: [7, 7] })
       .active('h')
       .build();
-    // Keen eye, the marksman's lens and high ground: three +1s.
+    // The marksman's lens, high ground and a long-reach perk on this very ability: three +1s.
     const stacked = scenario(content)
-      .hero('h', { cls: 'hunter', side: 'A', at: [3, 3], passive: 'hunter_passive_keen_eye', item: 'item_marksman_lens' })
+      .hero('h', {
+        cls: 'hunter',
+        side: 'A',
+        at: [3, 3],
+        item: 'item_marksman_lens',
+        perks: [{ perkId: 'perk_long_reach', abilityId: ranged.id }],
+      })
       .hero('foe', { cls: 'warrior', side: 'B', at: [7, 7] })
       .obstacle('high', [3, 3])
       .active('h')

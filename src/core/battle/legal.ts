@@ -28,8 +28,8 @@ export const READY: Legality = { ok: true };
 export const ONCE_COOLDOWN = -1;
 
 /**
- * How far an ability reaches for this hero, after range modifiers such as the elf's
- * "+1" or the hunter's "Зоркость".
+ * How far an ability reaches for this hero, after range modifiers such as "Линза стрелка",
+ * high ground or a "Длинная рука" perk, capped at config.battle.maxRangeBonus in all.
  */
 export function abilityRange(
   state: BattleState,

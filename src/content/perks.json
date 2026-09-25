@@ -145,14 +145,11 @@
   {
     "id": "perk_farsight",
     "name": "Дальний взор",
-    "description": "+1 к дальности всех способностей, бьющих дальше соседнего гекса.",
-    "category": "rules",
+    "description": "+10% урона по целям дальше 2 гексов.",
+    "category": "situational",
     "roles": ["ranged", "support"],
     "modifiers": [
-      {
-        "stat": "range",
-        "add": 1
-      }
+      { "stat": "damageDealt", "mul": 0.1, "when": { "targetDistanceAbove": 2 } }
     ]
   },
   {

@@ -56,8 +56,8 @@ function modifiersByStat(traitId: string, trait: Trait, content: ContentRegistry
 const RACE_TRAITS = new WeakMap<Race, Trait>();
 
 /**
- * A race as a battle trait: only its battle quantities, such as the elf's range or the
- * orc's crit damage. Its stat bonuses were baked into the hero when it was generated.
+ * A race as a battle trait: only its battle quantities, such as the elf's head start or
+ * the orc's crit damage. Its stat bonuses were baked into the hero when it was generated.
  */
 function raceTrait(race: Race): Trait {
   let trait = RACE_TRAITS.get(race);
@@ -344,7 +344,7 @@ export function critMultiplier(
 /**
  * Extra range from modifiers. [decision] It only reaches abilities that already hit
  * further than one hex: a melee strike stays a melee strike, and a self-buff stays on
- * the self, whatever an elf's eyesight.
+ * the self, however many sources stack up.
  */
 export function rangeBonus(state: BattleState, hero: BattleHero, baseRange: number, content: ContentRegistry): number {
   if (baseRange <= 1) return 0;
