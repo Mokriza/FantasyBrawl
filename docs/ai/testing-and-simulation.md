@@ -58,6 +58,7 @@ expect(state.heroes.m.hp).toBe(74); // закреплено для seed 42
 ```bash
 npm run sim -- --matches 10000 --seed 1 --profile normal --out sim-report.json
 npm run sim -- --mode draft --runs 200 --seed 1   # полные забеги: драфт, расстановка, серия
+npm run sim -- --mode draft --runs 50 --shards 16 --seed 1 --out report.json   # то же в 16 процессах
 npm run sim -- --mode tournament --a veteran --b normal --matches 2000
 ```
 
@@ -67,7 +68,9 @@ npm run sim -- --mode tournament --a veteran --b normal --matches 2000
 
 ### Отчёт
 
-Отчёт — JSON плюс короткая текстовая сводка в консоль:
+Отчёт — JSON плюс текстовая сводка в консоль. Счётчики собирает `src/sim/report.ts`: они складываются, поэтому `--shards N` делит забеги на N процессов с разными блоками сидов и сливает итог точно. Винрейты классов, ролей, рас, пассивок, артефактов и перков считаются по героям в матчах: герой, сыгравший матч, — одно появление, победа, если его сторона взяла матч.
+
+Метрики:
 
 | Метрика | Целевое значение | Что значит отклонение |
 |---|---|---|
