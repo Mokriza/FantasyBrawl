@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Готовые фигурки 16×16 (паладин, охотник, маг, жрец, бес) | [Kenney — Tiny Dungeon](https://kenney.nl/assets/tiny-dungeon), файл `kenney_tiny-dungeon.zip` | CC0 1.0 | Нет |
 | Конструктор персонажей (воин-орк, чернокнижник, разбойник, монах) | [Kenney — Roguelike Characters](https://kenney.nl/assets/roguelike-characters), файл `kenney_roguelike-characters.zip` | CC0 1.0 | Нет |
-| Иконки способностей (82 SVG) | [game-icons.net](https://game-icons.net), репозиторий [game-icons/icons](https://github.com/game-icons/icons) | CC BY 3.0 | **Да**, по авторам — см. ниже |
+| Иконки способностей (83 SVG) | [game-icons.net](https://game-icons.net), репозиторий [game-icons/icons](https://github.com/game-icons/icons) | CC BY 3.0 | **Да**, по авторам — см. ниже |
 
 ### Как собраны фигурки героев
 
@@ -34,7 +34,7 @@
 Они созданы авторами проекта game-icons.net и распространяются по
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Авторы использованных иконок:
 
-- **Lorc** — https://lorcblog.blogspot.com — 78 иконок
+- **Lorc** — https://lorcblog.blogspot.com — 79 иконок
 - **Delapouite** — https://delapouite.com — 3 иконки (`cleaver`, `healing`, `blindfold`)
 - **Sbed** — https://opengameart.org/content/95-game-icons — 1 иконка (`health-increase`)
 
