@@ -14,7 +14,9 @@ import type { ContentRegistry, HeroTemplate, Perk, RunState, StatName } from '..
 import {
   STAT_NAMES,
   awaitingPerk,
+  awaitingReward,
   awaitingUnlock,
+  itemFits,
   describeAbility,
   getAbility,
   getClass,
@@ -26,7 +28,7 @@ import {
   teamOf,
 } from '../../core/index.js';
 import { ClassIcon } from '../panels/ClassIcon.js';
-import { endUpgrade, takePerk, takeUnlock } from '../store.js';
+import { endUpgrade, takePerk, takeReward, takeUnlock } from '../store.js';
 import type { UiState } from '../store.js';
 import { UI } from '../strings.ru.js';
 import { TopBar } from './TopBar.js';
@@ -88,7 +90,14 @@ function PerkCard({
         <div className="perk-abilities">
           <span className="dim">{UI.upgrade.chooseAbility}</span>
           {targets.map((id) => (
-            <button key={id} type="button" onClick={() => takeOn(id)}>
+            <button
+              key={id}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                takeOn(id);
+              }}
+            >
               {getAbility(content, id).name}
             </button>
           ))}
@@ -149,6 +158,69 @@ function UnlockRow({ ui, run, hero }: { ui: UiState; run: RunState; hero: HeroTe
   );
 }
 
+/**
+ * The match reward: a few artifacts, one of which goes to one hero. Clicking a card
+ * asks which hero; the choice can be changed until the phase ends.
+ */
+function RewardBlock({ ui, run }: { ui: UiState; run: RunState }): JSX.Element | null {
+  const { content } = ui;
+  const [asking, setAsking] = useState<string | null>(null);
+  const offered = run.upgrade?.rewards[ui.playerSide] ?? [];
+  if (offered.length === 0) return null;
+  const pick = run.upgrade?.rewarded[ui.playerSide];
+  const team = teamOf(run.draft, ui.playerSide);
+
+  return (
+    <section className="reward-block">
+      <span className="unlock-title">{UI.upgrade.rewardTitle}</span>
+      <div className="perk-row">
+        {offered.map((id) => {
+          const item = content.items[id];
+          if (item === undefined) return null;
+          const fitting = team.filter((hero) => itemFits(item, hero.classId, content));
+          const chosen = pick?.itemId === id;
+          return (
+            <div
+              key={id}
+              className={['perk-card', 'reward-card', `reward-${item.tier}`, chosen ? 'perk-chosen' : ''].filter(Boolean).join(' ')}
+              onClick={asking === id ? undefined : () => setAsking(id)}
+            >
+              <span className="perk-category dim">{UI.upgrade.itemTiers[item.tier]}</span>
+              <strong>{item.name}</strong>
+              <span className="perk-text">{item.description}</span>
+              {chosen ? (
+                <span className="dim">
+                  {UI.upgrade.rewardFor} {team.find((h) => h.id === pick?.heroId)?.name}
+                </span>
+              ) : null}
+              {asking === id ? (
+                <div className="perk-abilities">
+                  <span className="dim">{UI.upgrade.rewardWho}</span>
+                  {fitting.map((hero) => (
+                    <button
+                      key={hero.id}
+                      type="button"
+                      onClick={(event) => {
+                        // The card itself opens this list; the click must not reach it again.
+                        event.stopPropagation();
+                        setAsking(null);
+                        takeReward(id, hero.id);
+                      }}
+                    >
+                      {hero.name}
+                      {hero.item === null ? '' : ` (${UI.upgrade.replaces} ${content.items[hero.item]?.name ?? hero.item})`}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function HeroUpgrade({ ui, run, hero }: { ui: UiState; run: RunState; hero: HeroTemplate }): JSX.Element {
   const { content } = ui;
   const offers = run.upgrade?.offers[hero.id] ?? [];
@@ -167,6 +239,11 @@ function HeroUpgrade({ ui, run, hero }: { ui: UiState; run: RunState; hero: Hero
             {heroClass.name}
           </span>
         </div>
+        {hero.item === null ? null : (
+          <span className="dim upgrade-owned" title={content.items[hero.item]?.description}>
+            {UI.item}: {content.items[hero.item]?.name ?? hero.item}
+          </span>
+        )}
         {hero.perks.length > 0 ? (
           <span className="dim upgrade-owned">
             {UI.upgrade.perks}: {hero.perks.map((p) => content.perks[p.perkId]?.name ?? p.perkId).join(', ')}
@@ -205,7 +282,14 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
   const you = ui.playerSide;
   const upgrade = run.upgrade;
   const waiting =
-    upgrade === null ? [] : [...awaitingPerk(upgrade, run.draft, you), ...awaitingUnlock(upgrade, run.draft, you)];
+    upgrade === null
+      ? []
+      : [
+          ...awaitingPerk(upgrade, run.draft, you),
+          ...awaitingUnlock(upgrade, run.draft, you),
+          ...(awaitingReward(upgrade, you) ? ['reward'] : []),
+        ];
+  const enemyReward = upgrade?.rewarded[otherSide(you)];
   const enemy = teamOf(run.draft, otherSide(you));
 
   return (
@@ -229,6 +313,7 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
 
       <main className="upgrade">
         <div className="upgrade-list">
+          <RewardBlock ui={ui} run={run} />
           {teamOf(run.draft, you).map((hero) => (
             <HeroUpgrade key={hero.id} ui={ui} run={run} hero={hero} />
           ))}
@@ -236,6 +321,12 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
 
         <aside className="upgrade-enemy">
           <h2>{UI.upgrade.enemy}</h2>
+          {enemyReward === undefined ? null : (
+            <p className="dim" title={ui.content.items[enemyReward.itemId]?.description}>
+              {UI.upgrade.rewardTitleShort}: {ui.content.items[enemyReward.itemId]?.name} {UI.upgrade.rewardFor}{' '}
+              {enemy.find((h) => h.id === enemyReward.heroId)?.name}
+            </p>
+          )}
           {enemy.map((hero) => {
             const pick = upgrade?.chosen[hero.id];
             const perk = pick === undefined ? undefined : ui.content.perks[pick.perkId];

@@ -7,6 +7,7 @@ import type { ContentRegistry, RunState } from '../core/index.js';
 import {
   applyRunAction,
   awaitingPerk,
+  awaitingReward,
   awaitingUnlock,
   createRng,
   createRun,
@@ -14,7 +15,7 @@ import {
   draftTurn,
 } from '../core/index.js';
 import type { AiProfile } from '../ai/index.js';
-import { choosePerk, choosePick, choosePlacement, chooseUnlock } from '../ai/index.js';
+import { choosePerk, choosePick, choosePlacement, chooseReward, chooseUnlock } from '../ai/index.js';
 import type { MatchResult } from './match.js';
 import { playBattle } from './match.js';
 
@@ -81,6 +82,11 @@ export function playRun(options: RunOptions): RunResult {
         break;
       case 'upgrade': {
         for (const side of ['A', 'B'] as const) {
+          if (run.upgrade !== null && awaitingReward(run.upgrade, side)) {
+            const decision = chooseReward(run, side, content, aiRng);
+            aiRng = decision.rng;
+            run = applyRunAction(run, { type: 'chooseReward', side, itemId: decision.itemId, heroId: decision.heroId }, content);
+          }
           for (const heroId of run.upgrade === null ? [] : awaitingUnlock(run.upgrade, run.draft, side)) {
             const decision = chooseUnlock(run, heroId, content, aiRng);
             aiRng = decision.rng;

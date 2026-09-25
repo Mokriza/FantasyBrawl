@@ -4,8 +4,8 @@
  * identical heroes do not always grow the same way.
  */
 
-import type { Ability, ContentRegistry, Modifier, Passive, Perk, RngState, RunState } from '../core/index.js';
-import { getAbility, getClass, nextFloatBetween, perkTargets } from '../core/index.js';
+import type { Ability, ContentRegistry, Item, Modifier, Passive, Perk, RngState, RunState, Side } from '../core/index.js';
+import { getAbility, getClass, itemFits, nextFloatBetween, perkTargets } from '../core/index.js';
 import type { HeroId, HeroTemplate } from '../core/index.js';
 
 export interface PerkDecision {
@@ -164,4 +164,58 @@ export function chooseUnlock(
   }
   if (best === null) throw new Error(`chooseUnlock: no known option for ${heroIdValue}`);
   return { optionId: best, rng: state };
+}
+
+export interface RewardDecision {
+  readonly itemId: string;
+  readonly heroId: HeroId;
+  readonly rng: RngState;
+}
+
+/** An artifact is worth what its modifiers are to the class, a trigger half a point. */
+function itemWorth(item: Item, hero: HeroTemplate, content: ContentRegistry): number {
+  const fromModifiers = item.modifiers.reduce((sum, m) => sum + modifierWorth(m, hero, content), 0);
+  return fromModifiers + item.triggers.length * 0.5;
+}
+
+/**
+ * The AI's reward: the artifact and the hero it fits where it gains the most over
+ * what that hero already carries, since the new one replaces the old. Draft noise on
+ * top, as everywhere between matches.
+ */
+export function chooseReward(
+  run: RunState,
+  side: Side,
+  content: ContentRegistry,
+  rng: RngState,
+): RewardDecision {
+  const offered = run.upgrade?.rewards[side] ?? [];
+  const team = run.draft.picks[side]
+    .map((id) => run.draft.pool.find((h) => h.id === id))
+    .filter((h): h is HeroTemplate => h !== undefined);
+
+  const noise = content.config.ai.draft.noise;
+  let state = rng;
+  let best: { itemId: string; heroId: HeroId } | null = null;
+  let bestScore = -Infinity;
+  for (const itemId of offered) {
+    const item = content.items[itemId];
+    if (item === undefined) continue;
+    for (const hero of team) {
+      if (!itemFits(item, hero.classId, content)) continue;
+      const current = hero.item === null ? undefined : content.items[hero.item];
+      let score = itemWorth(item, hero, content) - (current === undefined ? 0 : itemWorth(current, hero, content));
+      if (noise > 0) {
+        const [jitter, next] = nextFloatBetween(state, -noise, noise);
+        state = next;
+        score += Math.abs(score) * jitter;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = { itemId, heroId: hero.id };
+      }
+    }
+  }
+  if (best === null) throw new Error(`chooseReward: nothing ${side} can carry`);
+  return { ...best, rng: state };
 }

@@ -70,7 +70,7 @@ export function applyDamage(ctx: EffectContext, effect: DamageEffect): EffectOut
     // Out of stealth, the first hit is a sure crit ("Исчезновение").
     const forced = effect.alwaysCrit === true || hasStatusFlag(attacker, ctx.content, 'critsWhileOn');
     const scaled = { ...effect, k: effect.k * ctx.mul, alwaysCrit: forced };
-    const result = computeDamage(state, attacker, target, scaled, ctx.content, rng, ctx.mode);
+    const result = computeDamage(state, attacker, target, scaled, ctx.content, rng, ctx.mode, ctx.ability?.tier ?? null);
     rng = result.rng;
     state = { ...state, rng };
 
@@ -88,7 +88,7 @@ export function applyDamage(ctx: EffectContext, effect: DamageEffect): EffectOut
       events.push(...spent.events);
     }
 
-    const applied = damageHero(state, ctx.targetId, absorbed, final);
+    const applied = damageHero(state, ctx.targetId, absorbed, final, ctx.content);
     state = applied.state;
     events.push(...applied.events);
     events.push({
@@ -106,7 +106,7 @@ export function applyDamage(ctx: EffectContext, effect: DamageEffect): EffectOut
     // The parried share goes back as pure damage: no crit, no defence, barrier first.
     if (reflected > 0 && isAlive(heroById(state, attacker.id))) {
       const split = throughBarrier(heroById(state, attacker.id), reflected);
-      const back = damageHero(state, attacker.id, split.absorbed, split.final);
+      const back = damageHero(state, attacker.id, split.absorbed, split.final, ctx.content);
       state = back.state;
       events.push(...back.events);
       events.push({

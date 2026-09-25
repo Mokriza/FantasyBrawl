@@ -136,6 +136,17 @@ export function addStatus(
   if (def.hardControl && hasStatusFlag(hero, content, 'controlImmune')) {
     return { hero, events: [{ type: 'statusResisted', targetId: hero.id, status: id }] };
   }
+  // "Броня стража": a guard against this status takes the hit once and is spent.
+  const guard = hero.statuses.find((s) => content.statuses[s.status]?.blocksStatus === id);
+  if (guard !== undefined) {
+    return {
+      hero: { ...hero, statuses: hero.statuses.filter((s) => s !== guard) },
+      events: [
+        { type: 'statusResisted', targetId: hero.id, status: id },
+        { type: 'statusExpired', targetId: hero.id, status: guard.status },
+      ],
+    };
+  }
 
   const maxStacks = Math.min(def.maxStacks, requestedStacks);
   const existing = statusesOf(hero, id);

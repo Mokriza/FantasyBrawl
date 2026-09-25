@@ -1,0 +1,576 @@
+[
+  {
+    "modifiers": [
+      {
+        "stat": "attack",
+        "add": 3
+      }
+    ],
+    "triggers": [],
+    "id": "item_whetstone",
+    "tier": "common",
+    "name": "Точильный камень",
+    "description": "+3 Атаки.",
+    "classes": [
+      "warrior",
+      "hunter",
+      "rogue",
+      "monk"
+    ],
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "magic",
+        "add": 3
+      }
+    ],
+    "triggers": [],
+    "id": "item_apprentice_staff",
+    "tier": "common",
+    "name": "Посох ученика",
+    "description": "+3 Магии.",
+    "classes": [
+      "mage",
+      "priest",
+      "warlock",
+      "paladin"
+    ],
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 10
+      }
+    ],
+    "triggers": [],
+    "id": "item_chainmail",
+    "tier": "common",
+    "name": "Кольчуга",
+    "description": "+10 Брони.",
+    "roles": [
+      "tank",
+      "melee"
+    ],
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "resist",
+        "add": 10
+      }
+    ],
+    "triggers": [],
+    "id": "item_warding_amulet",
+    "tier": "common",
+    "name": "Амулет-оберег",
+    "description": "+10 Сопротивления.",
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "speed",
+        "add": 2
+      }
+    ],
+    "triggers": [],
+    "id": "item_courier_boots",
+    "tier": "common",
+    "name": "Сапоги гонца",
+    "description": "+2 Скорости.",
+    "cost": 7
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "maxHp",
+        "add": 18
+      }
+    ],
+    "triggers": [],
+    "id": "item_hunter_vest",
+    "tier": "common",
+    "name": "Жилет охотника",
+    "description": "+18 Здоровья.",
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "critChance",
+        "add": 0.06
+      }
+    ],
+    "triggers": [],
+    "id": "item_duelist_gloves",
+    "tier": "common",
+    "name": "Перчатки дуэлянта",
+    "description": "+6% шанса крита.",
+    "classes": [
+      "warrior",
+      "hunter",
+      "rogue",
+      "monk"
+    ],
+    "cost": 6
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 6
+      },
+      {
+        "stat": "resist",
+        "add": 6
+      }
+    ],
+    "triggers": [],
+    "id": "item_light_shield",
+    "tier": "common",
+    "name": "Лёгкий щит",
+    "description": "+6 Брони, +6 Сопротивления.",
+    "roles": [
+      "tank",
+      "melee",
+      "support"
+    ],
+    "cost": 7
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "attack",
+        "add": 5
+      },
+      {
+        "stat": "damageDealt",
+        "mul": 0.15,
+        "when": {
+          "targetHpBelowPct": 50
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "item_butcher_blade",
+    "tier": "rare",
+    "name": "Клинок мясника",
+    "description": "+5 Атаки, +15% урона по целям ниже 50% здоровья.",
+    "roles": [
+      "tank",
+      "melee"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "magic",
+        "add": 5
+      },
+      {
+        "stat": "damageDealt",
+        "mul": 0.1,
+        "when": {
+          "abilityTierAtLeast": 3
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "item_abyss_grimoire",
+    "tier": "rare",
+    "name": "Гримуар бездны",
+    "description": "+5 Магии, способности тира III и IV бьют на 10% сильнее.",
+    "classes": [
+      "mage",
+      "priest",
+      "warlock",
+      "paladin"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 14
+      }
+    ],
+    "triggers": [
+      {
+        "on": "battleStart",
+        "to": "self",
+        "effects": [
+          {
+            "type": "status",
+            "status": "stunGuard",
+            "turns": 99
+          }
+        ]
+      }
+    ],
+    "id": "item_guardian_armor",
+    "tier": "rare",
+    "name": "Броня стража",
+    "description": "+14 Брони, первое оглушение за матч не срабатывает.",
+    "roles": [
+      "tank",
+      "melee"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "speed",
+        "add": 3
+      },
+      {
+        "stat": "freeDisengage",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "item_shadow_cloak",
+    "tier": "rare",
+    "name": "Плащ теней",
+    "description": "+3 Скорости, первое перемещение за ход не вызывает атак вслед.",
+    "roles": [
+      "melee",
+      "ranged"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "magic",
+        "add": 4
+      }
+    ],
+    "triggers": [
+      {
+        "on": "healedAlly",
+        "to": "other",
+        "effects": [
+          {
+            "type": "barrier",
+            "scale": "magic",
+            "k": 0,
+            "pctOfEvent": 0.2,
+            "turns": 2
+          }
+        ]
+      }
+    ],
+    "id": "item_healer_cup",
+    "tier": "rare",
+    "name": "Кубок целителя",
+    "description": "+4 Магии, лечение от героя даёт цели барьер на 20% от вылеченного.",
+    "classes": [
+      "priest",
+      "paladin"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "maxHp",
+        "add": 25
+      },
+      {
+        "stat": "pushImmune",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "item_strongman_belt",
+    "tier": "rare",
+    "name": "Пояс силача",
+    "description": "+25 Здоровья, героя нельзя оттолкнуть.",
+    "roles": [
+      "tank",
+      "melee"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "range",
+        "add": 1
+      },
+      {
+        "stat": "damageDealt",
+        "mul": 0.1,
+        "when": {
+          "targetDistanceAbove": 3
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "item_marksman_lens",
+    "tier": "rare",
+    "name": "Линза стрелка",
+    "description": "+1 к дальности, +10% урона по целям дальше 3 гексов.",
+    "roles": [
+      "ranged"
+    ]
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "turnStart",
+        "to": "self",
+        "effects": [
+          {
+            "type": "atb",
+            "delta": 8
+          }
+        ]
+      }
+    ],
+    "id": "item_moment_clock",
+    "tier": "rare",
+    "name": "Часы мгновения",
+    "description": "+8 инициативы в начале каждого своего хода."
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 12
+      }
+    ],
+    "triggers": [
+      {
+        "on": "damaged",
+        "to": "other",
+        "periodic": false,
+        "school": "physical",
+        "effects": [
+          {
+            "type": "relay",
+            "pct": 0.15,
+            "school": "physical"
+          }
+        ]
+      }
+    ],
+    "id": "item_spiked_breastplate",
+    "tier": "rare",
+    "name": "Шипастый нагрудник",
+    "description": "+12 Брони, 15% полученного физического урона возвращается атакующему.",
+    "roles": [
+      "tank"
+    ]
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "kill",
+        "to": "self",
+        "effects": [
+          {
+            "type": "cooldown",
+            "mode": "reduce"
+          }
+        ]
+      }
+    ],
+    "id": "item_focus_ring",
+    "tier": "rare",
+    "name": "Кольцо концентрации",
+    "description": "Каждое убийство сокращает все кулдауны героя на 1 ход."
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "apPerTurn",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "item_tyrant_crown",
+    "tier": "legendary",
+    "name": "Корона тирана",
+    "description": "+1 ОД в каждом ходу. Больше ничего."
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "battleStart",
+        "to": "self",
+        "effects": [
+          {
+            "type": "status",
+            "status": "phoenixHeart",
+            "turns": 99
+          }
+        ]
+      }
+    ],
+    "id": "item_phoenix_heart",
+    "tier": "legendary",
+    "name": "Сердце феникса",
+    "description": "Раз за матч смертельный удар оставляет героя с 40% здоровья."
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "turnStart",
+        "to": "self",
+        "oncePerMatch": true,
+        "effects": [
+          {
+            "type": "atb",
+            "delta": 100
+          }
+        ]
+      }
+    ],
+    "id": "item_hourglass",
+    "tier": "legendary",
+    "name": "Песочные часы",
+    "description": "Раз за матч герой сразу после своего хода получает ещё один: +100 инициативы."
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "abilityUsed",
+        "oncePerMatch": true,
+        "effects": [
+          {
+            "type": "echo",
+            "mul": 1
+          }
+        ]
+      }
+    ],
+    "id": "item_twin_seal",
+    "tier": "legendary",
+    "name": "Печать двойника",
+    "description": "Первая способность за матч срабатывает дважды."
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "defensePierce",
+        "add": 0.4
+      }
+    ],
+    "triggers": [],
+    "id": "item_void_blade",
+    "tier": "legendary",
+    "name": "Клинок пустоты",
+    "description": "Удары героя игнорируют 40% Брони и Сопротивления.",
+    "roles": [
+      "tank",
+      "melee",
+      "ranged"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "zoneSize",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "item_archmage_mantle",
+    "tier": "legendary",
+    "name": "Мантия архимага",
+    "description": "Зоны способностей больше: аура, линия и цепь +1, зона из 3 гексов — из 7.",
+    "classes": [
+      "mage",
+      "priest",
+      "warlock",
+      "paladin"
+    ]
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "adjacentEnemyTurnStart",
+        "to": "other",
+        "effects": [
+          {
+            "type": "atb",
+            "delta": -5
+          }
+        ]
+      }
+    ],
+    "id": "item_fate_shackles",
+    "tier": "legendary",
+    "name": "Оковы судьбы",
+    "description": "Враги в соседних гексах теряют 5 инициативы в начале своего хода.",
+    "roles": [
+      "tank",
+      "melee"
+    ]
+  },
+  {
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "turnStart",
+        "to": "self",
+        "effects": [
+          {
+            "type": "heal",
+            "pctMaxHp": 12
+          }
+        ]
+      }
+    ],
+    "id": "item_life_talisman",
+    "tier": "legendary",
+    "name": "Талисман жизни",
+    "description": "Лечит 12% максимального здоровья в начале каждого своего хода."
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "critMult",
+        "add": 0.75
+      }
+    ],
+    "triggers": [],
+    "id": "item_titan_hammer",
+    "tier": "legendary",
+    "name": "Молот титана",
+    "description": "Крит наносит не ×1.75, а ×2.5.",
+    "roles": [
+      "tank",
+      "melee",
+      "ranged"
+    ]
+  },
+  {
+    "modifiers": [
+      {
+        "stat": "attack",
+        "mul": 0.1,
+        "scope": "allAllies"
+      },
+      {
+        "stat": "magic",
+        "mul": 0.1,
+        "scope": "allAllies"
+      }
+    ],
+    "triggers": [],
+    "id": "item_war_banner",
+    "tier": "legendary",
+    "name": "Знамя войны",
+    "description": "Союзники получают +10% Атаки и Магии, пока герой жив."
+  }
+]

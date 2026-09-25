@@ -10,7 +10,7 @@ import type { ContentRegistry, DamageEffect, HealEffect } from '../content.js';
 import type { BattleHero, BattleState, DamageSchool, ScaleStat } from '../types.js';
 import type { RngState } from '../rng.js';
 import { chance, nextFloatBetween } from '../rng.js';
-import { critMultiplier, dealtFactor, healFactor, statInBattle, takenFactor } from './modifiers.js';
+import { critMultiplier, dealtFactor, healFactor, modifierSum, statInBattle, takenFactor } from './modifiers.js';
 import { barrierAmount } from './statuses.js';
 import { distance } from '../hex.js';
 
@@ -60,11 +60,14 @@ export function computeDamage(
   content: ContentRegistry,
   rng: RngState,
   mode: RollMode = RANDOM_ROLLS,
+  /** The tier of the ability behind the hit, when there is one. */
+  abilityTier: number | null = null,
 ): DamageResult {
   const f = content.config.formulas;
 
-  // Σ attacker damage mods, section 6: passives, races and perks of the attacker.
-  let base = effect.k * scaleValue(state, attacker, content, effect.scale) * dealtFactor(state, attacker, target, content);
+  // Σ attacker damage mods, section 6: passives, races, perks and the artifact.
+  let base =
+    effect.k * scaleValue(state, attacker, content, effect.scale) * dealtFactor(state, attacker, target, content, abilityTier);
 
   // "Смертельный выстрел": the further the target, the harder it hits.
   if (effect.perHexBonus !== undefined) {
@@ -107,7 +110,8 @@ export function computeDamage(
     target,
     preDefense,
     effect.school,
-    effect.armorPierce ?? 0,
+    // The ability's own pierce and the attacker's ("Клинок пустоты") stack multiplicatively.
+    1 - (1 - (effect.armorPierce ?? 0)) * (1 - Math.min(1, Math.max(0, modifierSum(state, attacker, 'defensePierce', content).add))),
     content,
   );
   return { preDefense, absorbedByBarrier: mitigated.absorbed, final: mitigated.final, crit, rng: dice };
@@ -170,6 +174,10 @@ export function computeHeal(
   if (effect.flat !== undefined) {
     // A fixed amount: no stat, no spread, nothing to scale.
     return { amount: Math.min(missing, effect.flat), rng };
+  }
+  if (effect.pctMaxHp !== undefined) {
+    // A share of maximum health, no roll ("Талисман жизни").
+    return { amount: Math.min(missing, roundHalfUp((target.base.maxHp * effect.pctMaxHp) / 100)), rng };
   }
   if (effect.missingHpPct !== undefined) {
     // A share of what is missing, so it does not roll: its value is its predictability.

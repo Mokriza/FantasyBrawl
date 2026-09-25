@@ -413,7 +413,7 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     const caster = battle.heroes[pending.casterId];
     const ability = content.abilities[pending.abilityId];
     if (caster === undefined || ability === undefined) continue;
-    const zone = resolveShape(battle, caster, pending.target, ability).map((hit) => hit.hex);
+    const zone = resolveShape(battle, caster, pending.target, ability, content).map((hit) => hit.hex);
     drawPending(layer, zone, arena);
   }
 

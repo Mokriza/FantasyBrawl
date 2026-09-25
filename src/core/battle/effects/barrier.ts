@@ -15,7 +15,12 @@ export function applyBarrier(ctx: EffectContext, effect: BarrierEffect): EffectO
   if (!isAlive(target)) return NO_CHANGE(ctx);
 
   const caster = heroById(ctx.state, ctx.casterId);
-  const amount = computeBarrier(ctx.state, caster, ctx.content, effect.scale, effect.k * ctx.mul);
+  // Inside a trigger lastDamage is the event: "Кубок целителя" shields a fifth of the heal.
+  const amount =
+    effect.pctOfEvent !== undefined
+      ? Math.round(ctx.lastDamage * effect.pctOfEvent)
+      : computeBarrier(ctx.state, caster, ctx.content, effect.scale, effect.k * ctx.mul);
+  if (amount <= 0) return NO_CHANGE(ctx);
   // Same rule as the status atom: the turn it lands in does not count.
   const onOwnTurn = ctx.state.activeHeroId === ctx.targetId;
 

@@ -83,16 +83,16 @@ src/content/
 | `type` | Параметры | Что делает |
 |---|---|---|
 | `damage` | `school` (`physical`\|`magic`\|`pure`), `scale` (`attack`\|`magic`), `k`, `hits`?, `critBonus`?, `alwaysCrit`?, `armorPierce`?, `bonusVsLowHp`?, `perHexBonus`? | Урон по формуле из `game-rules.md`. `perHexBonus` — доля урона сверху за каждый гекс между кастером и целью («Смертельный выстрел»). `alwaysCrit` — крит без броска, в том числе при замороженных бросках ИИ |
-| `heal` | `scale`, `k` \| `missingHpPct` \| `full` \| `flat` | Лечение |
+| `heal` | `scale`, `k` \| `missingHpPct` \| `full` \| `flat` \| `pctMaxHp` | Лечение; `pctMaxHp` — процент максимального здоровья цели, без разброса |
 | `status` | `status`, `turns`, `value`?, `stacks`? | Наложить статус |
 | `cleanse` | `what`: `debuffs`\|`all`\|список | Снять статусы |
-| `barrier` | `scale`, `k`, `turns` | Барьер |
+| `barrier` | `scale`, `k`, `turns`, `pctOfEvent`? | Барьер. `pctOfEvent` — внутри триггера: доля величины события вместо `k` × характеристика («Кубок целителя») |
 | `move` | `to`: `target` \| `adjacentToTarget` | Мгновенно переместить **кастера** по кратчайшему допустимому пути. Пошаговые AP не платятся: у способности фиксированная цена. Урон Ямы начисляется только за конечный гекс. `adjacentToTarget` — свободный сосед цели, ближайший к кастеру, тай-брейк по `DIRECTIONS`; если свободного нет, способность нелегальна. Провоцирует атаку по возможности, если у способности нет `ignoresZoc` |
 | `teleport` | — | Переместить кастера на целевой гекс мгновенно, сквозь препятствия и зону контроля, без атак по возможности. Атом «про землю»: один раз за применение |
 | `push` | `distance`, `from`: `caster` \| `center` | Оттолкнуть цель. Направление — ближайшее из `DIRECTIONS` к вектору. Край поля, непроходимое препятствие и занятый гекс одинаково останавливают толчок без дополнительного урона. Яма при толчке наносит свой урон, но AP не трогает: это не ход цели. `root` от толчка не защищает, атаку по возможности толчок не провоцирует |
 | `atb` | `delta` | Сдвиг шкалы ATB цели |
 | `ap` | `delta`, `who`?: `target`\|`caster` | Изменить AP. Герою, чей сейчас ход, — сразу; любому другому — на его следующий ход (статус `apLoss`) |
-| `cooldown` | `mode`: `reset`\|`double`\|`resetThis`, `who`? | `reset` обнуляет все кулдауны, `double` удваивает идущие, `resetThis` обнуляет кулдаун этой способности (по умолчанию у кастера). Потраченные «раз за бой» не трогаются |
+| `cooldown` | `mode`: `reset`\|`double`\|`resetThis`\|`reduce`, `who`? | `reset` обнуляет все кулдауны, `double` удваивает идущие, `resetThis` обнуляет кулдаун этой способности (по умолчанию у кастера), `reduce` сокращает все идущие на 1. Потраченные «раз за бой» не трогаются |
 | `summon` | `unit`, `hp`, `turns`, `attack` {`k`, `scale`, `school`, `radius`} | Призвать юнита класса `unit` (у класса `summonOnly: true`) на целевой гекс. Правила — `game-rules.md` §7 |
 | `terrain` | `terrain` (`ice`\|`smoke`\|`trap`), `turns`, `onEnter`? | Временная местность на свободных гексах формы; `onEnter` — атомы капкана |
 | `spread` | `status`, `radius` | Скопировать все стаки статуса с цели на каждого врага в радиусе от неё, с тем же источником и сроками («Чума») |
@@ -135,7 +135,8 @@ src/content/
 `tier` задаёт цену пассивки в бюджете через `config.generation.passiveTierCost` (3 / 5 / 8 / 12) — это столбец «Пассивка» таблицы тиров GDD.
 
 Триггер: `{ on, to?, radius?, every?, oncePerMatch?, periodic?, effects }`.
-- `on`: `battleStart`, `turnStart`, `turnEnd`, `damaged`, `dealtDamage`, `crit`, `kill`, `died`, `healedAlly`, `abilityUsed`.
+- `on`: `battleStart`, `turnStart`, `turnEnd`, `damaged`, `dealtDamage`, `crit`, `kill`, `died`, `healedAlly`, `abilityUsed`, `adjacentEnemyTurnStart` (враг рядом с носителем начинает ход; `other` — этот враг, «Оковы судьбы»).
+- `school` — только удары этой школы, для `damaged` и `dealtDamage` («Шипастый нагрудник»).
 - `to`: `self` (по умолчанию), `other` — второй участник события, `nearestEnemy`, `enemiesAround` с `radius`.
 - `every: N` — каждое N-е событие за бой; `oncePerMatch`; `periodic` — отдельно урон со временем и прямые удары.
 - Семантика и порядок срабатывания — `game-rules.md` §11.
@@ -147,7 +148,8 @@ src/content/
 { "stat": "damageDealt", "mul": 0.25, "when": { "targetHpBelowPct": 40 } }
 ```
 
-- `stat`: семь характеристик или боевые величины `damageDealt`, `damageTaken`, `healDone`, `critMult`, `range`, `firstMoveCost`, `startAtb`.
+- `stat`: семь характеристик или боевые величины `damageDealt`, `damageTaken`, `healDone`, `critMult`, `range`, `firstMoveCost`, `startAtb`, `cooldownRecovery`, `apPerTurn`, `pitImmune`, `enemyAtbImmune`, `freeDisengage` (первое перемещение за ход без атак вслед), `pushImmune`, `defensePierce` (доля Брони и Сопротивления цели, которую игнорируют удары; складывается с `armorPierce` способности как `1 − (1−a)(1−b)`), `zoneSize` (зоны способностей: аура, линия, цепь +n, blob 3 → 7).
+- `when.abilityTierAtLeast` — только удары способностей не ниже этого тира («Гримуар бездны»).
 - `add` — плоская часть, `mul` — доля; нужна хотя бы одна.
 - `scope`: `self` (по умолчанию), `adjacentAllies`, `allAllies`, `adjacentEnemies`.
 - `when`: `selfHpAbovePct`, `selfHpBelowPct`, `noAdjacentAllies`, `targetHpBelowPct`, `targetHas` (статус, `debuff`, `buff`, `control`), `targetDistanceAbove`, `targetActedLast`, `targetIsolated`.
@@ -171,7 +173,12 @@ src/content/
 }
 ```
 
-`tier`: `common` \| `rare` \| `legendary`. `roles` фильтрует, кому предмет может выпасть. Цена обычных в бюджете бросается в `config.generation.reserve.item` (`[5, 10]`); пока артефактов нет, эта цена резервируется, см. `game-rules.md` §10.
+Файл `items.json`, 28 артефактов GDD: 8 обычных, 10 редких, 10 легендарных. Запись: `{ id, name, description, tier, roles?, classes?, cost?, modifiers, triggers }`.
+
+- `tier`: `common` \| `rare` \| `legendary`.
+- `roles` и `classes` — кому артефакт подходит; отсутствие списка — всем. Классы нужны, потому что роли мало: «Посох ученика» нужен Магу, но не Охотнику, хотя оба `ranged`. Проверка — `itemFits` в `core/draft/items.ts`, одна и та же для стартового артефакта и наград.
+- `cost` — цена обычного артефакта в бюджете героя (5–10, **[решение]** по силе); у обычного обязателен.
+- `modifiers`, `triggers` — как у пассивки: в бою артефакт — ещё одна черта героя. Здоровье из модификаторов вшивается при сборке боя, как у перков.
 
 ## Перк
 
@@ -255,6 +262,8 @@ src/content/
 14. Каждая сторона ставит столько героев, сколько выбирает: число `A` и `B` в `config.draft.placementOrder` совпадает с `config.draft.order`, а пиков не больше, чем героев в пуле.
 15. Число столбцов арены нечётное (иначе зеркальная симметрия ломает раскладку odd-q), стартовые столбцы лежат на поле.
 16. `draft.maxSameClass × число классов ≥ draft.poolSize`: иначе пул нельзя набрать, не нарушив лимит.
+17. У каждого класса пассивок не меньше, чем `run.unlockChoices`.
+18. Каждому классу подходит хотя бы один артефакт каждого тира: иначе генерации нечего выдать, а награде нечего предложить.
 
 ## Настройки генерации, драфта и забега
 
@@ -305,6 +314,8 @@ src/content/
 | `critsWhileOn` | Каждый удар носителя, пока статус на нём, — крит |
 | `reflectPct` | Первый вражеский удар делится: эта доля уходит атакующему чистым уроном, остальное — носителю; статус спадает |
 | `apOnKill` | Убийство носителем в его ход даёт столько AP |
+| `blocksStatus` | Первый раз, когда на носителя ложится этот статус, он не ложится, а этот статус спадает («Броня стража») |
+| `reviveAtPct` | Как `deathWard`, но оставляет эту долю максимального здоровья («Сердце феникса») |
 | `atbOnEnemyAction` | `{ radius, delta }`: после каждого действия врага, закончившегося в пределах `radius`, носитель получает `delta` ATB |
 
 ## Как добавить способность

@@ -397,7 +397,7 @@ button {
   cursor: help;
 }
 
-.budget-reserve {
+.budget-item {
   background: #5b6275;
 }
 
@@ -745,4 +745,18 @@ button {
 
 .unlock-card {
   border-color: #6b5a2e;
+}
+
+/* --- match rewards --- */
+
+.reward-block {
+  margin: 0 0 10px;
+}
+
+.reward-rare {
+  border-color: #3f6fb0;
+}
+
+.reward-legendary {
+  border-color: #b07a2e;
 }

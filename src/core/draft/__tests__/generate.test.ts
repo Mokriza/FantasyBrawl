@@ -13,6 +13,7 @@ import {
   statValue,
 } from '../generate.js';
 import type { Stats } from '../../types.js';
+import { itemFits } from '../items.js';
 
 let content: ContentRegistry;
 let heroes: HeroTemplate[];
@@ -42,22 +43,34 @@ describe('hero generation on the point budget', () => {
       );
       expect(hero.spend.abilities).toBe(abilities);
       expect(
-        hero.spend.abilities + hero.spend.passive + hero.spend.ultimate + hero.spend.reserved + hero.spend.stats,
+        hero.spend.abilities + hero.spend.passive + hero.spend.ultimate + hero.spend.item + hero.spend.stats,
       ).toBe(g.budget);
       const points = STAT_NAMES.reduce((sum, s) => sum + hero.statPoints[s], 0);
       expect(points).toBe(hero.spend.stats);
     }
   });
 
-  it('deals no passive yet: its price, the tier IV price and an artifact price are held back', () => {
+  it('deals no passive yet: its price and the tier IV price are held back', () => {
     const g = content.config.generation;
     for (const hero of heroes) {
       expect(hero.passive).toBeNull();
       expect(hero.spend.passive).toBe(g.reserve.passive);
       expect(hero.spend.ultimate).toBe(g.reserve.ultimate);
-      const item = hero.spend.reserved;
-      expect(item).toBeGreaterThanOrEqual(g.reserve.item[0]);
-      expect(item).toBeLessThanOrEqual(g.reserve.item[1]);
+    }
+  });
+
+  it('deals a common artifact that fits the class and pays its price', () => {
+    for (const hero of heroes) {
+      const item = hero.item === null ? undefined : content.items[hero.item];
+      expect(item?.tier).toBe('common');
+      if (item === undefined) continue;
+      expect(itemFits(item, hero.classId, content)).toBe(true);
+      expect(hero.spend.item).toBe(item.cost);
+    }
+    // Every common artifact turns up somewhere in the sweep.
+    const dealt = new Set(heroes.map((h) => h.item));
+    for (const item of Object.values(content.items).filter((i) => i.tier === 'common')) {
+      expect(dealt.has(item.id)).toBe(true);
     }
   });
 

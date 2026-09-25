@@ -82,7 +82,7 @@ function computeHighlights(ui: UiState, battle: BattleState): Highlights {
     ...EMPTY_HIGHLIGHTS,
     reach,
     targets,
-    zone: resolveShape(battle, hero, ui.hoverHex, ability).map((hit) => hit.hex),
+    zone: resolveShape(battle, hero, ui.hoverHex, ability, ui.content).map((hit) => hit.hex),
     zoneIsFriendly: ability.targets === 'ally' || ability.targets === 'self',
   };
 }

@@ -53,7 +53,7 @@ export function applyMove(ctx: EffectContext, effect: MoveEffect): EffectOutcome
   // Landing in a pit hurts, exactly as walking into one does.
   if (isPit(state.arena, destination)) {
     const pit = ctx.content.config.arena.pit.damage;
-    const hurt = damageHero(state, ctx.casterId, 0, pit);
+    const hurt = damageHero(state, ctx.casterId, 0, pit, ctx.content);
     state = hurt.state;
     events.push({
       type: 'damaged',

@@ -44,6 +44,7 @@ export function toBattleHero(entry: TeamHero, content: ContentRegistry): BattleH
     passive: entry.passive ?? null,
     race: entry.race ?? null,
     summon: null,
+    item: entry.item ?? null,
     perks: (entry.perks ?? []).map((p) =>
       p.abilityId === undefined ? { perkId: p.perkId } : { perkId: p.perkId, abilityId: abilityId(p.abilityId) },
     ),

@@ -7,6 +7,8 @@
 
 import { loadContent, loadTeams } from '../src/content/load.js';
 import type { Ability, ContentRegistry } from '../src/core/content.js';
+import { itemsFor } from '../src/core/draft/items.js';
+import { classId as toClassId } from '../src/core/types.js';
 
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -76,6 +78,14 @@ function validate(content: ContentRegistry): void {
     } else {
       // Rule 11: the generator deals the starting actives from tiers I–III.
       fail(`${classId}: способностей тиров I–III ${cheapest.length}, генератору нужно ${starting}`);
+    }
+
+    // Rule 18: a hero of every class can be dealt a common artifact and win a reward of
+    // every tier, or generation and the upgrade phase would come up empty for it.
+    for (const tier of ['common', 'rare', 'legendary'] as const) {
+      if (itemsFor(toClassId(classId), tier, content).length === 0) {
+        fail(`${classId}: ни один артефакт тира ${tier} не подходит классу`);
+      }
     }
 
     // Rule 17: there must be something to choose between matches.

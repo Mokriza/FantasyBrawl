@@ -23,6 +23,7 @@ import type { BattleHero, BattleState, HeroId } from '../types.js';
 import { abilityId } from '../types.js';
 import { enemiesOf } from './query.js';
 import { STUN, hasStatus } from './statuses.js';
+import { freeDisengage } from './modifiers.js';
 
 /** A hero holds a zone of control only if it can actually punish the hex next to it. */
 export function holdsZoneOfControl(hero: BattleHero, content: ContentRegistry): boolean {
@@ -50,6 +51,7 @@ export function reactorsForStep(
   content: ContentRegistry,
 ): BattleHero[] {
   if (!content.config.battle.opportunityAttack.enabled) return [];
+  if (freeDisengage(state, mover, content)) return [];
   const oncePerTurn = content.config.battle.opportunityAttack.oncePerEnemyPerTurn;
 
   return enemiesOf(state, mover).filter((enemy) => {

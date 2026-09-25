@@ -43,7 +43,7 @@ export function previewAbility(
   const targets: TargetPreview[] = [];
   const hexes: Hex[] = [];
 
-  for (const resolved of resolveTargets(state, caster, aimedAt, ability)) {
+  for (const resolved of resolveTargets(state, caster, aimedAt, ability, content)) {
     hexes.push(resolved.hero.hex);
     let min = 0;
     let max = 0;
@@ -54,7 +54,7 @@ export function previewAbility(
         const scaled = { ...effect, k: effect.k * resolved.mul };
         const hits = effect.hits ?? 1;
         // FIXED_ROLLS keeps the generator untouched; the spread is folded in after.
-        const flat = computeDamage(state, caster, resolved.hero, scaled, content, state.rng, FIXED_ROLLS);
+        const flat = computeDamage(state, caster, resolved.hero, scaled, content, state.rng, FIXED_ROLLS, ability.tier);
         min += Math.round(flat.final * spreadLow) * hits;
         max += Math.round(flat.final * spreadHigh * critMultiplier(state, caster, resolved.hero, content)) * hits;
       } else if (effect.type === 'heal') {

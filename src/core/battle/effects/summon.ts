@@ -49,6 +49,7 @@ export function applySummon(ctx: EffectContext, effect: SummonEffect): EffectOut
     passive: null,
     race: null,
     perks: [],
+    item: null,
     counters: {},
     summon: { ownerId: owner.id, turnsLeft: effect.turns, attack: effect.attack },
   };

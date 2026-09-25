@@ -43,7 +43,7 @@ import { basicAttackOf, reactorsForStep } from './opportunity.js';
 import { pitImmune, stepCost } from './pathing.js';
 import { heroById, livingHeroes, updateHero } from './query.js';
 import { DOT, ROOT, STUN, hasStatus, statusesOf, tickHeroAtTurnEnd } from './statuses.js';
-import { MOVES_THIS_TURN, firstMoveDiscount, modifierSum, startAtbBonus } from './modifiers.js';
+import { MOVES_THIS_TURN, firstMoveDiscount, freeDisengage, modifierSum, startAtbBonus } from './modifiers.js';
 import { reactTo } from './triggers.js';
 import type { Reaction, Rerun } from './triggers.js';
 import { resolveTargets } from './targeting.js';
@@ -115,7 +115,7 @@ function runAbilityEffects(
     run.events.push(...reacted.events);
   }
 
-  const targets = resolveTargets(run.state, heroById(run.state, caster.id), aimedAt, ability);
+  const targets = resolveTargets(run.state, heroById(run.state, caster.id), aimedAt, ability, content);
 
   // A caster-relocating ability has no hero target of its own; run it once on nobody.
   const movesCaster = ability.effects.some((e) => e.type === 'move');
@@ -465,7 +465,7 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
   }
   for (const { sourceId, amount } of bySource.values()) {
     if (!isAlive(heroById(next, id))) break;
-    const hurt = damageHero(next, id, 0, amount);
+    const hurt = damageHero(next, id, 0, amount, content);
     next = hurt.state;
     rest.push({
       type: 'damaged',
@@ -485,7 +485,7 @@ function startTurn(state: BattleState, content: ContentRegistry, mode: RollMode)
     return sum + Math.round(heroById(next, id).base.maxHp * pct);
   }, 0);
   if (drain > 0 && isAlive(heroById(next, id))) {
-    const hurt = damageHero(next, id, 0, drain);
+    const hurt = damageHero(next, id, 0, drain, content);
     next = hurt.state;
     rest.push({
       type: 'damaged',
@@ -658,6 +658,8 @@ function applyMoveAction(
   const run: EffectRun = { state, events: [] };
   // "Ловкость" and the like: the first move of a turn is cheaper by this much.
   let discount = firstMoveDiscount(state, hero, content);
+  // "Плащ теней": decided before the move counter goes up, for the whole walk.
+  const free = freeDisengage(state, hero, content);
   run.state = updateHero(run.state, hero.id, (h) => ({
     ...h,
     counters: { ...h.counters, [MOVES_THIS_TURN]: (h.counters[MOVES_THIS_TURN] ?? 0) + 1 },
@@ -669,7 +671,7 @@ function applyMoveAction(
     const from = mover.hex;
 
     // The reaction fires while the mover is still on the hex it is leaving.
-    const reactors = reactorsForStep(run.state, mover, from, to, mover.reactedThisTurn, content);
+    const reactors = free ? [] : reactorsForStep(run.state, mover, from, to, mover.reactedThisTurn, content);
     if (reactors.length > 0) {
       const reacted = resolveOpportunityAttacks(
         run.state,
@@ -702,7 +704,7 @@ function applyMoveAction(
 
     if (isPit(run.state.arena, to) && !pitImmune(run.state, heroById(run.state, hero.id), content)) {
       const pit = content.config.arena.pit.damage;
-      const hurt = damageHero(run.state, hero.id, 0, pit);
+      const hurt = damageHero(run.state, hero.id, 0, pit, content);
       run.state = hurt.state;
       const fell: BattleEvent[] = [
         {

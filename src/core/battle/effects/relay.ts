@@ -20,7 +20,7 @@ export function applyRelay(ctx: EffectContext, effect: RelayEffect): EffectOutco
   const caster = heroById(ctx.state, ctx.casterId);
   const raw = ctx.lastDamage * effect.pct;
   const mitigated = mitigate(ctx.state, caster, target, raw, effect.school, 0, ctx.content);
-  const applied = damageHero(ctx.state, ctx.targetId, mitigated.absorbed, mitigated.final);
+  const applied = damageHero(ctx.state, ctx.targetId, mitigated.absorbed, mitigated.final, ctx.content);
 
   const events: BattleEvent[] = [
     ...applied.events.filter((e) => e.type !== 'died'),

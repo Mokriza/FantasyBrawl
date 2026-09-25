@@ -34,9 +34,11 @@ import { IllegalActionError, assertNever } from '../types.js';
 import { statsAtLevel } from './levels.js';
 import { applyPlace, createPlacement } from './placement.js';
 import {
+  applyChooseReward,
   applyChooseUnlock,
   applyChoosePerk,
   awaitingPerk,
+  awaitingReward,
   awaitingUnlock,
   commitUpgrade,
   createUpgrade,
@@ -189,11 +191,18 @@ export function applyRunAction(
       return { ...run, upgrade };
     }
 
+    case 'chooseReward': {
+      requirePhase(run, 'upgrade', 'chooseReward');
+      const upgrade = applyChooseReward(requireUpgrade(run), run.draft, action.side, action.itemId, action.heroId, content);
+      return { ...run, upgrade };
+    }
+
     case 'endUpgrade': {
       requirePhase(run, 'upgrade', 'endUpgrade');
       const upgrade = requireUpgrade(run);
       for (const side of ['A', 'B'] as const) {
-        const waiting = [...awaitingPerk(upgrade, run.draft, side), ...awaitingUnlock(upgrade, run.draft, side)];
+        const waiting: string[] = [...awaitingPerk(upgrade, run.draft, side), ...awaitingUnlock(upgrade, run.draft, side)];
+        if (awaitingReward(upgrade, side)) waiting.push('the reward');
         if (waiting.length > 0) {
           throw new IllegalActionError(`endUpgrade: ${waiting.join(', ')} of side ${side} still to choose`);
         }
@@ -238,9 +247,10 @@ function toTeamHero(
     class: hero.classId,
     side,
     at: [col, row],
-    stats: withPerkHealth(statsAtLevel(hero, heroLevel(run), content), hero.perks, content),
+    stats: withPerkHealth(statsAtLevel(hero, heroLevel(run), content), hero.perks, content, hero.item),
     abilities: [...hero.abilities],
     ...(hero.passive === null ? {} : { passive: hero.passive }),
+    ...(hero.item === null ? {} : { item: hero.item }),
     race: hero.race,
     perks: hero.perks.map((p) => ({ ...p })),
   };
@@ -277,9 +287,10 @@ export function previewHero(
       class: hero.classId,
       side,
       at: [0, 0],
-      stats: withPerkHealth(statsAtLevel(hero, level, content), hero.perks, content),
+      stats: withPerkHealth(statsAtLevel(hero, level, content), hero.perks, content, hero.item),
       abilities: [...hero.abilities],
       ...(hero.passive === null ? {} : { passive: hero.passive }),
+      ...(hero.item === null ? {} : { item: hero.item }),
       race: hero.race,
       perks: hero.perks.map((p) => ({ ...p })),
     },

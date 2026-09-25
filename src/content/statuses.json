@@ -286,5 +286,25 @@
       "radius": 2,
       "delta": 25
     }
+  },
+  {
+    "id": "stunGuard",
+    "name": "Стойкость стража",
+    "description": "Первое оглушение не срабатывает.",
+    "kind": "special",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "blocksStatus": "stun"
+  },
+  {
+    "id": "phoenixHeart",
+    "name": "Сердце феникса",
+    "description": "Смертельный удар оставит 40% здоровья, один раз.",
+    "kind": "special",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "reviveAtPct": 0.4
   }
 ]

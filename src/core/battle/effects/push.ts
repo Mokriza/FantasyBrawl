@@ -14,6 +14,7 @@ import { isAlive } from '../../types.js';
 import type { BattleEvent } from '../../types.js';
 import type { PushEffect } from '../../content.js';
 import { heroById, updateHero } from '../query.js';
+import { modifierSum } from '../modifiers.js';
 import { isPassable, pitImmune } from '../pathing.js';
 import type { EffectContext, EffectOutcome } from './context.js';
 import { NO_CHANGE, damageHero } from './context.js';
@@ -23,6 +24,8 @@ export function applyPush(ctx: EffectContext, effect: PushEffect): EffectOutcome
 
   const target = heroById(ctx.state, ctx.targetId);
   if (!isAlive(target)) return NO_CHANGE(ctx);
+  // "Пояс силача": the bearer does not budge.
+  if (modifierSum(ctx.state, target, 'pushImmune', ctx.content).add > 0) return NO_CHANGE(ctx);
 
   const origin: Hex = effect.from === 'caster' ? heroById(ctx.state, ctx.casterId).hex : ctx.aimedAt;
   const step = nearestDirection(origin, target.hex);
@@ -43,7 +46,7 @@ export function applyPush(ctx: EffectContext, effect: PushEffect): EffectOutcome
 
   if (isPit(state.arena, current) && !pitImmune(state, heroById(state, ctx.targetId), ctx.content)) {
     const pit = ctx.content.config.arena.pit.damage;
-    const hurt = damageHero(state, ctx.targetId, 0, pit);
+    const hurt = damageHero(state, ctx.targetId, 0, pit, ctx.content);
     state = hurt.state;
     events.push({
       type: 'damaged',

@@ -56,7 +56,7 @@ function aimPoints(
     if (!abilityLegality(state, hero, ability, candidate, content).ok) continue;
     // A relocation has no hero target, so it is judged by the landing hex instead.
     const relocates = ability.effects.some((e) => e.type === 'move');
-    if (!relocates && resolveTargets(state, hero, candidate, ability).length === 0) {
+    if (!relocates && resolveTargets(state, hero, candidate, ability, content).length === 0) {
       if (onGround) ground.push(candidate);
       continue;
     }

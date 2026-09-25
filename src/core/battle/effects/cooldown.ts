@@ -23,6 +23,7 @@ export function applyCooldown(ctx: EffectContext, effect: CooldownEffect): Effec
     if (turns < 0) cooldowns[ability] = turns;
     else if (effect.mode === 'double') cooldowns[ability] = turns * 2;
     else if (effect.mode === 'resetThis' && ability !== ctx.ability?.id) cooldowns[ability] = turns;
+    else if (effect.mode === 'reduce' && turns > 1) cooldowns[ability] = turns - 1;
   }
   return {
     state: updateHero(ctx.state, id, (h) => ({ ...h, cooldowns })),

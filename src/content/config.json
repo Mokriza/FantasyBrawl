@@ -49,7 +49,6 @@
     "abilityBudget": [8, 22],
     "maxAbilityAttempts": 50,
     "reserve": {
-      "item": [5, 10],
       "passive": 8,
       "ultimate": 16
     },
@@ -83,6 +82,8 @@
     "winsToFinish": 3,
     "maxMatches": 5,
     "perkChoices": 3,
+    "rewardChoices": 3,
+    "rewardTiers": ["rare", "rare", "legendary", "legendary"],
     "unlockChoices": 2,
     "passiveAfterMatch": 1,
     "ultimateAfterMatch": 2

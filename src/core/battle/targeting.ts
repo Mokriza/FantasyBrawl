@@ -7,12 +7,13 @@
  */
 
 import { blocksLos, blocksMovement, inBounds } from '../arena/terrain.js';
-import type { Ability, Shape } from '../content.js';
+import type { Ability, ContentRegistry, Shape } from '../content.js';
 import { DIRECTIONS, distance, hexAdd, hexEquals, hexKey, hexLine, hexesInRange, nearestDirection, neighbors } from '../hex.js';
 import type { Hex } from '../hex.js';
 import type { BattleHero, BattleState } from '../types.js';
 import { assertNever } from '../types.js';
 import { alliesOf, enemiesOf, heroAt, livingHeroes } from './query.js';
+import { zoneGrowth } from './modifiers.js';
 
 /**
  * Only the hexes between the two ends are checked. Heroes never block sight
@@ -192,13 +193,35 @@ export interface ResolvedTarget {
 }
 
 /** Every hex an ability covers, deduplicated and clipped to the board. */
+/**
+ * "Мантия архимага": a zone n steps bigger. Aura radius, line length and chain jumps
+ * grow by n; a 3-hex blob becomes the full 7. A single target, a 7-hex blob and the
+ * cone stay as they are.
+ */
+function grown(shape: Shape, n: number): Shape {
+  if (n <= 0) return shape;
+  switch (shape.type) {
+    case 'aura':
+      return { ...shape, radius: shape.radius + n };
+    case 'line':
+      return { ...shape, length: shape.length + n };
+    case 'chain':
+      return { ...shape, jumps: shape.jumps + n };
+    case 'blob':
+      return shape.size === 3 ? { ...shape, size: 7 } : shape;
+    default:
+      return shape;
+  }
+}
+
 export function resolveShape(
   state: BattleState,
   caster: BattleHero,
   target: Hex,
   ability: Ability,
+  content: ContentRegistry,
 ): ShapeHit[] {
-  const hits = shapeHexes(state, caster, target, ability.shape, filterOf(ability));
+  const hits = shapeHexes(state, caster, target, grown(ability.shape, zoneGrowth(state, caster, content)), filterOf(ability));
   const seen = new Set<string>();
   const out: ShapeHit[] = [];
   for (const hit of hits) {
@@ -216,10 +239,11 @@ export function resolveTargets(
   caster: BattleHero,
   target: Hex,
   ability: Ability,
+  content: ContentRegistry,
 ): ResolvedTarget[] {
   const filter = filterOf(ability);
   const out: ResolvedTarget[] = [];
-  for (const hit of resolveShape(state, caster, target, ability)) {
+  for (const hit of resolveShape(state, caster, target, ability, content)) {
     const hero = heroAt(state, hit.hex);
     if (hero === null) continue;
     // A self-targeted ability always reaches the caster, whatever the filter says. Any

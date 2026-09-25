@@ -11,7 +11,8 @@ import { IllegalActionError, heroId } from '../../types.js';
 import { statsAtLevel } from '../levels.js';
 import { legalPlacementHexes, placementTurn, startZone } from '../placement.js';
 import { applyRunAction, createRun, createRunBattle, heroLevel, runWinner } from '../run.js';
-import { awaitingPerk, awaitingUnlock, perkTargets } from '../upgrade.js';
+import { awaitingPerk, awaitingReward, awaitingUnlock, perkTargets } from '../upgrade.js';
+import { itemFits } from '../../draft/items.js';
 
 let content: ContentRegistry;
 beforeAll(() => {
@@ -57,6 +58,15 @@ function placeAll(run: RunState): RunState {
 function upgradeAll(run: RunState): RunState {
   let current = run;
   for (const side of ['A', 'B'] as const) {
+    if (current.upgrade !== null && awaitingReward(current.upgrade, side)) {
+      const itemId = current.upgrade.rewards[side][0];
+      const item = itemId === undefined ? undefined : content.items[itemId];
+      const hero = current.draft.picks[side]
+        .map((id) => current.draft.pool.find((h) => h.id === id))
+        .find((h) => h !== undefined && item !== undefined && itemFits(item, h.classId, content));
+      if (itemId === undefined || hero === undefined) throw new Error('no reward to take');
+      current = applyRunAction(current, { type: 'chooseReward', side, itemId, heroId: hero.id }, content);
+    }
     for (const id of current.upgrade === null ? [] : awaitingUnlock(current.upgrade, current.draft, side)) {
       const optionId = current.upgrade?.unlocks[id]?.options[0];
       if (optionId === undefined) throw new Error('no unlock');
@@ -79,6 +89,13 @@ function upgradeAll(run: RunState): RunState {
     }
   }
   return applyRunAction(current, { type: 'endUpgrade' }, content);
+}
+
+/** An artifact that must exist in the content. */
+function itemById(id: string) {
+  const item = content.items[id];
+  if (item === undefined) throw new Error(`no artifact ${id}`);
+  return item;
 }
 
 function win(run: RunState, winner: Side): RunState {
@@ -409,7 +426,7 @@ describe('the upgrade phase', () => {
     );
     // Every perk taken, but the unlocks still open: not yet.
     for (const side of ['A', 'B'] as const) {
-      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {} }, run.draft, side)) {
+      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {}, rewards: { A: [], B: [] }, rewarded: {} }, run.draft, side)) {
         const perkId = run.upgrade?.offers[hero]?.find((p) => content.perks[p]?.abilityMod === undefined);
         if (perkId !== undefined) run = applyRunAction(run, { type: 'choosePerk', side, heroId: hero, perkId }, content);
       }
@@ -459,6 +476,62 @@ describe('the upgrade phase', () => {
     run = placeAll(upgradeAll(applyRunAction(win(run, 'B'), { type: 'nextMatch' }, content)));
     run = applyRunAction(win(run, 'B'), { type: 'nextMatch' }, content);
     expect(run.upgrade?.unlocks).toEqual({});
+  });
+
+  it('offers each side three rare artifacts after the first match, each fitting a different hero', () => {
+    const run = afterFirstMatch(4);
+    for (const side of ['A', 'B'] as const) {
+      const offered = run.upgrade?.rewards[side] ?? [];
+      expect(offered).toHaveLength(content.config.run.rewardChoices);
+      const team = run.draft.picks[side].map((id) => run.draft.pool.find((h) => h.id === id));
+      // A matching of options to distinct heroes exists: try every assignment.
+      const fits = offered.map((itemId) =>
+        team.map((h) => h !== undefined && itemFits(itemById(itemId), h.classId, content)),
+      );
+      const perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+      expect(perms.some((p) => p.every((hero, option) => fits[option]?.[hero] === true))).toBe(true);
+      for (const itemId of offered) expect(content.items[itemId]?.tier).toBe('rare');
+    }
+  });
+
+  it('a reward goes to a hero it fits, replaces the old artifact, may be re-chosen, and reaches the battle', () => {
+    let run = afterFirstMatch(6);
+    const [first, second] = run.upgrade?.rewards.A ?? [];
+    if (first === undefined || second === undefined) throw new Error('setup');
+    const fitting = (itemId: string) =>
+      run.draft.picks.A.find((id) => {
+        const hero = run.draft.pool.find((h) => h.id === id);
+        return hero !== undefined && itemFits(itemById(itemId), hero.classId, content);
+      });
+    const misfit = run.draft.picks.A.find((id) => {
+      const hero = run.draft.pool.find((h) => h.id === id);
+      return hero !== undefined && !itemFits(itemById(first), hero.classId, content);
+    });
+    if (misfit !== undefined) {
+      expect(() => applyRunAction(run, { type: 'chooseReward', side: 'A', itemId: first, heroId: misfit }, content)).toThrow(
+        IllegalActionError,
+      );
+    }
+    const heroA = fitting(first);
+    const heroB = fitting(second);
+    if (heroA === undefined || heroB === undefined) throw new Error('setup');
+    run = applyRunAction(run, { type: 'chooseReward', side: 'A', itemId: first, heroId: heroA }, content);
+    run = applyRunAction(run, { type: 'chooseReward', side: 'A', itemId: second, heroId: heroB }, content);
+    expect(run.upgrade?.rewarded.A).toEqual({ itemId: second, heroId: heroB });
+
+    run = placeAll(upgradeAll(run));
+    expect(run.draft.pool.find((h) => h.id === heroB)?.item).toBe(second);
+    expect(createRunBattle(run, content).heroes[heroB]?.item).toBe(second);
+  });
+
+  it('after the third match the rewards are legendary and never repeat within the run', () => {
+    let run = placeAll(upgradeAll(afterFirstMatch(6)));
+    run = placeAll(upgradeAll(applyRunAction(win(run, 'B'), { type: 'nextMatch' }, content)));
+    run = applyRunAction(win(run, 'B'), { type: 'nextMatch' }, content);
+    const a = run.upgrade?.rewards.A ?? [];
+    const b = run.upgrade?.rewards.B ?? [];
+    for (const itemId of [...a, ...b]) expect(content.items[itemId]?.tier).toBe('legendary');
+    expect(a.filter((id) => b.includes(id))).toEqual([]);
   });
 
   it('never offers a hero a perk it already has', () => {

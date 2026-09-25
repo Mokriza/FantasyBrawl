@@ -122,6 +122,7 @@ interface BattleHero {
   readonly race: string | null;                          // id расы; её бонусы к характеристикам уже в base
   readonly perks: readonly PerkPick[];                   // взятые перки: { perkId, abilityId? }
   readonly counters: Readonly<Record<string, number>>;   // счётчики на бой: «каждый N-й», «раз за бой», перемещения за ход
+  readonly item: string | null;                          // артефакт в единственном слоте
   readonly summon: SummonInfo | null;                    // призыв: владелец, ходов осталось, удар; у героя null
 }
 
@@ -161,6 +162,7 @@ type RunAction =
   | { type: 'matchEnded'; outcome: BattleOutcome; rounds: number }
   | { type: 'nextMatch' }                                 // в фазу усиления
   | { type: 'chooseUnlock'; side: Side; heroId: HeroId; optionId: string } // пассивка или тир IV из предложенных
+  | { type: 'chooseReward'; side: Side; itemId: string; heroId: HeroId }   // артефакт-награда одному герою
   | { type: 'choosePerk'; side: Side; heroId: HeroId; perkId: string; abilityId?: string }
   | { type: 'endUpgrade' };                               // к расстановке
 

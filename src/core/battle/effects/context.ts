@@ -57,6 +57,7 @@ export function damageHero(
   targetId: HeroId,
   absorbedByBarrier: number,
   amount: number,
+  content: ContentRegistry,
 ): { state: BattleState; events: BattleEvent[]; killed: boolean; dealt: number } {
   const events: BattleEvent[] = [];
   let next = state;
@@ -103,6 +104,16 @@ export function damageHero(
     }));
     events.push({ type: 'statusExpired', targetId, status: DEATH_WARD });
     dealtAmount = before - 1;
+  }
+  // "Сердце феникса": the blow that would kill leaves a share of health instead, once.
+  if (after === 0 && before > 0) {
+    const phoenix = heroById(next, targetId).statuses.find((s) => (content.statuses[s.status]?.reviveAtPct ?? 0) > 0);
+    const pct = phoenix === undefined ? 0 : (content.statuses[phoenix.status]?.reviveAtPct ?? 0);
+    if (phoenix !== undefined && pct > 0) {
+      after = Math.max(1, Math.round(heroById(next, targetId).base.maxHp * pct));
+      next = updateHero(next, targetId, (hero) => ({ ...hero, statuses: hero.statuses.filter((s) => s !== phoenix) }));
+      events.push({ type: 'statusExpired', targetId, status: phoenix.status });
+    }
   }
   next = updateHero(next, targetId, (hero) => ({
     ...hero,

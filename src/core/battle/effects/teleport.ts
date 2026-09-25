@@ -23,7 +23,7 @@ export function applyTeleport(ctx: EffectContext, _effect: TeleportEffect): Effe
   let state = updateHero(ctx.state, ctx.casterId, (hero) => ({ ...hero, hex: to }));
   const events: BattleEvent[] = [{ type: 'teleported', heroId: ctx.casterId, from: caster.hex, to }];
   if (isPit(state.arena, to)) {
-    const hurt = damageHero(state, ctx.casterId, 0, ctx.content.config.arena.pit.damage);
+    const hurt = damageHero(state, ctx.casterId, 0, ctx.content.config.arena.pit.damage, ctx.content);
     state = hurt.state;
     events.push(
       {

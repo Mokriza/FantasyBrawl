@@ -168,7 +168,7 @@ button.primary:hover {
   display: block;
   /* The top bar, the turn queue and the ability bar take about this much height;
      the board gives way to them rather than pushing them off screen. */
-  max-height: calc(100vh - 320px);
+  max-height: calc(100vh - 345px);
   min-height: 360px;
   border: 1px solid var(--border);
   border-radius: 8px;

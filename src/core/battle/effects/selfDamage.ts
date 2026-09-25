@@ -13,7 +13,7 @@ export function applySelfDamage(ctx: EffectContext, effect: SelfDamageEffect): E
     caster.base.maxHp * (effect.pctMaxHp ?? 0) + caster.hp * (effect.pctCurrentHp ?? 0),
   );
   if (amount <= 0) return NO_CHANGE(ctx);
-  const hurt = damageHero(ctx.state, ctx.casterId, 0, amount);
+  const hurt = damageHero(ctx.state, ctx.casterId, 0, amount, ctx.content);
   return {
     state: hurt.state,
     events: [

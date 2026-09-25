@@ -42,7 +42,7 @@ export function threatAgainst(
 
         for (const effect of ability.effects) {
           if (effect.type !== 'damage') continue;
-          const hit = computeDamage(state, attacker, victim, effect, content, state.rng, FIXED_ROLLS);
+          const hit = computeDamage(state, attacker, victim, effect, content, state.rng, FIXED_ROLLS, ability.tier);
           worst = Math.max(worst, hit.final * (effect.hits ?? 1));
         }
       }

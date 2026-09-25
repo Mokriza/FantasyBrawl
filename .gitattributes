@@ -1,0 +1,7 @@
+# Source files use LF everywhere, whatever core.autocrlf says on a machine: Prettier
+# expects LF, and a CRLF checkout breaks tools that match text across lines.
+* text=auto eol=lf
+*.png binary
+*.svg text eol=lf
+*.md text eol=lf
+docs/GAMEDESIGN.md binary

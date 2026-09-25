@@ -69,7 +69,7 @@ function raceTrait(race: Race): Trait {
   return trait;
 }
 
-/** Every trait a hero carries, in a fixed order: passive, race, then perks as taken. */
+/** Every trait a hero carries, in a fixed order: passive, race, perks as taken, artifact. */
 export function traitsOf(hero: BattleHero, content: ContentRegistry): Trait[] {
   const out: Trait[] = [];
   if (hero.passive !== null) {
@@ -83,6 +83,10 @@ export function traitsOf(hero: BattleHero, content: ContentRegistry): Trait[] {
   for (const pick of hero.perks) {
     const perk = content.perks[pick.perkId];
     if (perk !== undefined) out.push(perk);
+  }
+  if (hero.item !== null) {
+    const item = content.items[hero.item];
+    if (item !== undefined) out.push(item);
   }
   return out;
 }
@@ -124,8 +128,14 @@ function conditionHolds(
   target: BattleHero | null,
   when: ModifierCondition | undefined,
   content: ContentRegistry,
+  abilityTier: number | null,
 ): boolean {
   if (when === undefined) return true;
+
+  // "Гримуар бездны": only hits of abilities of at least this tier.
+  if (when.abilityTierAtLeast !== undefined && !(abilityTier !== null && abilityTier >= when.abilityTierAtLeast)) {
+    return false;
+  }
 
   if (when.selfHpAbovePct !== undefined && !(hpPct(owner) > when.selfHpAbovePct)) return false;
   if (when.selfHpBelowPct !== undefined && !(hpPct(owner) < when.selfHpBelowPct)) return false;
@@ -203,6 +213,8 @@ export function modifierSum(
   stat: ModifierStat,
   content: ContentRegistry,
   target: BattleHero | null = null,
+  /** The tier of the ability behind a hit, for conditions that care about it. */
+  abilityTier: number | null = null,
 ): ModifierSum {
   let add = 0;
   let mul = 0;
@@ -216,7 +228,7 @@ export function modifierSum(
       if (relevant === undefined) continue;
       for (const modifier of relevant) {
         if (!inScope(owner, hero, modifier)) continue;
-        if (!conditionHolds(state, owner, hero, target, modifier.when, content)) continue;
+        if (!conditionHolds(state, owner, hero, target, modifier.when, content, abilityTier)) continue;
         const count = perCount(state, owner, modifier, content);
         add += (modifier.add ?? 0) * count;
         mul += (modifier.mul ?? 0) * count;
@@ -289,8 +301,9 @@ export function dealtFactor(
   attacker: BattleHero,
   target: BattleHero,
   content: ContentRegistry,
+  abilityTier: number | null = null,
 ): number {
-  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target).mul);
+  return Math.max(0, 1 + modifierSum(state, attacker, 'damageDealt', content, target, abilityTier).mul);
 }
 
 /** 1 + every damageTaken share of the target against this attacker. */
@@ -340,6 +353,17 @@ export function firstMoveDiscount(state: BattleState, hero: BattleHero, content:
 
 export function startAtbBonus(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
   return Math.max(0, modifierSum(state, hero, 'startAtb', content).add);
+}
+
+/** "Плащ теней": the first move of this turn draws no attack of opportunity. */
+export function freeDisengage(state: BattleState, hero: BattleHero, content: ContentRegistry): boolean {
+  if ((hero.counters[MOVES_THIS_TURN] ?? 0) > 0) return false;
+  return modifierSum(state, hero, 'freeDisengage', content).add > 0;
+}
+
+/** How much the hero's ability zones grow ("Мантия архимага"). */
+export function zoneGrowth(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
+  return Math.max(0, Math.floor(modifierSum(state, hero, 'zoneSize', content).add));
 }
 
 /** Counter key for the first-move discount; reset at every turn end. */

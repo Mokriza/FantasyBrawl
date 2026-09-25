@@ -66,6 +66,8 @@ export const healEffectSchema = z
     full: z.boolean().optional(),
     /** A fixed amount, no spread: "heals 15 on a kill". */
     flat: z.number().int().positive().optional(),
+    /** A share of the target's maximum health, in percent, no spread ("Талисман жизни"). */
+    pctMaxHp: z.number().positive().optional(),
     ...withCondition,
   })
   .strict();
@@ -88,6 +90,11 @@ export const barrierEffectSchema = z
     scale: z.enum(['attack', 'magic']),
     k: z.number(),
     turns: z.number().int().positive(),
+    /**
+     * Inside a trigger: the barrier is this share of the event instead of k × stat
+     * ("Кубок целителя": a fifth of the healing).
+     */
+    pctOfEvent: z.number().positive().optional(),
     ...withCondition,
   })
   .strict();
@@ -188,7 +195,8 @@ export const apEffectSchema = z
 export const cooldownEffectSchema = z
   .object({
     type: z.literal('cooldown'),
-    mode: z.enum(['reset', 'double', 'resetThis']),
+    /** reduce: every running cooldown one turn shorter ("Кольцо концентрации"). */
+    mode: z.enum(['reset', 'double', 'resetThis', 'reduce']),
     who: z.enum(['target', 'caster']).optional(),
     ...withCondition,
   })
@@ -322,6 +330,14 @@ export const modifierStatSchema = z.enum([
   'pitImmune',
   // Anything above zero: enemies cannot move the hero on the bar ("Дисциплина").
   'enemyAtbImmune',
+  // Anything above zero: the first move of a turn draws no attack of opportunity.
+  'freeDisengage',
+  // Anything above zero: push atoms do not move the hero ("Пояс силача").
+  'pushImmune',
+  // Share of the target's Armor and Resist the hero's hits ignore ("Клинок пустоты").
+  'defensePierce',
+  // Ability zones grow by this much: aura, line, chain +n, a 3-hex blob becomes 7.
+  'zoneSize',
 ]);
 
 export type ModifierStat = z.infer<typeof modifierStatSchema>;
@@ -343,6 +359,8 @@ export const modifierConditionSchema = z
     targetIsolated: z.literal(true).optional(),
     /** The target is the hero that took the turn right before this one. */
     targetActedLast: z.literal(true).optional(),
+    /** Only on hits of abilities of at least this tier ("Гримуар бездны"). */
+    abilityTierAtLeast: z.number().int().min(1).max(4).optional(),
   })
   .strict();
 
@@ -376,6 +394,8 @@ export const triggerEventSchema = z.enum([
   'died',
   'healedAlly',
   'abilityUsed',
+  // An enemy standing next to the carrier starts its turn; "other" is that enemy.
+  'adjacentEnemyTurnStart',
 ]);
 
 export type TriggerEvent = z.infer<typeof triggerEventSchema>;
@@ -395,6 +415,8 @@ export const triggerSchema = z
     oncePerMatch: z.literal(true).optional(),
     /** For damaged and dealtDamage: true only damage over time, false only direct hits. */
     periodic: z.boolean().optional(),
+    /** For damaged and dealtDamage: only hits of this school ("Шипастый нагрудник"). */
+    school: z.enum(['physical', 'magic', 'pure']).optional(),
     effects: z.array(effectSchema).min(1),
   })
   .strict();
@@ -479,6 +501,29 @@ export const perkSchema = z
   .strict();
 
 export type Perk = z.infer<typeof perkSchema>;
+
+/**
+ * An artifact: one slot per hero. Commons come with a generated hero and cost budget
+ * points; rares and legendaries are match rewards. Works in battle like a passive.
+ */
+export const itemSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_]+$/),
+    name: z.string().min(1),
+    description: z.string().min(1),
+    tier: z.enum(['common', 'rare', 'legendary']),
+    /** Fits only these roles; everyone when absent. */
+    roles: z.array(z.enum(['tank', 'melee', 'ranged', 'support'])).optional(),
+    /** Fits only these classes; everyone when absent. */
+    classes: z.array(z.string()).optional(),
+    /** Budget points a common artifact takes from a generated hero. */
+    cost: z.number().int().positive().optional(),
+    modifiers: z.array(modifierSchema).default([]),
+    triggers: z.array(triggerSchema).default([]),
+  })
+  .strict();
+
+export type Item = z.infer<typeof itemSchema>;
 
 /** The seven stats a race changes at generation; anything else acts in battle. */
 export const BASE_STAT_NAMES: readonly string[] = baseStatNames;
@@ -593,6 +638,10 @@ export const statusDefSchema = z
     critsWhileOn: z.literal(true).optional(),
     /** The first enemy hit is split: this share goes back to the attacker, then it is gone. */
     reflectPct: z.number().min(0).max(1).optional(),
+    /** The first time this status would land on the carrier, it does not, and this one goes. */
+    blocksStatus: z.string().optional(),
+    /** Like deathWard, but the carrier is left with this share of maximum health. */
+    reviveAtPct: z.number().positive().max(1).optional(),
     /** A kill by the carrier on its own turn gives it this many AP back. */
     apOnKill: z.number().int().positive().optional(),
     /** After each action an enemy ends within radius, the carrier gains delta ATB. */
@@ -699,7 +748,7 @@ export const configSchema = z
          */
         /** Held back at the draft for the passive and the tier IV ability chosen later. */
         reserve: z
-          .object({ item: intRange, passive: z.number().int().nonnegative(), ultimate: z.number().int().nonnegative() })
+          .object({ passive: z.number().int().nonnegative(), ultimate: z.number().int().nonnegative() })
           .strict(),
         /** Actives a hero is drafted with; tier IV never among them. */
         startingAbilities: z.number().int().positive(),
@@ -744,6 +793,10 @@ export const configSchema = z
         perkChoices: z.number().int().positive(),
         /** Options offered for an unlock: a passive, then a tier IV ability. */
         unlockChoices: z.number().int().positive(),
+        /** Artifacts offered as the reward of an upgrade phase. */
+        rewardChoices: z.number().int().positive(),
+        /** The tier offered after each finished match: [after 1, after 2, ...]. */
+        rewardTiers: z.array(z.enum(['rare', 'legendary'])),
         /** After which finished match the passive is chosen, and after which tier IV. */
         passiveAfterMatch: z.number().int().positive(),
         ultimateAfterMatch: z.number().int().positive(),
@@ -829,6 +882,7 @@ export const teamHeroSchema = z
     perks: z
       .array(z.object({ perkId: z.string(), abilityId: z.string().optional() }).strict())
       .optional(),
+    item: z.string().optional(),
   })
   .strict();
 
@@ -848,6 +902,7 @@ export interface ContentRegistry {
   readonly passives: Readonly<Record<string, Passive>>;
   readonly races: Readonly<Record<string, Race>>;
   readonly perks: Readonly<Record<string, Perk>>;
+  readonly items: Readonly<Record<string, Item>>;
 }
 
 export interface RawContent {
@@ -860,6 +915,7 @@ export interface RawContent {
   readonly passives: readonly unknown[];
   readonly races: unknown;
   readonly perks: unknown;
+  readonly items: unknown;
 }
 
 export class ContentError extends Error {
@@ -961,7 +1017,18 @@ export function buildRegistry(raw: RawContent): ContentRegistry {
     for (const trigger of perk.triggers) checkEffectRefs(trigger.effects, `Perk ${perk.id}`, statuses);
   }
 
-  return { config, classes, abilities, statuses, names, passives, races, perks };
+  const items = byId(z.array(itemSchema).parse(raw.items), 'item');
+  for (const item of Object.values(items)) {
+    for (const cls of item.classes ?? []) {
+      if (classes[cls] === undefined) throw new ContentError(`Item ${item.id} names unknown class ${cls}`);
+    }
+    if (item.tier === 'common' && item.cost === undefined) {
+      throw new ContentError(`Item ${item.id}: a common artifact needs a cost`);
+    }
+    for (const trigger of item.triggers) checkEffectRefs(trigger.effects, `Item ${item.id}`, statuses);
+  }
+
+  return { config, classes, abilities, statuses, names, passives, races, perks, items };
 }
 
 export function getAbility(content: ContentRegistry, id: AbilityId): Ability {

@@ -9,7 +9,8 @@
  *
  * Besides the perk, a hero unlocks what it was drafted without: a passive after the
  * first match and a tier IV ability after the second, each chosen from a few of its
- * class's options (config.run). The artifact and the swap of a hero are stage 4.
+ * class's options (config.run). One side also takes one artifact as the match reward
+ * and hands it to one hero; it replaces what that hero carried.
  */
 
 import type { Ability, ContentRegistry, Perk } from '../content.js';
@@ -24,9 +25,11 @@ import type {
   PerkPick,
   Side,
   Stats,
+  RewardPick,
   UnlockOffer,
   UpgradeState,
 } from '../types.js';
+import { itemFits } from '../draft/items.js';
 import { IllegalActionError, abilityId as toAbilityId } from '../types.js';
 
 function heroOf(draft: DraftState, id: HeroId): HeroTemplate {
@@ -132,7 +135,81 @@ export function createUpgrade(
       unlocks[hero.id] = { kind: due.kind, options: shuffled.slice(0, content.config.run.unlockChoices) };
     }
   }
-  return [{ offers, chosen: {}, unlocks, unlocked: {} }, state];
+  // Rewards are drawn last, so they did not shift the perks or the unlocks either.
+  const [rewards, afterRewards] = createRewards(draft, content, state, finishedMatch);
+  return [{ offers, chosen: {}, unlocks, unlocked: {}, rewards, rewarded: {} }, afterRewards];
+}
+
+/**
+ * The artifacts each side is offered: config.run.rewardChoices of the tier this match
+ * gives, each one fitting a different hero of the team where possible, so the choice
+ * is between heroes and not only between items. A legendary never repeats in a run:
+ * not one any hero carries, and not one already offered to the other side.
+ */
+function createRewards(
+  draft: DraftState,
+  content: ContentRegistry,
+  rng: RngState,
+  finishedMatch: number,
+): [Record<Side, string[]>, RngState] {
+  const out: Record<Side, string[]> = { A: [], B: [] };
+  const tier = content.config.run.rewardTiers[finishedMatch - 1];
+  if (tier === undefined) return [out, rng];
+
+  const carried = new Set(draft.pool.map((h) => h.item));
+  const taken = new Set<string>();
+  let state = rng;
+  for (const side of ['A', 'B'] as const) {
+    const [team, afterTeam] = shuffle(state, draft.picks[side].map((id) => heroOf(draft, id)));
+    state = afterTeam;
+    const open = Object.values(content.items)
+      .filter((item) => item.tier === tier)
+      .filter((item) => item.tier !== 'legendary' || (!carried.has(item.id) && !taken.has(item.id)))
+      .sort((a, b) => (a.id < b.id ? -1 : 1));
+
+    const [shuffled, afterItems] = shuffle(state, open);
+    state = afterItems;
+    const picked: string[] = [];
+    // One per hero first, in a random hero order; then anything that fits anyone.
+    for (const hero of team) {
+      if (picked.length >= content.config.run.rewardChoices) break;
+      const item = shuffled.find((i) => !picked.includes(i.id) && itemFits(i, hero.classId, content));
+      if (item !== undefined) picked.push(item.id);
+    }
+    for (const item of shuffled) {
+      if (picked.length >= content.config.run.rewardChoices) break;
+      if (picked.includes(item.id)) continue;
+      if (team.some((hero) => itemFits(item, hero.classId, content))) picked.push(item.id);
+    }
+    for (const id of picked) if (content.items[id]?.tier === 'legendary') taken.add(id);
+    out[side] = picked;
+  }
+  return [out, state];
+}
+
+export function applyChooseReward(
+  upgrade: UpgradeState,
+  draft: DraftState,
+  side: Side,
+  itemId: string,
+  heroIdValue: HeroId,
+  content: ContentRegistry,
+): UpgradeState {
+  const what = `chooseReward ${itemId} for ${heroIdValue}`;
+  if (!upgrade.rewards[side].includes(itemId)) throw new IllegalActionError(`${what}: not among the rewards`);
+  if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
+  const item = content.items[itemId];
+  if (item === undefined || !itemFits(item, heroOf(draft, heroIdValue).classId, content)) {
+    throw new IllegalActionError(`${what}: the artifact does not fit this hero`);
+  }
+  // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
+  const pick: RewardPick = { itemId, heroId: heroIdValue };
+  return { ...upgrade, rewarded: { ...upgrade.rewarded, [side]: pick } };
+}
+
+/** Whether a side still has its reward to take. */
+export function awaitingReward(upgrade: UpgradeState, side: Side): boolean {
+  return upgrade.rewards[side].length > 0 && upgrade.rewarded[side] === undefined;
 }
 
 export function applyChooseUnlock(
@@ -220,6 +297,11 @@ export function commitUpgrade(upgrade: UpgradeState, draft: DraftState): DraftSt
             ? { ...next, passive: option }
             : { ...next, abilities: [...next.abilities, toAbilityId(option)] };
       }
+      // The reward replaces whatever artifact the hero carried.
+      for (const side of ['A', 'B'] as const) {
+        const reward = upgrade.rewarded[side];
+        if (reward?.heroId === hero.id) next = { ...next, item: reward.itemId };
+      }
       return next;
     }),
   };
@@ -229,11 +311,21 @@ export function commitUpgrade(upgrade: UpgradeState, draft: DraftState): DraftSt
  * Health from perks, added when the hero is built: a maximum that changed mid-battle
  * would leave the current health meaningless. See game-rules.md section 11.
  */
-export function withPerkHealth(stats: Stats, perks: readonly PerkPick[], content: ContentRegistry): Stats {
+export function withPerkHealth(
+  stats: Stats,
+  perks: readonly PerkPick[],
+  content: ContentRegistry,
+  /** The hero's artifact, whose Health goes in the same way ("Жилет охотника"). */
+  item: string | null = null,
+): Stats {
   let add = 0;
   let mul = 0;
-  for (const pick of perks) {
-    for (const modifier of content.perks[pick.perkId]?.modifiers ?? []) {
+  const sources = [
+    ...perks.map((pick) => content.perks[pick.perkId]?.modifiers ?? []),
+    item === null ? [] : (content.items[item]?.modifiers ?? []),
+  ];
+  for (const modifiers of sources) {
+    for (const modifier of modifiers) {
       if (modifier.stat !== 'maxHp' || modifier.when !== undefined || (modifier.scope ?? 'self') !== 'self') continue;
       add += modifier.add ?? 0;
       mul += modifier.mul ?? 0;

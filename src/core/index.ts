@@ -78,6 +78,7 @@ export {
   generatePool,
   statValue,
 } from './draft/generate.js';
+export { itemFits, itemsFor } from './draft/items.js';
 export {
   applyPick,
   availableHeroes,
@@ -126,7 +127,9 @@ export {
   applyChoosePerk,
   applyChooseUnlock,
   awaitingPerk,
+  awaitingReward,
   awaitingUnlock,
+  applyChooseReward,
   commitUpgrade,
   createUpgrade,
   perkTargets,

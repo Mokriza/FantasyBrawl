@@ -13,7 +13,7 @@
 import type { ContentRegistry, Trigger, TriggerEvent } from '../content.js';
 import { distance } from '../hex.js';
 import type { Hex } from '../hex.js';
-import type { AbilityId, BattleEvent, BattleHero, BattleState, HeroId } from '../types.js';
+import type { AbilityId, BattleEvent, BattleHero, BattleState, DamageSchool, HeroId } from '../types.js';
 import { isAlive } from '../types.js';
 import { applyEffect } from './effects/index.js';
 import type { EffectContext } from './effects/index.js';
@@ -81,6 +81,8 @@ interface Party {
   readonly crit: boolean;
   readonly killed: boolean;
   readonly periodic: boolean;
+  /** The school of the hit, for damaged and dealtDamage. */
+  readonly school: DamageSchool | null;
   readonly ability: { readonly id: AbilityId; readonly target: Hex } | null;
 }
 
@@ -94,7 +96,7 @@ function partiesOf(
   event: BattleEvent,
   lastHitter: Map<string, HeroId>,
 ): Party[] {
-  const base = { amount: 0, crit: false, killed: false, periodic: false, ability: null };
+  const base = { amount: 0, crit: false, killed: false, periodic: false, school: null, ability: null };
   switch (event.type) {
     case 'battleStarted':
       return Object.values(state.heroes).map((hero) => ({
@@ -103,8 +105,18 @@ function partiesOf(
         on: 'battleStart' as const,
         otherId: null,
       }));
-    case 'turnStarted':
-      return [{ ...base, ownerId: event.heroId, on: 'turnStart', otherId: null }];
+    case 'turnStarted': {
+      const out: Party[] = [{ ...base, ownerId: event.heroId, on: 'turnStart', otherId: null }];
+      // Enemies standing next to whoever starts: "Оковы судьбы" and its kind.
+      const starter = state.heroes[event.heroId];
+      if (starter !== undefined) {
+        for (const enemy of livingHeroes(state)) {
+          if (enemy.side === starter.side || distance(enemy.hex, starter.hex) !== 1) continue;
+          out.push({ ...base, ownerId: enemy.id, on: 'adjacentEnemyTurnStart', otherId: starter.id });
+        }
+      }
+      return out;
+    }
     case 'turnEnded':
       return [{ ...base, ownerId: event.heroId, on: 'turnEnd', otherId: null }];
     case 'damaged': {
@@ -119,6 +131,7 @@ function partiesOf(
           amount: event.amount,
           crit: event.crit,
           periodic,
+          school: event.school,
         },
       ];
       if (event.sourceId !== null) {
@@ -130,6 +143,7 @@ function partiesOf(
           amount: event.amount,
           crit: event.crit,
           periodic,
+          school: event.school,
         });
         if (event.crit) {
           out.push({
@@ -308,6 +322,7 @@ export function reactTo(
 
       for (const { trait, index, trigger } of listening(owner, party.on, content)) {
         if (trigger.periodic !== undefined && trigger.periodic !== party.periodic) continue;
+        if (trigger.school !== undefined && trigger.school !== party.school) continue;
 
         const firing: Firing = {
           owner,

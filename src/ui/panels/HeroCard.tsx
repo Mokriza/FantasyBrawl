@@ -78,6 +78,12 @@ export function HeroCard({ hero, battle, content, shown, compact }: Props): JSX.
         </p>
       )}
 
+      {hero.item === null || compact === true ? null : (
+        <p className="hero-passive" title={content.items[hero.item]?.description}>
+          <span className="dim">{UI.item}:</span> {content.items[hero.item]?.name ?? hero.item}
+        </p>
+      )}
+
       {hero.perks.length === 0 || compact === true ? null : (
         <p className="hero-perks">
           <span className="dim">{UI.upgrade.perks}:</span>{' '}

@@ -34,6 +34,7 @@ export interface ScenarioHero {
   readonly passive?: string;
   readonly race?: string;
   readonly perks?: readonly { perkId: string; abilityId?: string }[];
+  readonly item?: string;
 }
 
 export interface Scenario {
@@ -97,6 +98,7 @@ export function scenario(content: ContentRegistry): Scenario {
         passive: spec.passive ?? null,
         race: spec.race ?? null,
         summon: null,
+        item: spec.item ?? null,
         perks: (spec.perks ?? []).map((p) =>
           p.abilityId === undefined ? { perkId: p.perkId } : { perkId: p.perkId, abilityId: abilityId(p.abilityId) },
         ),

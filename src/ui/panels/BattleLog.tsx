@@ -38,8 +38,13 @@ export function eventText(
       return `Барьер поглощает ${event.amount}, осталось ${event.left}`;
     case 'healed':
       return `${heroName(state, event.targetId)} вылечен на ${event.amount}`;
-    case 'passiveTriggered':
-      return `${heroName(state, event.heroId)}: пассивка «${content.passives[event.passiveId]?.name ?? event.passiveId}»`;
+    case 'passiveTriggered': {
+      // Passives, perks and artifacts all fire through the same trigger machinery.
+      const item = content.items[event.passiveId];
+      if (item !== undefined) return `${heroName(state, event.heroId)}: артефакт «${item.name}»`;
+      const name = content.passives[event.passiveId]?.name ?? content.perks[event.passiveId]?.name ?? event.passiveId;
+      return `${heroName(state, event.heroId)}: пассивка «${name}»`;
+    }
     case 'statusApplied': {
       const name = getStatus(content, event.status).name;
       // Past the round limit it lasts the whole battle; a count would only confuse.

@@ -149,6 +149,8 @@ export interface BattleHero {
   readonly race: string | null;
   /** Perks taken between matches, oldest first. */
   readonly perks: readonly PerkPick[];
+  /** The artifact in the hero's one slot, or null. */
+  readonly item: string | null;
   /** Set for a summoned unit: it takes no turns and does not count for victory. */
   readonly summon: SummonInfo | null;
   /**
@@ -287,7 +289,7 @@ export type BattleEvent =
   | { readonly type: 'passiveTriggered'; readonly heroId: HeroId; readonly passiveId: string }
   | { readonly type: 'teleported'; readonly heroId: HeroId; readonly from: Hex; readonly to: Hex }
   | { readonly type: 'apChanged'; readonly heroId: HeroId; readonly delta: number }
-  | { readonly type: 'cooldownsChanged'; readonly heroId: HeroId; readonly mode: 'reset' | 'double' | 'resetThis' }
+  | { readonly type: 'cooldownsChanged'; readonly heroId: HeroId; readonly mode: 'reset' | 'double' | 'resetThis' | 'reduce' }
   | { readonly type: 'terrainChanged'; readonly hex: Hex; readonly terrain: TerrainId | null }
   | { readonly type: 'summoned'; readonly heroId: HeroId; readonly ownerId: HeroId; readonly hex: Hex }
   | {
@@ -310,12 +312,12 @@ export interface ApplyResult {
 /** How a generated hero spent the point budget. Shown on the draft card. */
 export interface BudgetSpend {
   readonly abilities: number;
+  /** The starting common artifact's price. */
+  readonly item: number;
   /** Held back for the passive chosen after the first match. */
   readonly passive: number;
   /** Held back for the tier IV ability chosen after the second match. */
   readonly ultimate: number;
-  /** Held for the starting artifact, which arrives in stage 4. */
-  readonly reserved: number;
   readonly stats: number;
 }
 
@@ -334,6 +336,8 @@ export interface HeroTemplate {
   /** Null until it is chosen in the upgrade phase after the first match. */
   readonly passive: string | null;
   readonly race: string;
+  /** The one artifact slot: a common one from generation, later a reward. */
+  readonly item: string | null;
   /** Chosen in the upgrade phases, one per level after the first. */
   readonly perks: readonly PerkPick[];
   readonly spend: BudgetSpend;
@@ -372,6 +376,12 @@ export interface UnlockOffer {
   readonly options: readonly string[];
 }
 
+/** The artifact a side took as its reward, and who carries it. */
+export interface RewardPick {
+  readonly itemId: string;
+  readonly heroId: HeroId;
+}
+
 export interface UpgradeState {
   /** heroId to the perk ids offered to that hero. */
   readonly offers: Readonly<Record<string, readonly string[]>>;
@@ -381,6 +391,10 @@ export interface UpgradeState {
   readonly unlocks: Readonly<Record<string, UnlockOffer>>;
   /** heroId to the option taken, once made. */
   readonly unlocked: Readonly<Record<string, string>>;
+  /** The artifacts each side may take one of; empty when there is no reward this time. */
+  readonly rewards: Readonly<Record<Side, readonly string[]>>;
+  /** The reward each side took, once taken. */
+  readonly rewarded: Readonly<Partial<Record<Side, RewardPick>>>;
 }
 
 /**
@@ -418,6 +432,7 @@ export type RunAction =
   | { readonly type: 'matchEnded'; readonly outcome: BattleOutcome; readonly rounds: number }
   | { readonly type: 'nextMatch' }
   | { readonly type: 'chooseUnlock'; readonly side: Side; readonly heroId: HeroId; readonly optionId: string }
+  | { readonly type: 'chooseReward'; readonly side: Side; readonly itemId: string; readonly heroId: HeroId }
   | {
       readonly type: 'choosePerk';
       readonly side: Side;

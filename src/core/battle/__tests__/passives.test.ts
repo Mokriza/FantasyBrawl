@@ -395,5 +395,7 @@ describe('perks in battle', () => {
     const base = { maxHp: 100, attack: 10, magic: 10, armor: 0, resist: 0, speed: 10, critChance: 0.05 };
     expect(withPerkHealth(base, [{ perkId: 'perk_vigor' }], content).maxHp).toBe(120);
     expect(withPerkHealth(base, [{ perkId: 'perk_swiftness' }], content)).toBe(base);
+    // An artifact's Health goes in the same way: "Жилет охотника", +18.
+    expect(withPerkHealth(base, [], content, 'item_hunter_vest').maxHp).toBe(118);
   });
 });

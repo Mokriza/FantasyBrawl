@@ -76,5 +76,5 @@ export { choosePick, scoreHero } from './draft.js';
 export type { DraftDecision } from './draft.js';
 export { choosePlacement } from './placement.js';
 export type { PlacementDecision } from './placement.js';
-export { choosePerk, chooseUnlock } from './perks.js';
+export { choosePerk, chooseReward, chooseUnlock } from './perks.js';
 export type { PerkDecision } from './perks.js';

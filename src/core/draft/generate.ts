@@ -16,6 +16,7 @@ import { nextFloat, nextInt, pick, shuffle } from '../rng.js';
 import type { RngState } from '../rng.js';
 import type { HeroTemplate, StatName, Stats } from '../types.js';
 import { abilityId, classId, heroId } from '../types.js';
+import { itemsFor } from './items.js';
 
 
 export const STAT_NAMES: readonly StatName[] = [
@@ -231,9 +232,12 @@ export function generateHero(
   );
   const abilitySpend = abilities.reduce((sum, a) => sum + abilityCost(a, config), 0);
 
-  // The artifact price is rolled as it will be once artifacts exist, so the numbers
-  // do not shift when stage 4 lands. The passive and tier IV shares are fixed.
-  const [itemCost, afterItem] = nextInt(afterAbilities, g.reserve.item[0], g.reserve.item[1]);
+  // A common artifact that fits the class, paid for out of the budget like an ability.
+  // The passive and tier IV shares are held back at a fixed price.
+  const commons = itemsFor(classId(heroClass.id), 'common', content);
+  if (commons.length === 0) throw new ContentError(`No common artifact fits ${heroClass.id}`);
+  const [item, afterItem] = pick(afterAbilities, commons);
+  const itemCost = item.cost ?? 0;
   const held = g.reserve.passive + g.reserve.ultimate;
   const statBudget = Math.max(0, g.budget - abilitySpend - held - itemCost);
 
@@ -249,12 +253,13 @@ export function generateHero(
       abilities: abilities.map((a) => abilityId(a.id)),
       passive: null,
       race: race.id,
+      item: item.id,
       perks: [],
       spend: {
         abilities: abilitySpend,
         passive: g.reserve.passive,
         ultimate: g.reserve.ultimate,
-        reserved: itemCost,
+        item: itemCost,
         stats: statBudget,
       },
     },

@@ -16,7 +16,7 @@ import { NO_CHANGE } from './context.js';
 export function applyTerrain(ctx: EffectContext, effect: TerrainEffect): EffectOutcome {
   if (ctx.ability === null) return NO_CHANGE(ctx);
   const caster = heroById(ctx.state, ctx.casterId);
-  const hexes = resolveShape(ctx.state, caster, ctx.aimedAt, ctx.ability)
+  const hexes = resolveShape(ctx.state, caster, ctx.aimedAt, ctx.ability, ctx.content)
     .map((hit) => hit.hex)
     .filter(
       (h) =>

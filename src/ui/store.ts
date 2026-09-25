@@ -37,6 +37,7 @@ import {
   applyAction,
   applyRunAction,
   awaitingPerk,
+  awaitingReward,
   awaitingUnlock,
   createBattle,
   createRng,
@@ -50,7 +51,7 @@ import {
   startBattle,
 } from '../core/index.js';
 import { loadContent, loadTeams } from '../content/load.js';
-import { chooseActions, choosePerk, choosePick, choosePlacement, chooseUnlock, profileByName } from '../ai/index.js';
+import { chooseActions, choosePerk, choosePick, choosePlacement, chooseReward, chooseUnlock, profileByName } from '../ai/index.js';
 import type { AiProfile } from '../ai/index.js';
 import { EVENT_MS, FLOAT_MS, OPPONENT_PICK_MS } from './config.js';
 import { advanceDisplay, pruneFloats } from './playback.js';
@@ -394,6 +395,15 @@ function stepRun(): void {
       // The opponent takes its unlocks and perks at once; the player's wait on the screen.
       const opponent = state.playerSide === 'A' ? 'B' : 'A';
       let current = run;
+      if (current.upgrade !== null && awaitingReward(current.upgrade, opponent)) {
+        const decision = chooseReward(current, opponent, content, aiRng);
+        aiRng = decision.rng;
+        current = applyRunAction(
+          current,
+          { type: 'chooseReward', side: opponent, itemId: decision.itemId, heroId: decision.heroId },
+          content,
+        );
+      }
       for (const heroId of current.upgrade === null ? [] : awaitingUnlock(current.upgrade, current.draft, opponent)) {
         const decision = chooseUnlock(current, heroId, content, aiRng);
         aiRng = decision.rng;
@@ -520,12 +530,19 @@ export function takeUnlock(heroId: HeroId, optionId: string): void {
   applyRun({ type: 'chooseUnlock', side: state.playerSide, heroId, optionId });
 }
 
-/** On to placement, once every hero has its perk and its unlock. */
+/** The player's reward: an artifact and the hero who will carry it. */
+export function takeReward(itemId: string, heroId: HeroId): void {
+  if (state.run?.phase !== 'upgrade') return;
+  applyRun({ type: 'chooseReward', side: state.playerSide, itemId, heroId });
+}
+
+/** On to placement, once every hero has its perk and its unlock, and the reward is taken. */
 export function endUpgrade(): void {
   const run = state.run;
   if (run?.phase !== 'upgrade' || run.upgrade === null) return;
   if (awaitingPerk(run.upgrade, run.draft, state.playerSide).length > 0) return;
   if (awaitingUnlock(run.upgrade, run.draft, state.playerSide).length > 0) return;
+  if (awaitingReward(run.upgrade, state.playerSide)) return;
   applyRun({ type: 'endUpgrade' });
 }
 

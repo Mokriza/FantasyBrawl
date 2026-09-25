@@ -41,7 +41,7 @@ function BudgetBar({ hero, content }: { hero: HeroTemplate; content: ContentRegi
     { key: 'passive', value: hero.spend.passive, label: UI.draft.budgetPassive },
     { key: 'ultimate', value: hero.spend.ultimate, label: UI.draft.budgetUltimate },
     { key: 'stats', value: hero.spend.stats, label: UI.draft.budgetStats },
-    { key: 'reserve', value: hero.spend.reserved, label: UI.draft.budgetReserve },
+    { key: 'item', value: hero.spend.item, label: UI.draft.budgetItem },
   ];
   return (
     <div
@@ -178,6 +178,15 @@ export function DraftCard({
             <span className="dim">{UI.passive}:</span> {passive.name}
           </strong>
           {compact === true ? null : <p className="draft-ability-text">{passive.description}</p>}
+        </div>
+      )}
+
+      {hero.item === null ? null : (
+        <div className="draft-passive" title={content.items[hero.item]?.description}>
+          <strong>
+            <span className="dim">{UI.item}:</span> {content.items[hero.item]?.name ?? hero.item}
+          </strong>
+          {compact === true ? null : <p className="draft-ability-text">{content.items[hero.item]?.description}</p>}
         </div>
       )}
 
