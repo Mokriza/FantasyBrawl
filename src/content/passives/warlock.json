@@ -1,0 +1,61 @@
+[
+  {
+    "class": "warlock",
+    "modifiers": [
+      {
+        "stat": "magic",
+        "add": 2,
+        "per": "debuffOnField"
+      }
+    ],
+    "triggers": [],
+    "id": "warlock_passive_feeding_pain",
+    "name": "Питание боли",
+    "description": "+2 Магии за каждый активный дебафф на поле.",
+    "tier": 2
+  },
+  {
+    "class": "warlock",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "died",
+        "to": "enemiesAround",
+        "radius": 2,
+        "effects": [
+          {
+            "type": "damage",
+            "school": "magic",
+            "scale": "magic",
+            "k": 1.5
+          }
+        ]
+      }
+    ],
+    "id": "warlock_passive_dark_pact",
+    "name": "Тёмный договор",
+    "description": "При смерти наносит 1.5 × Магия всем врагам в 2 гексах.",
+    "tier": 2
+  },
+  {
+    "class": "warlock",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "dealtDamage",
+        "periodic": true,
+        "to": "self",
+        "effects": [
+          {
+            "type": "lifesteal",
+            "pct": 0.15
+          }
+        ]
+      }
+    ],
+    "id": "warlock_passive_vitality",
+    "name": "Живучесть",
+    "description": "Урон со временем от Чернокнижника лечит его на 15% от нанесённого.",
+    "tier": 1
+  }
+]

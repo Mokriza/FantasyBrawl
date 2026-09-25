@@ -1,0 +1,108 @@
+[
+  {
+    "id": "basic_melee_physical",
+    "class": "common",
+    "basic": true,
+    "name": "Ближняя атака",
+    "description": "Наносит {0} физического урона соседнему врагу.",
+    "icon": "/assets/game-icons/lorc/crossed-swords.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 0,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.35
+      }
+    ]
+  },
+  {
+    "id": "basic_melee_holy",
+    "class": "common",
+    "basic": true,
+    "name": "Удар света",
+    "description": "Наносит {0} физического и {1} магического урона соседнему врагу.",
+    "icon": "/assets/game-icons/lorc/crossed-swords.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 0,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.85
+      },
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 0.85
+      }
+    ]
+  },
+  {
+    "id": "basic_ranged_physical",
+    "class": "common",
+    "basic": true,
+    "name": "Дальний выстрел",
+    "description": "Наносит {0} физического урона на расстоянии.",
+    "icon": "/assets/game-icons/lorc/high-shot.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 0,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.7
+      }
+    ]
+  },
+  {
+    "id": "basic_magic_bolt",
+    "class": "common",
+    "basic": true,
+    "name": "Магический выстрел",
+    "description": "Наносит {0} магического урона на расстоянии.",
+    "icon": "/assets/game-icons/lorc/energy-arrow.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 0,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 0.85
+      }
+    ]
+  }
+]

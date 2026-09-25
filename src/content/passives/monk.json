@@ -1,0 +1,45 @@
+[
+  {
+    "class": "monk",
+    "modifiers": [
+      {
+        "stat": "pitImmune",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "monk_passive_barefoot",
+    "name": "Босые ноги",
+    "description": "Яма не стоит лишнего ОД и не наносит урона.",
+    "tier": 2
+  },
+  {
+    "class": "monk",
+    "modifiers": [
+      {
+        "stat": "speed",
+        "add": 3,
+        "per": "adjacentEnemy"
+      }
+    ],
+    "triggers": [],
+    "id": "monk_passive_balance",
+    "name": "Равновесие",
+    "description": "+3 Скорости за каждого соседнего врага.",
+    "tier": 2
+  },
+  {
+    "class": "monk",
+    "modifiers": [
+      {
+        "stat": "enemyAtbImmune",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "monk_passive_discipline",
+    "name": "Дисциплина",
+    "description": "Враги не могут сдвинуть Монаха по шкале инициативы.",
+    "tier": 2
+  }
+]

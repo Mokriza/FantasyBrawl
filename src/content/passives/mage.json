@@ -1,0 +1,60 @@
+[
+  {
+    "class": "mage",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.15,
+        "when": {
+          "targetHas": "debuff"
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "mage_passive_elements",
+    "name": "Сила стихий",
+    "description": "+20% урона по целям под дебаффом.",
+    "tier": 2
+  },
+  {
+    "class": "mage",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "abilityUsed",
+        "every": 4,
+        "effects": [
+          {
+            "type": "echo",
+            "mul": 0.5
+          }
+        ]
+      }
+    ],
+    "id": "mage_passive_echo",
+    "name": "Эхо",
+    "description": "Каждая четвёртая способность за бой срабатывает ещё раз с силой 50%.",
+    "tier": 3
+  },
+  {
+    "class": "mage",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "battleStart",
+        "to": "self",
+        "effects": [
+          {
+            "type": "status",
+            "status": "ward",
+            "turns": 99
+          }
+        ]
+      }
+    ],
+    "id": "mage_passive_arcane_shield",
+    "name": "Арканный щит",
+    "description": "Первый полученный за бой удар поглощается полностью.",
+    "tier": 2
+  }
+]

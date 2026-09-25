@@ -1,0 +1,278 @@
+[
+  {
+    "id": "warlock_corruption",
+    "class": "warlock",
+    "name": "Порча",
+    "description": "{0} урона в начале хода цели в течение 4 ходов, до трёх стаков.",
+    "icon": "/assets/game-icons/lorc/poison-bottle.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "dot",
+        "turns": 4,
+        "value": 10,
+        "stacks": 3
+      }
+    ]
+  },
+  {
+    "id": "warlock_fear",
+    "class": "warlock",
+    "name": "Страх",
+    "description": "Цель отходит на два гекса прочь от Чернокнижника и теряет {1} ОД на следующий ход.",
+    "icon": "/assets/game-icons/lorc/terror.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "push",
+        "distance": 2,
+        "from": "caster"
+      },
+      {
+        "type": "ap",
+        "delta": -1
+      }
+    ]
+  },
+  {
+    "id": "warlock_curse_of_weakness",
+    "class": "warlock",
+    "name": "Проклятие слабости",
+    "description": "Атака и Магия цели ниже на {0} в течение 3 ходов.",
+    "icon": "/assets/game-icons/lorc/despair.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "weaken",
+        "turns": 3,
+        "value": 0.3
+      }
+    ]
+  },
+  {
+    "id": "warlock_shadow_bolt",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Теневая стрела",
+    "description": "Наносит {0} магического урона и лечит Чернокнижника на {1} нанесённого.",
+    "icon": "/assets/game-icons/lorc/shadow-grasp.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 4,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.1
+      },
+      {
+        "type": "lifesteal",
+        "pct": 0.2
+      }
+    ]
+  },
+  {
+    "id": "warlock_drain_life",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Высасывание жизни",
+    "description": "Наносит {0} магического урона и лечит Чернокнижника на {1} нанесённого.",
+    "icon": "/assets/game-icons/lorc/heart-drop.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.5
+      },
+      {
+        "type": "lifesteal",
+        "pct": 0.6
+      }
+    ]
+  },
+  {
+    "id": "warlock_imp",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Призыв беса",
+    "description": "Призывает беса с {0} здоровья на 4 хода. В начале каждого хода Чернокнижника бес бьёт ближайшего врага в 3 гексах на 0.8 × Магия.",
+    "icon": "/assets/game-icons/lorc/imp-laugh.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 5,
+    "range": 2,
+    "targets": "emptyHex",
+    "effects": [
+      {
+        "type": "summon",
+        "unit": "imp",
+        "hp": 40,
+        "turns": 4,
+        "attack": {
+          "k": 0.8,
+          "scale": "magic",
+          "school": "magic",
+          "radius": 3
+        }
+      }
+    ]
+  },
+  {
+    "id": "warlock_plague",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Чума",
+    "description": "Все стаки Порчи с цели переходят на каждого врага в {0} гексах от неё.",
+    "icon": "/assets/game-icons/lorc/biohazard.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 4,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "spread",
+        "status": "dot",
+        "radius": 2
+      }
+    ]
+  },
+  {
+    "id": "warlock_sacrifice",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Жертва",
+    "description": "Чернокнижник теряет {0} текущего здоровья и наносит цели {1} магического урона.",
+    "icon": "/assets/game-icons/lorc/sacrificial-dagger.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "selfDamage",
+        "pctCurrentHp": 0.2
+      },
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 2.5
+      }
+    ]
+  },
+  {
+    "id": "warlock_soul_rend",
+    "class": "warlock",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Разрыв души",
+    "description": "Наносит {0} магического урона. Если цель умерла — кулдаун сбрасывается и Чернокнижник получает +{2} ОД.",
+    "icon": "/assets/game-icons/lorc/ghost.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 4,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.8
+      },
+      {
+        "type": "cooldown",
+        "mode": "resetThis",
+        "if": {
+          "killed": true
+        }
+      },
+      {
+        "type": "ap",
+        "delta": 2,
+        "who": "caster",
+        "if": {
+          "killed": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "warlock_blood_pact",
+    "class": "warlock",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Пакт крови",
+    "description": "4 хода: +{0} к Магии, но в начале каждого хода Чернокнижник теряет 8% максимального здоровья. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/drop.svg",
+    "tier": 4,
+    "ap": 1,
+    "cooldown": "once",
+    "range": 0,
+    "targets": "self",
+    "effects": [
+      {
+        "type": "status",
+        "status": "bloodPact",
+        "turns": 4,
+        "value": 0.6
+      }
+    ]
+  }
+]

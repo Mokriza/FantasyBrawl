@@ -1,0 +1,112 @@
+{
+  "heroes": [
+    {
+      "id": "a_warrior",
+      "name": "Гаррош",
+      "class": "warrior",
+      "side": "A",
+      "at": [1, 3],
+      "stats": {
+        "maxHp": 125,
+        "attack": 19,
+        "magic": 8,
+        "armor": 26,
+        "resist": 12,
+        "speed": 11,
+        "critChance": 0.12
+      },
+      "abilities": ["warrior_cleave", "warrior_charge", "warrior_decapitate"],
+      "passive": "warrior_passive_hardened"
+    },
+    {
+      "id": "a_mage",
+      "name": "Джайна",
+      "class": "mage",
+      "side": "A",
+      "at": [0, 1],
+      "stats": {
+        "maxHp": 88,
+        "attack": 8,
+        "magic": 22,
+        "armor": 4,
+        "resist": 18,
+        "speed": 14,
+        "critChance": 0.15
+      },
+      "abilities": ["mage_frost_bolt", "mage_fireball", "mage_chain_lightning"],
+      "passive": "mage_passive_arcane_shield"
+    },
+    {
+      "id": "a_priest",
+      "name": "Анвина",
+      "class": "priest",
+      "side": "A",
+      "at": [0, 5],
+      "stats": {
+        "maxHp": 105,
+        "attack": 8,
+        "magic": 20,
+        "armor": 6,
+        "resist": 22,
+        "speed": 12,
+        "critChance": 0.08
+      },
+      "abilities": ["priest_minor_heal", "priest_heal", "priest_word_of_pain"],
+      "passive": "priest_passive_mercy"
+    },
+    {
+      "id": "b_paladin",
+      "name": "Утер",
+      "class": "paladin",
+      "side": "B",
+      "at": [7, 3],
+      "stats": {
+        "maxHp": 125,
+        "attack": 18,
+        "magic": 15,
+        "armor": 30,
+        "resist": 16,
+        "speed": 11,
+        "critChance": 0.1
+      },
+      "abilities": ["paladin_hammer_strike", "paladin_shield_of_faith", "paladin_retribution"],
+      "passive": "paladin_passive_bulwark"
+    },
+    {
+      "id": "b_hunter",
+      "name": "Сильвана",
+      "class": "hunter",
+      "side": "B",
+      "at": [8, 1],
+      "stats": {
+        "maxHp": 90,
+        "attack": 22,
+        "magic": 8,
+        "armor": 8,
+        "resist": 8,
+        "speed": 15,
+        "critChance": 0.22
+      },
+      "abilities": ["hunter_aimed_shot", "hunter_crippling_arrow", "hunter_piercing_arrow"],
+      "passive": "hunter_passive_distance"
+    },
+    {
+      "id": "b_warlock",
+      "name": "Гул'дан",
+      "class": "warlock",
+      "side": "B",
+      "at": [8, 5],
+      "stats": {
+        "maxHp": 103,
+        "attack": 8,
+        "magic": 21,
+        "armor": 12,
+        "resist": 14,
+        "speed": 12,
+        "critChance": 0.1
+      },
+      "abilities": ["warlock_corruption", "warlock_curse_of_weakness", "warlock_fear"],
+      "passive": "warlock_passive_vitality"
+    }
+  ]
+}

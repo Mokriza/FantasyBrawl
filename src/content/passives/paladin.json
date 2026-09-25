@@ -1,0 +1,56 @@
+[
+  {
+    "class": "paladin",
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 10,
+        "scope": "adjacentAllies"
+      }
+    ],
+    "triggers": [],
+    "id": "paladin_passive_bulwark",
+    "name": "Оплот",
+    "description": "Соседние союзники получают +10 Брони.",
+    "tier": 2
+  },
+  {
+    "class": "paladin",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "healedAlly",
+        "to": "other",
+        "effects": [
+          {
+            "type": "status",
+            "status": "resistUp",
+            "turns": 2,
+            "value": 5
+          }
+        ]
+      }
+    ],
+    "id": "paladin_passive_righteousness",
+    "name": "Праведность",
+    "description": "Лечение от Паладина даёт цели +5 Сопротивления на 2 хода.",
+    "tier": 1
+  },
+  {
+    "class": "paladin",
+    "modifiers": [
+      {
+        "stat": "damageTaken",
+        "mul": -0.15,
+        "when": {
+          "selfHpAbovePct": 70
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "paladin_passive_patience",
+    "name": "Терпение",
+    "description": "−15% получаемого урона, пока здоровье выше 70%.",
+    "tier": 2
+  }
+]

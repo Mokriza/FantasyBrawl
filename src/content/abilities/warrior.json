@@ -1,0 +1,284 @@
+[
+  {
+    "id": "warrior_cleave",
+    "class": "warrior",
+    "name": "Рассекающий удар",
+    "description": "Наносит {0} физического урона цели и одному соседнему с ней врагу.",
+    "icon": "/assets/game-icons/delapouite/cleaver.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "targetPlusAdjacent",
+      "count": 1,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.4
+      }
+    ]
+  },
+  {
+    "id": "warrior_trip",
+    "class": "warrior",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Подсечка",
+    "description": "Наносит {0} физического урона и снижает Скорость цели на {1} на 2 хода.",
+    "icon": "/assets/game-icons/lorc/foot-trip.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1
+      },
+      {
+        "type": "status",
+        "status": "slow",
+        "turns": 2,
+        "value": 3
+      }
+    ]
+  },
+  {
+    "id": "warrior_charge",
+    "class": "warrior",
+    "name": "Рывок",
+    "description": "Переместиться вплотную к врагу и нанести {1} физического урона.",
+    "icon": "/assets/game-icons/lorc/sprint.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 4,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "move",
+        "to": "adjacentToTarget"
+      },
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.1
+      }
+    ]
+  },
+  {
+    "id": "warrior_stance",
+    "class": "warrior",
+    "name": "Стойка",
+    "description": "Броня и Сопротивление выше на {0} на 2 хода, но двигаться нельзя.",
+    "icon": "/assets/game-icons/lorc/shieldcomb.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 3,
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "fortify",
+        "turns": 2,
+        "value": 0.5
+      },
+      {
+        "type": "status",
+        "status": "root",
+        "turns": 2
+      }
+    ]
+  },
+  {
+    "id": "warrior_whirlwind",
+    "class": "warrior",
+    "name": "Вихрь клинков",
+    "description": "Наносит {0} физического урона всем соседним врагам.",
+    "icon": "/assets/game-icons/lorc/tornado.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "aura",
+      "radius": 1,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "warrior_second_wind",
+    "class": "warrior",
+    "name": "Второе дыхание",
+    "description": "Лечит 30% недостающего здоровья и снимает один дебафф.",
+    "icon": "/assets/game-icons/lorc/heart-bottle.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 5,
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "missingHpPct": 30
+      },
+      {
+        "type": "cleanse",
+        "what": "debuffs",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "id": "warrior_decapitate",
+    "class": "warrior",
+    "name": "Обезглавливание",
+    "description": "Наносит {0} физического урона. Двойной урон по целям ниже 35% здоровья.",
+    "icon": "/assets/game-icons/lorc/decapitation.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 2.2,
+        "bonusVsLowHp": {
+          "belowPct": 35,
+          "mul": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "warrior_stunning_blow",
+    "class": "warrior",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Оглушающий удар",
+    "description": "Наносит {0} физического урона, цель теряет {1} ОД на следующий ход.",
+    "icon": "/assets/game-icons/lorc/punch-blast.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 3,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.1
+      },
+      {
+        "type": "ap",
+        "delta": -1
+      }
+    ]
+  },
+  {
+    "id": "warrior_fracture",
+    "class": "warrior",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Перелом",
+    "description": "Наносит {0} физического урона и снижает Броню и Сопротивление цели на {1} на 3 хода.",
+    "icon": "/assets/game-icons/lorc/broken-bone.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.4
+      },
+      {
+        "type": "status",
+        "status": "vulnerable",
+        "turns": 3,
+        "value": 0.3
+      }
+    ]
+  },
+  {
+    "id": "warrior_unstoppable",
+    "class": "warrior",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Неудержимость",
+    "description": "3 хода: иммунитет к контролю, +1 ОД в начале хода и +{1} к Атаке. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/muscle-up.svg",
+    "tier": 4,
+    "ap": 1,
+    "cooldown": "once",
+    "range": 0,
+    "targets": "self",
+    "effects": [
+      {
+        "type": "status",
+        "status": "unstoppable",
+        "turns": 3,
+        "value": 1
+      },
+      {
+        "type": "status",
+        "status": "empower",
+        "turns": 3,
+        "value": 0.25
+      }
+    ]
+  }
+]

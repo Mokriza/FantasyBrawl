@@ -1,0 +1,144 @@
+{
+  "_comment": "Sprite sheets and the hero figure for each class, as [row, col] layers drawn back to front. Paths to images live here and in the content JSON, never in code. Licences are in ASSETS.md.",
+  "sheets": {
+    "tinyDungeon": {
+      "url": "/assets/kenney-tiny-dungeon/tilemap.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 12,
+      "rows": 11
+    },
+    "rogueChars": {
+      "url": "/assets/kenney-roguelike-characters/characters.png",
+      "tileSize": 16,
+      "margin": 1,
+      "columns": 54,
+      "rows": 12
+    }
+  },
+  "classSprites": {
+    "warrior": {
+      "_note": "Орк с двуручным топором, собран из тела, доспеха и оружия",
+      "sheet": "rogueChars",
+      "layers": [
+        [
+          3,
+          0
+        ],
+        [
+          7,
+          14
+        ],
+        [
+          1,
+          51
+        ]
+      ]
+    },
+    "paladin": {
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          8,
+          1
+        ]
+      ]
+    },
+    "hunter": {
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          9,
+          4
+        ]
+      ]
+    },
+    "mage": {
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          7,
+          0
+        ]
+      ]
+    },
+    "priest": {
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          8,
+          4
+        ]
+      ]
+    },
+    "warlock": {
+      "_note": "Человек в тёмной робе с посохом. Тонировка делает силуэт мрачным: в паке нет капюшона, только причёски",
+      "sheet": "rogueChars",
+      "layers": [
+        [
+          0,
+          0
+        ],
+        [
+          9,
+          14
+        ],
+        [
+          9,
+          19
+        ],
+        [
+          0,
+          47
+        ]
+      ],
+      "tint": "#7d5fb0"
+    },
+    "rogue": {
+      "_note": "Человек в тёмной кожаной куртке с кинжалом",
+      "sheet": "rogueChars",
+      "layers": [
+        [
+          0,
+          0
+        ],
+        [
+          5,
+          15
+        ],
+        [
+          2,
+          19
+        ],
+        [
+          7,
+          44
+        ]
+      ]
+    },
+    "monk": {
+      "_note": "Бритый наголо боец в оранжевой рубахе, без оружия",
+      "sheet": "rogueChars",
+      "layers": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    "imp": {
+      "_note": "Красный рогатый бес из Tiny Dungeon — призыв Чернокнижника",
+      "sheet": "tinyDungeon",
+      "layers": [
+        [
+          9,
+          2
+        ]
+      ]
+    }
+  }
+}

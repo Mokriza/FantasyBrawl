@@ -1,0 +1,63 @@
+[
+  {
+    "class": "warrior",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "damaged",
+        "periodic": false,
+        "to": "self",
+        "effects": [
+          {
+            "type": "status",
+            "status": "hardened",
+            "turns": 99,
+            "value": 2,
+            "stacks": 6
+          }
+        ]
+      }
+    ],
+    "id": "warrior_passive_hardened",
+    "name": "Закалка",
+    "description": "Каждое полученное попадание даёт +2 Брони до конца боя, максимум +12.",
+    "tier": 2
+  },
+  {
+    "class": "warrior",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "dealtDamage",
+        "to": "self",
+        "effects": [
+          {
+            "type": "lifesteal",
+            "pct": 0.1
+          }
+        ]
+      }
+    ],
+    "id": "warrior_passive_bloodthirst",
+    "name": "Кровожадность",
+    "description": "Лечит 10% от всего нанесённого урона.",
+    "tier": 2
+  },
+  {
+    "class": "warrior",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.15,
+        "when": {
+          "targetActedLast": true
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "warrior_passive_onslaught",
+    "name": "Напор",
+    "description": "+15% урона по цели, которая ходила последней.",
+    "tier": 1
+  }
+]

@@ -1,0 +1,253 @@
+[
+  {
+    "id": "priest_minor_heal",
+    "class": "priest",
+    "name": "Малое исцеление",
+    "description": "Лечит союзника на {0}.",
+    "icon": "/assets/game-icons/sbed/health-increase.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 0.9
+      }
+    ]
+  },
+  {
+    "id": "priest_word_of_pain",
+    "class": "priest",
+    "name": "Слово боли",
+    "description": "Наносит {0} магического урона, игнорируя 30% Сопротивления.",
+    "icon": "/assets/game-icons/lorc/tear-tracks.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1,
+        "armorPierce": 0.3
+      }
+    ]
+  },
+  {
+    "id": "priest_blessing",
+    "class": "priest",
+    "name": "Благословение",
+    "description": "Атака и Магия союзника выше на {0} в течение 3 ходов.",
+    "icon": "/assets/game-icons/lorc/rally-the-troops.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "empower",
+        "turns": 3,
+        "value": 0.2
+      }
+    ]
+  },
+  {
+    "id": "priest_heal",
+    "class": "priest",
+    "name": "Исцеление",
+    "description": "Лечит союзника на {0}.",
+    "icon": "/assets/game-icons/delapouite/healing.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 2
+      }
+    ]
+  },
+  {
+    "id": "priest_purify",
+    "class": "priest",
+    "name": "Очищение",
+    "description": "Снимает все дебаффы с союзника.",
+    "icon": "/assets/game-icons/lorc/divert.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "cleanse",
+        "what": "debuffs"
+      }
+    ]
+  },
+  {
+    "id": "priest_circle_of_light",
+    "class": "priest",
+    "name": "Круг света",
+    "description": "Лечит всех союзников в зоне из трёх гексов на {0}.",
+    "icon": "/assets/game-icons/lorc/sunbeams.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "any",
+    "requiresLos": false,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "allies"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "priest_intervention",
+    "class": "priest",
+    "name": "Вмешательство",
+    "description": "Полностью лечит союзника и даёт ему 40 очков шкалы инициативы.",
+    "icon": "/assets/game-icons/lorc/angel-wings.svg",
+    "tier": 4,
+    "ap": 3,
+    "cooldown": "once",
+    "range": 4,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "full": true
+      },
+      {
+        "type": "atb",
+        "delta": 40
+      }
+    ]
+  },
+  {
+    "id": "priest_silence",
+    "class": "priest",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Немота",
+    "description": "Цель 2 хода не может применять способности, только базовую атаку.",
+    "icon": "/assets/game-icons/lorc/silence.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "status",
+        "status": "silence",
+        "turns": 2
+      }
+    ]
+  },
+  {
+    "id": "priest_ward",
+    "class": "priest",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Оберег",
+    "description": "3 хода: следующий смертельный удар по союзнику оставляет ему 1 здоровья.",
+    "icon": "/assets/game-icons/lorc/angel-outfit.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "ally",
+    "effects": [
+      {
+        "type": "status",
+        "status": "deathWard",
+        "turns": 3
+      }
+    ]
+  },
+  {
+    "id": "priest_holy_smite",
+    "class": "priest",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "all"
+    },
+    "name": "Кара небес",
+    "description": "Зона из 3 гексов: врагам {0} магического урона, союзникам лечение на {1}.",
+    "icon": "/assets/game-icons/lorc/sun-radiations.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 4,
+    "targets": "any",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 2,
+        "if": {
+          "targetIsAlly": false
+        }
+      },
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 1,
+        "if": {
+          "targetIsAlly": true
+        }
+      }
+    ]
+  }
+]

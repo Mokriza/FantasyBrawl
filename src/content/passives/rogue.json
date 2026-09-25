@@ -1,0 +1,68 @@
+[
+  {
+    "class": "rogue",
+    "modifiers": [
+      {
+        "stat": "critMult",
+        "add": -0.1
+      },
+      {
+        "stat": "critChance",
+        "add": 0.1
+      }
+    ],
+    "triggers": [],
+    "id": "rogue_passive_precision",
+    "name": "Смертельная точность",
+    "description": "Крит бьёт на +60% вместо +75%, но шанс крита выше на 10%.",
+    "tier": 2
+  },
+  {
+    "class": "rogue",
+    "modifiers": [
+      {
+        "stat": "firstMoveCost",
+        "add": -1
+      }
+    ],
+    "triggers": [],
+    "id": "rogue_passive_agility",
+    "name": "Ловкость",
+    "description": "Первое перемещение за ход стоит на 1 ОД меньше.",
+    "tier": 2
+  },
+  {
+    "class": "rogue",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.25,
+        "when": {
+          "targetHpBelowPct": 40
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "rogue_passive_finisher",
+    "name": "Добивание",
+    "description": "+25% урона по целям ниже 40% здоровья.",
+    "tier": 3
+  },
+  {
+    "class": "rogue",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.25,
+        "when": {
+          "targetIsolated": true
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "rogue_passive_lone_prey",
+    "name": "Охота на одиночек",
+    "description": "+25% урона по цели, рядом с которой нет её союзников.",
+    "tier": 3
+  }
+]

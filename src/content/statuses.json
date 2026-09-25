@@ -1,0 +1,290 @@
+[
+  {
+    "id": "stun",
+    "name": "Оглушение",
+    "description": "Ход пропускается целиком.",
+    "kind": "debuff",
+    "hardControl": true,
+    "maxStacks": 1,
+    "valueKind": "none"
+  },
+  {
+    "id": "root",
+    "name": "Обездвиживание",
+    "description": "Нельзя перемещаться, способности работают.",
+    "kind": "debuff",
+    "hardControl": true,
+    "maxStacks": 1,
+    "valueKind": "none"
+  },
+  {
+    "id": "slow",
+    "name": "Замедление",
+    "description": "Снижает Скорость.",
+    "kind": "debuff",
+    "hardControl": false,
+    "maxStacks": 3,
+    "valueKind": "flat",
+    "stat": "speed"
+  },
+  {
+    "id": "weaken",
+    "name": "Ослабление",
+    "description": "Снижает Атаку и Магию.",
+    "kind": "debuff",
+    "hardControl": false,
+    "maxStacks": 2,
+    "valueKind": "fraction",
+    "stats": [
+      "attack",
+      "magic"
+    ]
+  },
+  {
+    "id": "dot",
+    "name": "Урон со временем",
+    "description": "Наносит урон в начале хода носителя.",
+    "kind": "debuff",
+    "hardControl": false,
+    "maxStacks": 3,
+    "valueKind": "flat"
+  },
+  {
+    "id": "barrier",
+    "name": "Барьер",
+    "description": "Поглощает урон до применения защиты.",
+    "kind": "special",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat"
+  },
+  {
+    "id": "fortify",
+    "name": "Стойка",
+    "description": "Повышает Броню и Сопротивление в долях.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "fraction",
+    "stats": [
+      "armor",
+      "resist"
+    ]
+  },
+  {
+    "id": "stoneskin",
+    "name": "Каменная кожа",
+    "description": "Повышает Броню и Сопротивление на плоскую величину.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "stats": [
+      "armor",
+      "resist"
+    ]
+  },
+  {
+    "id": "empower",
+    "name": "Благословение",
+    "description": "Повышает Атаку и Магию в долях.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "fraction",
+    "stats": [
+      "attack",
+      "magic"
+    ]
+  },
+  {
+    "id": "hardened",
+    "name": "Закалка",
+    "description": "Броня выше за каждое полученное попадание.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 6,
+    "valueKind": "flat",
+    "stat": "armor"
+  },
+  {
+    "id": "resistUp",
+    "name": "Праведность",
+    "description": "Повышает Сопротивление.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "stat": "resist"
+  },
+  {
+    "id": "ward",
+    "name": "Арканный щит",
+    "description": "Следующий полученный удар поглощается полностью.",
+    "kind": "special",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none"
+  },
+  {
+    "hardControl": true,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "id": "silence",
+    "name": "Немота",
+    "description": "Доступны только базовая атака, перемещение и конец хода.",
+    "kind": "debuff"
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "id": "stealth",
+    "name": "Невидимость",
+    "description": "Враги не могут выбрать героя одиночной целью, площадные удары задевают. Первый удар героя — крит, после него невидимость спадает.",
+    "kind": "buff",
+    "untargetable": true,
+    "breaksOnDamageDealt": true,
+    "critsWhileOn": true
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "id": "invulnerable",
+    "name": "Неуязвимость",
+    "description": "Любой урон равен нулю.",
+    "kind": "buff",
+    "invulnerable": true
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 2,
+    "valueKind": "fraction",
+    "id": "vulnerable",
+    "name": "Уязвимость",
+    "description": "Снижает Броню и Сопротивление.",
+    "kind": "debuff",
+    "stats": [
+      "armor",
+      "resist"
+    ]
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "fraction",
+    "id": "mark",
+    "name": "Метка охотника",
+    "description": "Получает больше урона.",
+    "kind": "debuff",
+    "battleStat": "damageTaken",
+    "battleSign": 1
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "id": "deathWard",
+    "name": "Оберег",
+    "description": "Следующий смертельный удар оставляет 1 здоровья.",
+    "kind": "buff",
+    "deathWard": true
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "id": "unstoppable",
+    "name": "Неудержимость",
+    "description": "Иммунитет к контролю и +1 ОД в начале хода.",
+    "kind": "buff",
+    "battleStat": "apPerTurn",
+    "controlImmune": true
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "id": "eagleEye",
+    "name": "Соколиный глаз",
+    "description": "Дальность выше, способности не требуют линии видимости.",
+    "kind": "buff",
+    "battleStat": "range",
+    "ignoresLos": true
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "fraction",
+    "id": "bloodPact",
+    "name": "Пакт крови",
+    "description": "Магия выше, но в начале хода теряет часть максимального здоровья.",
+    "kind": "buff",
+    "stat": "magic",
+    "drainPctMaxHp": 0.08
+  },
+  {
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "id": "apLoss",
+    "name": "Потеря ОД",
+    "description": "В начале следующего хода меньше очков действия.",
+    "kind": "debuff",
+    "battleStat": "apPerTurn"
+  },
+  {
+    "id": "blind",
+    "name": "Ослепление",
+    "description": "Шанс крита ниже.",
+    "kind": "debuff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "fraction",
+    "stat": "critChance"
+  },
+  {
+    "id": "rangeDown",
+    "name": "Пелена",
+    "description": "Дальность способностей ниже, но не меньше 1.",
+    "kind": "debuff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "flat",
+    "battleStat": "range"
+  },
+  {
+    "id": "parry",
+    "name": "Парирование",
+    "description": "Первый вражеский удар по герою: он получает 40%, а 60% уходит атакующему.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "reflectPct": 0.6
+  },
+  {
+    "id": "flow",
+    "name": "Поток",
+    "description": "Каждое убийство в свой ход возвращает герою 2 ОД.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "apOnKill": 2
+  },
+  {
+    "id": "flowState",
+    "name": "Состояние потока",
+    "description": "После каждого действия врага в пределах 2 гексов герой получает +25 инициативы.",
+    "kind": "buff",
+    "hardControl": false,
+    "maxStacks": 1,
+    "valueKind": "none",
+    "atbOnEnemyAction": {
+      "radius": 2,
+      "delta": 25
+    }
+  }
+]

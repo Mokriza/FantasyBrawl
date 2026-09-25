@@ -1,0 +1,55 @@
+[
+  {
+    "class": "priest",
+    "modifiers": [
+      {
+        "stat": "healDone",
+        "mul": 0.25,
+        "when": {
+          "targetHpBelowPct": 40
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "priest_passive_mercy",
+    "name": "Милосердие",
+    "description": "Лечение на 25% сильнее по целям ниже 40% здоровья.",
+    "tier": 2
+  },
+  {
+    "class": "priest",
+    "modifiers": [
+      {
+        "stat": "resist",
+        "add": 8,
+        "scope": "adjacentAllies"
+      }
+    ],
+    "triggers": [],
+    "id": "priest_passive_fortitude",
+    "name": "Стойкость духа",
+    "description": "Соседние союзники получают +8 Сопротивления.",
+    "tier": 2
+  },
+  {
+    "class": "priest",
+    "modifiers": [],
+    "triggers": [
+      {
+        "on": "healedAlly",
+        "to": "nearestEnemy",
+        "effects": [
+          {
+            "type": "relay",
+            "pct": 0.2,
+            "school": "magic"
+          }
+        ]
+      }
+    ],
+    "id": "priest_passive_reflected_light",
+    "name": "Отражённый свет",
+    "description": "Каждое лечение наносит ближайшему врагу магический урон в 20% от вылеченного.",
+    "tier": 2
+  }
+]

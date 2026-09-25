@@ -1,0 +1,141 @@
+{
+  "battle": {
+    "apPerTurn": 4,
+    "maxRounds": 20,
+    "ticksPerRound": 10,
+    "atbThreshold": 100,
+    "moveCost": 1,
+    "playerSide": "A",
+    "maxTriggerDepth": 3,
+    "opportunityAttack": {
+      "enabled": true,
+      "meleeOnly": true,
+      "oncePerEnemyPerTurn": true
+    }
+  },
+  "formulas": {
+    "spread": [0.88, 1.12],
+    "critMult": 1.75,
+    "defenseConstant": 70,
+    "minDamage": 1,
+    "minDefense": 0,
+    "minSpeed": 1,
+    "critChanceCap": 1
+  },
+  "arena": {
+    "cols": 9,
+    "rows": 9,
+    "startColumnsA": [0, 1],
+    "startColumnsB": [7, 8],
+    "obstacles": {
+      "min": 10,
+      "max": 16
+    },
+    "weights": {
+      "rock": 3,
+      "thicket": 2,
+      "pit": 2
+    },
+    "maxGenerationAttempts": 50,
+    "pit": {
+      "damage": 10,
+      "extraApCost": 1
+    }
+  },
+  "generation": {
+    "budget": 100,
+    "abilityTierCost": [4, 7, 11, 16],
+    "passiveTierCost": [3, 5, 8, 12],
+    "abilityBudget": [8, 22],
+    "maxAbilityAttempts": 50,
+    "reserve": {
+      "item": [5, 10],
+      "passive": 8,
+      "ultimate": 16
+    },
+    "statRanges": {
+      "maxHp": [70, 140],
+      "attack": [8, 22],
+      "magic": [8, 22],
+      "armor": [0, 40],
+      "resist": [0, 40],
+      "speed": [10, 16],
+      "critChance": [0.05, 0.3]
+    },
+    "pointsPerRange": 30,
+    "primaryMinShare": 0.4,
+    "otherMaxShare": 0.25,
+    "statWeights": {
+      "primary": 4,
+      "secondary": 3,
+      "other": 1
+    },
+    "startingAbilities": 2
+  },
+  "draft": {
+    "poolSize": 10,
+    "maxSameClass": 2,
+    "order": ["A", "B", "B", "A", "A", "B"],
+    "pickSeconds": 60,
+    "placementOrder": ["A", "B", "A", "B", "A", "B"]
+  },
+  "run": {
+    "winsToFinish": 3,
+    "maxMatches": 5,
+    "perkChoices": 3,
+    "unlockChoices": 2,
+    "passiveAfterMatch": 1,
+    "ultimateAfterMatch": 2
+  },
+  "ai": {
+    "maxPlans": 5000,
+    "weights": {
+      "damageDealt": 1,
+      "kill": 80,
+      "overkill": -0.8,
+      "hpLost": -1.2,
+      "healing": 0.9,
+      "stunTurn": 25,
+      "silenceTurn": 12,
+      "threat": -0.4,
+      "distanceToTarget": -2.5,
+      "ultimateSaved": 5,
+      "focusBonus": 10,
+      "summonDamage": 0.6,
+      "trapNearEnemy": 8
+    },
+    "profiles": {
+      "novice": {
+        "noise": 0.4,
+        "useThreat": false,
+        "allowUltimates": false,
+        "lookahead": 0
+      },
+      "normal": {
+        "noise": 0.15,
+        "useThreat": true,
+        "allowUltimates": true,
+        "lookahead": 0
+      },
+      "veteran": {
+        "noise": 0.05,
+        "useThreat": true,
+        "allowUltimates": true,
+        "lookahead": 1
+      },
+      "nightmare": {
+        "noise": 0,
+        "useThreat": true,
+        "allowUltimates": true,
+        "lookahead": 2
+      }
+    },
+    "draft": {
+      "statWeight": 1,
+      "abilityWeight": 1,
+      "missingRoleBonus": 0.15,
+      "duplicateRolePenalty": 0.1,
+      "noise": 0.05
+    }
+  }
+}

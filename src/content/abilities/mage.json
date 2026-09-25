@@ -1,0 +1,267 @@
+[
+  {
+    "id": "mage_frost_bolt",
+    "class": "mage",
+    "name": "Ледяная стрела",
+    "description": "Наносит {0} магического урона и снижает Скорость на {1} на 2 хода.",
+    "icon": "/assets/game-icons/lorc/frostfire.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 0.9
+      },
+      {
+        "type": "status",
+        "status": "slow",
+        "turns": 2,
+        "value": 2
+      }
+    ]
+  },
+  {
+    "id": "mage_sparks",
+    "class": "mage",
+    "name": "Искры",
+    "description": "Наносит {0} магического урона цели и одному соседнему с ней врагу.",
+    "icon": "/assets/game-icons/lorc/magic-swirl.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "targetPlusAdjacent",
+      "count": 1,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 0.7
+      }
+    ]
+  },
+  {
+    "id": "mage_blink",
+    "class": "mage",
+    "name": "Телепорт",
+    "description": "Мгновенно переместиться на свободный видимый гекс, сквозь любые препятствия.",
+    "icon": "/assets/game-icons/lorc/teleport.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 4,
+    "range": 5,
+    "targets": "emptyHex",
+    "requiresLos": true,
+    "ignoresZoc": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "teleport"
+      }
+    ]
+  },
+  {
+    "id": "mage_fireball",
+    "class": "mage",
+    "name": "Огненный шар",
+    "description": "Наносит {0} магического урона по зоне из трёх гексов.",
+    "icon": "/assets/game-icons/lorc/fireball.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 3,
+    "range": 4,
+    "targets": "any",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "mage_stoneskin",
+    "class": "mage",
+    "name": "Каменная кожа",
+    "description": "Союзник получает +{0} Брони и Сопротивления на 2 хода.",
+    "icon": "/assets/game-icons/lorc/rock.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "stoneskin",
+        "turns": 2,
+        "value": 25
+      }
+    ]
+  },
+  {
+    "id": "mage_chain_lightning",
+    "class": "mage",
+    "name": "Цепная молния",
+    "description": "Наносит {0} магического урона и прыгает на двух ближайших врагов, теряя 30% урона за прыжок.",
+    "icon": "/assets/game-icons/lorc/lightning-arc.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 4,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "chain",
+      "jumps": 2,
+      "falloff": 0.3,
+      "jumpRange": 3,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "mage_time_warp",
+    "class": "mage",
+    "name": "Замедление времени",
+    "description": "Все враги в зоне из трёх гексов теряют 20 очков шкалы инициативы.",
+    "icon": "/assets/game-icons/lorc/stopwatch.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 5,
+    "range": 4,
+    "targets": "any",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "atb",
+        "delta": -20
+      }
+    ]
+  },
+  {
+    "id": "mage_ice_wall",
+    "class": "mage",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "all"
+    },
+    "name": "Стена льда",
+    "description": "Три гекса льда на {0} хода: сквозь лёд видно, но пройти нельзя.",
+    "icon": "/assets/game-icons/lorc/frozen-block.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 5,
+    "range": 4,
+    "targets": "emptyHex",
+    "effects": [
+      {
+        "type": "terrain",
+        "terrain": "ice",
+        "turns": 3
+      }
+    ]
+  },
+  {
+    "id": "mage_meteor",
+    "class": "mage",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 7,
+      "filter": "enemies"
+    },
+    "name": "Метеор",
+    "description": "Через ход обрушивается на зону из 7 гексов: {0} магического урона всем врагам в ней.",
+    "icon": "/assets/game-icons/lorc/meteor-impact.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 5,
+    "targets": "any",
+    "delay": 1,
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 2
+      }
+    ]
+  },
+  {
+    "id": "mage_mana_rift",
+    "class": "mage",
+    "requiresLos": true,
+    "shape": {
+      "type": "single",
+      "filter": "all"
+    },
+    "name": "Разрыв маны",
+    "description": "Союзнику обнуляет все кулдауны, врагу удваивает. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/vortex.svg",
+    "tier": 4,
+    "ap": 3,
+    "cooldown": "once",
+    "range": 4,
+    "targets": "any",
+    "effects": [
+      {
+        "type": "cooldown",
+        "mode": "reset",
+        "if": {
+          "targetIsAlly": true
+        }
+      },
+      {
+        "type": "cooldown",
+        "mode": "double",
+        "if": {
+          "targetIsAlly": false
+        }
+      }
+    ]
+  }
+]

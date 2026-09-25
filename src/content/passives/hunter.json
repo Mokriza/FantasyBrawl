@@ -1,0 +1,47 @@
+[
+  {
+    "class": "hunter",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.1,
+        "when": {
+          "targetDistanceAbove": 3
+        }
+      }
+    ],
+    "triggers": [],
+    "id": "hunter_passive_distance",
+    "name": "Дистанция",
+    "description": "+20% урона по целям дальше 3 гексов.",
+    "tier": 2
+  },
+  {
+    "class": "hunter",
+    "modifiers": [
+      {
+        "stat": "range",
+        "add": 1
+      }
+    ],
+    "triggers": [],
+    "id": "hunter_passive_keen_eye",
+    "name": "Зоркость",
+    "description": "+1 к дальности способностей, бьющих дальше соседнего гекса.",
+    "tier": 2
+  },
+  {
+    "class": "hunter",
+    "modifiers": [
+      {
+        "stat": "startAtb",
+        "add": 20
+      }
+    ],
+    "triggers": [],
+    "id": "hunter_passive_instinct",
+    "name": "Инстинкт",
+    "description": "Начинает бой с 30 очками на шкале инициативы.",
+    "tier": 1
+  }
+]

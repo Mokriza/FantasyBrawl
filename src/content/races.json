@@ -1,0 +1,46 @@
+[
+  {
+    "id": "human",
+    "name": "Человек",
+    "description": "+4% ко всем характеристикам. Универсал без слабых мест.",
+    "modifiers": [
+      { "stat": "maxHp", "mulBase": 0.04 },
+      { "stat": "attack", "mulBase": 0.04 },
+      { "stat": "magic", "mulBase": 0.04 },
+      { "stat": "armor", "mulBase": 0.04 },
+      { "stat": "resist", "mulBase": 0.04 },
+      { "stat": "speed", "mulBase": 0.04 },
+      { "stat": "critChance", "mulBase": 0.04 }
+    ]
+  },
+  {
+    "id": "elf",
+    "name": "Эльф",
+    "description": "+2 Скорости, +15 к стартовой инициативе, −10% Здоровья. Быстрый и хрупкий.",
+    "modifiers": [
+      { "stat": "speed", "add": 2 },
+      { "stat": "startAtb", "add": 15 },
+      { "stat": "maxHp", "mulBase": -0.1 }
+    ]
+  },
+  {
+    "id": "dwarf",
+    "name": "Дворф",
+    "description": "+12% Здоровья, +6 Брони, −2 Скорости. Медленный и неубиваемый.",
+    "modifiers": [
+      { "stat": "maxHp", "mulBase": 0.12 },
+      { "stat": "armor", "add": 6 },
+      { "stat": "speed", "add": -2 }
+    ]
+  },
+  {
+    "id": "orc",
+    "name": "Орк",
+    "description": "+10% к любому наносимому урону, +25% к урону крита, −8 Сопротивления. Бьёт больно, магию держит плохо.",
+    "modifiers": [
+      { "stat": "damageDealt", "mul": 0.1 },
+      { "stat": "critMult", "add": 0.25 },
+      { "stat": "resist", "add": -8 }
+    ]
+  }
+]

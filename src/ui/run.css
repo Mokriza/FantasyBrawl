@@ -1,0 +1,753 @@
+/* Screens of a run: menu, draft, placement, and the overlays between matches. */
+
+/* --- colours follow whose team it is, not the letter --- */
+
+.app.player-B {
+  --side-a: var(--theirs);
+  --side-b: var(--ours);
+}
+
+.score-you {
+  color: var(--ours);
+  font-weight: 700;
+}
+
+.score-enemy {
+  color: var(--theirs);
+  font-weight: 700;
+}
+
+.series {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+}
+
+.series .score {
+  font-size: 16px;
+}
+
+button {
+  font: inherit;
+}
+
+.overlay-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.overlay-buttons button {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.overlay-buttons button.primary {
+  border-color: var(--active);
+  color: var(--active);
+}
+
+/* --- main menu --- */
+
+.menu {
+  grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
+}
+
+.menu-card {
+  display: grid;
+  gap: 12px;
+  width: min(440px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.menu-card h1 {
+  font-size: 26px;
+}
+
+.menu-button {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #22262f;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-button strong {
+  font-size: 15px;
+}
+
+.menu-button span {
+  color: var(--dim);
+  font-size: 12.5px;
+}
+
+.menu-button:hover {
+  border-color: var(--active);
+}
+
+.menu-button.primary strong {
+  color: var(--active);
+}
+
+.menu-seed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-seed input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.menu-seed input.invalid {
+  border-color: var(--theirs);
+}
+
+/* --- draft and placement banner --- */
+
+.draft-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.draft-banner h2 {
+  font-size: 15px;
+}
+
+.pick-timer {
+  min-width: 44px;
+  padding: 1px 8px;
+  border-radius: 12px;
+  background: #2a2f3d;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pick-timer-low {
+  background: #6a2a22;
+  color: #ffd7cf;
+}
+
+.pick-order {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.pick-order li {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0b0d12;
+}
+
+.pick-order .pick-you {
+  background: var(--ours);
+}
+
+.pick-order .pick-enemy {
+  background: var(--theirs);
+}
+
+.pick-order .pick-done {
+  opacity: 0.35;
+}
+
+.pick-order .pick-now {
+  border-color: var(--active);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* --- draft --- */
+
+.draft {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) 230px;
+  align-items: start;
+  gap: 10px;
+  min-height: 0;
+}
+
+.draft-team {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.draft-team h2 {
+  padding: 0 2px;
+}
+
+.draft-team.side-A h2 {
+  color: var(--side-a);
+}
+
+.draft-team.side-B h2 {
+  color: var(--side-b);
+}
+
+.draft-slot {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.draft-pool {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 8px;
+}
+
+.draft-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.draft-card header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draft-team .draft-card.side-A {
+  border-left: 4px solid var(--side-a);
+}
+
+.draft-team .draft-card.side-B {
+  border-left: 4px solid var(--side-b);
+}
+
+.draft-pickable {
+  cursor: pointer;
+}
+
+.draft-pickable:hover {
+  border-color: var(--active);
+  box-shadow: 0 0 0 1px var(--active);
+}
+
+.draft-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.draft-stats > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  cursor: help;
+}
+
+.draft-stats dt {
+  color: var(--dim);
+}
+
+.draft-stats dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-stats .stat-primary dt,
+.draft-stats .stat-primary dd {
+  color: var(--active);
+}
+
+.stat-meter {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 2px;
+  background: #2a2f3d;
+  overflow: hidden;
+}
+
+.stat-meter span {
+  display: block;
+  height: 100%;
+  background: #6f7890;
+}
+
+.stat-primary .stat-meter span {
+  background: var(--active);
+}
+
+.draft-compact .draft-stats {
+  font-size: 11px;
+}
+
+.draft-compact .draft-abilities {
+  gap: 2px;
+}
+
+.budget {
+  display: grid;
+  gap: 3px;
+  cursor: help;
+}
+
+.budget-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #2a2f3d;
+}
+
+.budget-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 11px;
+}
+
+.budget-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 2px;
+}
+
+.budget-abilities {
+  background: #b46ae0;
+}
+
+.budget-stats {
+  background: #4bbd7f;
+}
+
+.budget-passive {
+  background: #d4a13a;
+}
+
+.budget-ultimate {
+  background: #c0587a;
+}
+
+/* What a hero was drafted without and gets to choose between matches. */
+.draft-locked {
+  margin: 0;
+  padding: 4px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+  font-size: 11.5px;
+  font-style: italic;
+}
+
+.draft-passive {
+  font-size: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.draft-passive .draft-ability-text {
+  margin-left: 0;
+}
+
+.hero-passive {
+  margin: 5px 0 0;
+  font-size: 12px;
+  cursor: help;
+}
+
+.budget-reserve {
+  background: #5b6275;
+}
+
+.draft-abilities {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.draft-ability-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.draft-ability-head .ability-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.draft-ability-meta {
+  margin: 0 0 0 23px;
+  font-size: 11px;
+}
+
+.draft-ability-text {
+  margin: 1px 0 0 23px;
+  color: #c9cddb;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.draft-basic {
+  margin: 0;
+  font-size: 11px;
+}
+
+.draft-pick-button {
+  margin-top: auto;
+  align-self: stretch;
+  padding: 4px 10px;
+  border: 1px solid var(--active);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--active);
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .draft {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-team {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .draft-team h2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- placement --- */
+
+.stage.placement {
+  grid-template-columns: 220px minmax(320px, auto) 220px;
+}
+
+.column-title {
+  padding: 0 2px;
+}
+
+.place-hero {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-hero.side-A {
+  border-left-color: var(--side-a);
+}
+
+.place-hero.side-B {
+  border-left-color: var(--side-b);
+}
+
+.place-hero:disabled {
+  cursor: default;
+}
+
+.place-hero .hero-title {
+  display: grid;
+  font-size: 12px;
+}
+
+.place-selected {
+  outline: 2px solid var(--active);
+}
+
+.place-done {
+  opacity: 0.55;
+}
+
+.place-mark {
+  margin-left: auto;
+  font-size: 11px;
+}
+
+@media (max-width: 1000px) {
+  .stage.placement {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- between matches and at the end of a run --- */
+
+.overlay-wide {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.overlay-card h2 {
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.big-score {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.level-up {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.level-up li {
+  display: grid;
+  grid-template-columns: auto 110px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.level-changes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--dim);
+}
+
+.level-changes b {
+  color: #4bbd7f;
+}
+
+.match-history {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.match-history .won {
+  color: #4bbd7f;
+}
+
+.match-history .lost {
+  color: var(--theirs);
+}
+
+/* --- upgrade phase --- */
+
+.upgrade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  align-items: start;
+  gap: 10px;
+}
+
+.upgrade-list {
+  display: grid;
+  gap: 10px;
+}
+
+.upgrade-hero {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--ours);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.upgrade-hero header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgrade-owned {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.upgrade-hero .level-changes {
+  margin: 0;
+  font-size: 12px;
+}
+
+.perk-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.perk-card {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #22262f;
+  cursor: pointer;
+}
+
+.perk-card:hover {
+  border-color: var(--active);
+}
+
+.perk-category {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.perk-text {
+  font-size: 12.5px;
+  color: #c9cddb;
+}
+
+.perk-chosen {
+  border-color: var(--active);
+  box-shadow: 0 0 0 1px var(--active);
+}
+
+.perk-dim {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.perk-abilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.perk-abilities button {
+  padding: 2px 8px;
+  border: 1px solid var(--active);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--active);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.upgrade-done {
+  margin-left: auto;
+  padding: 5px 14px;
+}
+
+.upgrade-done:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.upgrade-enemy {
+  display: grid;
+  gap: 6px;
+}
+
+.upgrade-enemy h2 {
+  color: var(--theirs);
+}
+
+.upgrade-enemy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--theirs);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 12.5px;
+}
+
+.hero-perks {
+  margin: 3px 0 0;
+  font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+  .upgrade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .perk-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- unlocks in the upgrade phase --- */
+
+.unlock-block {
+  margin: 4px 0 8px;
+}
+
+.unlock-title {
+  display: block;
+  margin: 6px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--active);
+}
+
+.unlock-card {
+  border-color: #6b5a2e;
+}

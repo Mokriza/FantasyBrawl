@@ -1,0 +1,275 @@
+[
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_backstab",
+    "name": "Подлый удар",
+    "description": "Наносит {0} физического урона, шанс крита этого удара выше на 30%.",
+    "icon": "/assets/game-icons/lorc/backstab.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.6,
+        "critBonus": 0.4
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_throwing_knife",
+    "name": "Метательный нож",
+    "description": "Наносит {0} физического урона, игнорируя половину Брони.",
+    "icon": "/assets/game-icons/lorc/thrown-daggers.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.1,
+        "armorPierce": 0.5
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_shadow_step",
+    "name": "Теневой шаг",
+    "description": "Мгновенно переместиться на свободный видимый гекс, не провоцируя атак вслед.",
+    "icon": "/assets/game-icons/lorc/shadow-follower.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 2,
+    "range": 4,
+    "targets": "emptyHex",
+    "ignoresZoc": true,
+    "effects": [
+      {
+        "type": "teleport"
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_poison",
+    "name": "Яд",
+    "description": "Наносит {0} физического урона и отравляет: {1} урона в начале хода цели 3 хода.",
+    "icon": "/assets/game-icons/lorc/dripping-knife.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1
+      },
+      {
+        "type": "status",
+        "status": "dot",
+        "turns": 3,
+        "value": 10
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_blind",
+    "name": "Ослепление",
+    "description": "На 2 хода цель теряет половину шанса крита и 2 дальности способностей.",
+    "icon": "/assets/game-icons/delapouite/blindfold.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 2,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "status",
+        "status": "blind",
+        "turns": 2,
+        "value": 0.5
+      },
+      {
+        "type": "status",
+        "status": "rangeDown",
+        "turns": 2,
+        "value": 2
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_open_veins",
+    "name": "Вскрытие вен",
+    "description": "Наносит {0} физического урона. При крите перезарядка сбрасывается.",
+    "icon": "/assets/game-icons/lorc/bleeding-wound.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.9
+      },
+      {
+        "type": "cooldown",
+        "mode": "resetThis",
+        "if": {
+          "wasCrit": true
+        }
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "all"
+    },
+    "id": "rogue_smoke_screen",
+    "name": "Дымовая завеса",
+    "description": "Три гекса дыма на {0} хода: сквозь дым не видно, но пройти можно.",
+    "icon": "/assets/game-icons/lorc/smoking-orb.svg",
+    "tier": 3,
+    "ap": 2,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "emptyHex",
+    "effects": [
+      {
+        "type": "terrain",
+        "terrain": "smoke",
+        "turns": 2
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_flurry",
+    "name": "Серия ударов",
+    "description": "Наносит {0} физического урона, крит проверяется на каждом ударе отдельно.",
+    "icon": "/assets/game-icons/lorc/quick-slash.svg",
+    "tier": 3,
+    "ap": 4,
+    "cooldown": 4,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.9,
+        "hits": 3
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_assassinate",
+    "name": "Убийство из тени",
+    "description": "Наносит {0} физического урона. Гарантированный крит, если с конца прошлого хода Разбойник не получал урона.",
+    "icon": "/assets/game-icons/lorc/cloak-dagger.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 1,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 2.4,
+        "alwaysCrit": true,
+        "if": {
+          "casterUndamagedSinceLastTurn": true
+        }
+      },
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 2.4,
+        "if": {
+          "casterUndamagedSinceLastTurn": false
+        }
+      }
+    ]
+  },
+  {
+    "class": "rogue",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "id": "rogue_vanish",
+    "name": "Исчезновение",
+    "description": "Невидимость на 2 хода: врагам нельзя выбрать Разбойника целью. Первый удар из невидимости — крит, после него она спадает. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/cowled.svg",
+    "tier": 4,
+    "ap": 2,
+    "cooldown": "once",
+    "range": 0,
+    "targets": "self",
+    "effects": [
+      {
+        "type": "status",
+        "status": "stealth",
+        "turns": 2
+      }
+    ]
+  }
+]

@@ -1,0 +1,268 @@
+[
+  {
+    "id": "hunter_aimed_shot",
+    "class": "hunter",
+    "name": "Прицельный выстрел",
+    "description": "Наносит {0} физического урона на увеличенной дальности.",
+    "icon": "/assets/game-icons/lorc/arrowhead.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1
+      }
+    ]
+  },
+  {
+    "id": "hunter_disengage",
+    "class": "hunter",
+    "name": "Отскок",
+    "description": "Переместиться на свободный гекс, не провоцируя атаку по возможности.",
+    "icon": "/assets/game-icons/lorc/run.svg",
+    "tier": 2,
+    "ap": 1,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "emptyHex",
+    "requiresLos": true,
+    "ignoresZoc": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "move",
+        "to": "target"
+      }
+    ]
+  },
+  {
+    "id": "hunter_volley",
+    "class": "hunter",
+    "name": "Залп",
+    "description": "Три стрелы по {0} физического урона по ближайшим целям.",
+    "icon": "/assets/game-icons/lorc/arrow-cluster.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 3,
+    "range": 4,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "chain",
+      "jumps": 2,
+      "falloff": 0,
+      "jumpRange": 4,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.55
+      }
+    ]
+  },
+  {
+    "id": "hunter_crippling_arrow",
+    "class": "hunter",
+    "name": "Подрезающая стрела",
+    "description": "Наносит {0} физического урона и снижает Скорость цели на {1} на 3 хода.",
+    "icon": "/assets/game-icons/lorc/striking-arrows.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.8
+      },
+      {
+        "type": "status",
+        "status": "slow",
+        "turns": 3,
+        "value": 4
+      }
+    ]
+  },
+  {
+    "id": "hunter_arrow_rain",
+    "class": "hunter",
+    "name": "Дождь стрел",
+    "description": "Наносит {0} физического урона по зоне из трёх гексов.",
+    "icon": "/assets/game-icons/lorc/arrow-dunk.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 4,
+    "targets": "any",
+    "requiresLos": true,
+    "shape": {
+      "type": "blob",
+      "size": 3,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1
+      }
+    ]
+  },
+  {
+    "id": "hunter_piercing_arrow",
+    "class": "hunter",
+    "name": "Пронзающая стрела",
+    "description": "Наносит {0} физического урона всем врагам на прямой линии.",
+    "icon": "/assets/game-icons/lorc/pocket-bow.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 3,
+    "targets": "any",
+    "requiresLos": true,
+    "shape": {
+      "type": "line",
+      "length": 4,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "hunter_trap",
+    "class": "hunter",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Капкан",
+    "description": "Ставит капкан на {0} ходов. Враг, вошедший в него, получает 0.8 × Атака физического урона и обездвиживается на 1 ход.",
+    "icon": "/assets/game-icons/lorc/wolf-trap.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "emptyHex",
+    "effects": [
+      {
+        "type": "terrain",
+        "terrain": "trap",
+        "turns": 6,
+        "onEnter": [
+          {
+            "type": "damage",
+            "school": "physical",
+            "scale": "attack",
+            "k": 0.8
+          },
+          {
+            "type": "status",
+            "status": "root",
+            "turns": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hunter_eagle_eye",
+    "class": "hunter",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Соколиный глаз",
+    "description": "3 хода: +{0} к дальности способностей, бьющих дальше соседнего гекса, и выстрелы не требуют линии видимости.",
+    "icon": "/assets/game-icons/lorc/eagle-emblem.svg",
+    "tier": 3,
+    "ap": 1,
+    "cooldown": 4,
+    "range": 0,
+    "targets": "self",
+    "effects": [
+      {
+        "type": "status",
+        "status": "eagleEye",
+        "turns": 3,
+        "value": 2
+      }
+    ]
+  },
+  {
+    "id": "hunter_deadly_shot",
+    "class": "hunter",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Смертельный выстрел",
+    "description": "Наносит {0} физического урона, +10% за каждый гекс до цели.",
+    "icon": "/assets/game-icons/lorc/target-arrows.svg",
+    "tier": 4,
+    "ap": 4,
+    "cooldown": 6,
+    "range": 5,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 1.7,
+        "perHexBonus": 0.1
+      }
+    ]
+  },
+  {
+    "id": "hunter_hunt",
+    "class": "hunter",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "name": "Охота",
+    "description": "Метка на 4 хода: цель получает на {0} больше урона от всех. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/barbed-arrow.svg",
+    "tier": 4,
+    "ap": 2,
+    "cooldown": "once",
+    "range": 5,
+    "targets": "enemy",
+    "effects": [
+      {
+        "type": "status",
+        "status": "mark",
+        "turns": 4,
+        "value": 0.3
+      }
+    ]
+  }
+]

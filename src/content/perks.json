@@ -1,0 +1,425 @@
+[
+  {
+    "id": "perk_might",
+    "name": "Сила",
+    "description": "+6 Атаки.",
+    "category": "stats",
+    "classes": ["warrior", "hunter"],
+    "modifiers": [
+      {
+        "stat": "attack",
+        "add": 6
+      }
+    ]
+  },
+  {
+    "id": "perk_arcana",
+    "name": "Мистика",
+    "description": "+6 Магии.",
+    "category": "stats",
+    "classes": ["paladin", "mage", "priest", "warlock"],
+    "modifiers": [
+      {
+        "stat": "magic",
+        "add": 6
+      }
+    ]
+  },
+  {
+    "id": "perk_vigor",
+    "name": "Живучесть",
+    "description": "+20 Здоровья.",
+    "category": "stats",
+    "modifiers": [
+      {
+        "stat": "maxHp",
+        "add": 20
+      }
+    ]
+  },
+  {
+    "id": "perk_swiftness",
+    "name": "Проворство",
+    "description": "+3 Скорости.",
+    "category": "stats",
+    "modifiers": [
+      {
+        "stat": "speed",
+        "add": 3
+      }
+    ]
+  },
+  {
+    "id": "perk_precision",
+    "name": "Меткость",
+    "description": "+8% шанса крита.",
+    "category": "stats",
+    "classes": ["warrior", "hunter"],
+    "modifiers": [
+      {
+        "stat": "critChance",
+        "add": 0.08
+      }
+    ]
+  },
+  {
+    "id": "perk_plating",
+    "name": "Латы",
+    "description": "+8 Брони.",
+    "category": "stats",
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 8
+      }
+    ]
+  },
+  {
+    "id": "perk_warding",
+    "name": "Оберег разума",
+    "description": "+8 Сопротивления.",
+    "category": "stats",
+    "modifiers": [
+      {
+        "stat": "resist",
+        "add": 8
+      }
+    ]
+  },
+  {
+    "id": "perk_bastion",
+    "name": "Бастион",
+    "description": "+8 Брони и +8 Сопротивления.",
+    "category": "stats",
+    "roles": ["tank"],
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 8
+      },
+      {
+        "stat": "resist",
+        "add": 8
+      }
+    ]
+  },
+  {
+    "id": "perk_quick_hands",
+    "name": "Быстрые руки",
+    "description": "Выбранная способность восстанавливается на 1 ход быстрее (кулдаун не меньше 1).",
+    "category": "ability",
+    "abilityMod": {
+      "cooldown": -1
+    }
+  },
+  {
+    "id": "perk_economy",
+    "name": "Экономия движений",
+    "description": "Выбранная способность стоит на 1 ОД меньше (не меньше 1).",
+    "category": "ability",
+    "abilityMod": {
+      "ap": -1
+    }
+  },
+  {
+    "id": "perk_long_reach",
+    "name": "Длинная рука",
+    "description": "Выбранная способность, бьющая дальше соседнего гекса, получает +1 к дальности.",
+    "category": "ability",
+    "abilityMod": {
+      "range": 1
+    }
+  },
+  {
+    "id": "perk_light_step",
+    "name": "Лёгкий шаг",
+    "description": "Первое перемещение за ход стоит на 1 ОД меньше.",
+    "category": "rules",
+    "modifiers": [
+      {
+        "stat": "firstMoveCost",
+        "add": -1
+      }
+    ]
+  },
+  {
+    "id": "perk_farsight",
+    "name": "Дальний взор",
+    "description": "+1 к дальности всех способностей, бьющих дальше соседнего гекса.",
+    "category": "rules",
+    "roles": ["ranged", "support"],
+    "modifiers": [
+      {
+        "stat": "range",
+        "add": 1
+      }
+    ]
+  },
+  {
+    "id": "perk_desperation",
+    "name": "Отчаяние",
+    "description": "Пока здоровье ниже 50%, кулдауны тикают на 1 ход быстрее.",
+    "category": "rules",
+    "modifiers": [
+      {
+        "stat": "cooldownRecovery",
+        "add": 1,
+        "when": {
+          "selfHpBelowPct": 50
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_head_start",
+    "name": "Фора",
+    "description": "Начинает бой с 25 очками на шкале инициативы.",
+    "category": "rules",
+    "modifiers": [
+      {
+        "stat": "startAtb",
+        "add": 25
+      }
+    ]
+  },
+  {
+    "id": "perk_opportunist",
+    "name": "Добивающий",
+    "description": "+25% урона по целям под контролем (оглушение, обездвиживание, немота).",
+    "category": "situational",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.25,
+        "when": {
+          "targetHas": "control"
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_lone_wolf",
+    "name": "Одиночка",
+    "description": "+15 Брони, пока рядом нет союзников.",
+    "category": "situational",
+    "modifiers": [
+      {
+        "stat": "armor",
+        "add": 15,
+        "when": {
+          "noAdjacentAllies": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_reaper",
+    "name": "Жнец",
+    "description": "Лечит 15 здоровья при убийстве.",
+    "category": "situational",
+    "triggers": [
+      {
+        "on": "kill",
+        "to": "self",
+        "effects": [
+          {
+            "type": "heal",
+            "flat": 15
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "perk_executioner",
+    "name": "Палач",
+    "description": "+20% урона по целям ниже 35% здоровья.",
+    "category": "situational",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.2,
+        "when": {
+          "targetHpBelowPct": 35
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_last_stand",
+    "name": "Последний рубеж",
+    "description": "+20% урона, пока своё здоровье ниже 40%.",
+    "category": "situational",
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.2,
+        "when": {
+          "selfHpBelowPct": 40
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_vampiric",
+    "name": "Вампиризм",
+    "description": "Лечит 8% нанесённого урона.",
+    "category": "situational",
+    "triggers": [
+      {
+        "on": "dealtDamage",
+        "to": "self",
+        "effects": [
+          {
+            "type": "lifesteal",
+            "pct": 0.08
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "perk_thorns",
+    "name": "Шипы",
+    "description": "Отражает атакующему 15% полученного прямого урона.",
+    "category": "situational",
+    "roles": ["tank", "melee"],
+    "triggers": [
+      {
+        "on": "damaged",
+        "periodic": false,
+        "to": "other",
+        "effects": [
+          {
+            "type": "relay",
+            "pct": 0.15,
+            "school": "physical"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "perk_sniper",
+    "name": "Снайпер",
+    "description": "+15% урона по целям дальше 3 гексов.",
+    "category": "situational",
+    "roles": ["ranged"],
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.15,
+        "when": {
+          "targetDistanceAbove": 3
+        }
+      }
+    ]
+  },
+  {
+    "id": "perk_brawler",
+    "name": "Драчун",
+    "description": "+2 Скорости за каждого соседнего врага.",
+    "category": "situational",
+    "roles": ["tank", "melee"],
+    "modifiers": [
+      {
+        "stat": "speed",
+        "add": 2,
+        "per": "adjacentEnemy"
+      }
+    ]
+  },
+  {
+    "id": "perk_quickening",
+    "name": "Ускоряющее лечение",
+    "description": "Лечение даёт цели +5 очков шкалы инициативы.",
+    "category": "role",
+    "roles": ["support"],
+    "triggers": [
+      {
+        "on": "healedAlly",
+        "to": "other",
+        "effects": [
+          {
+            "type": "atb",
+            "delta": 5
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "perk_blessed_hands",
+    "name": "Благие руки",
+    "description": "+20% силы лечения.",
+    "category": "role",
+    "roles": ["support"],
+    "modifiers": [
+      {
+        "stat": "healDone",
+        "mul": 0.2
+      }
+    ]
+  },
+  {
+    "id": "perk_guardian",
+    "name": "Страж",
+    "description": "Соседние союзники получают на 10% меньше урона.",
+    "category": "role",
+    "roles": ["tank"],
+    "unique": true,
+    "modifiers": [
+      {
+        "stat": "damageTaken",
+        "mul": -0.1,
+        "scope": "adjacentAllies"
+      }
+    ]
+  },
+  {
+    "id": "perk_vanguard",
+    "name": "Авангард",
+    "description": "Получает на 10% меньше урона.",
+    "category": "role",
+    "roles": ["tank"],
+    "modifiers": [
+      {
+        "stat": "damageTaken",
+        "mul": -0.1
+      }
+    ]
+  },
+  {
+    "id": "perk_marksman",
+    "name": "Стрелок",
+    "description": "+10% урона.",
+    "category": "role",
+    "roles": ["ranged"],
+    "modifiers": [
+      {
+        "stat": "damageDealt",
+        "mul": 0.1
+      }
+    ]
+  },
+  {
+    "id": "perk_inspiration",
+    "name": "Вдохновение",
+    "description": "Соседние союзники получают +2 Атаки и +2 Магии.",
+    "category": "role",
+    "roles": ["support"],
+    "unique": true,
+    "modifiers": [
+      {
+        "stat": "attack",
+        "add": 2,
+        "scope": "adjacentAllies"
+      },
+      {
+        "stat": "magic",
+        "add": 2,
+        "scope": "adjacentAllies"
+      }
+    ]
+  }
+]

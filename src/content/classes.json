@@ -1,0 +1,165 @@
+[
+  {
+    "id": "warrior",
+    "name": "Воин",
+    "role": "tank",
+    "primaryStat": "attack",
+    "secondaryStats": [
+      "maxHp",
+      "armor"
+    ],
+    "baseAttack": "basic_melee_physical",
+    "statGrowth": {
+      "hp": 0.15,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/warrior.png",
+    "color": "#c0392b"
+  },
+  {
+    "id": "paladin",
+    "name": "Паладин",
+    "role": "tank",
+    "primaryStat": "armor",
+    "secondaryStats": [
+      "maxHp",
+      "magic"
+    ],
+    "baseAttack": "basic_melee_holy",
+    "statGrowth": {
+      "hp": 0.16,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/paladin.png",
+    "color": "#d4ac0d"
+  },
+  {
+    "id": "hunter",
+    "name": "Охотник",
+    "role": "ranged",
+    "primaryStat": "attack",
+    "secondaryStats": [
+      "speed",
+      "critChance"
+    ],
+    "baseAttack": "basic_ranged_physical",
+    "statGrowth": {
+      "hp": 0.08,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/hunter.png",
+    "color": "#27ae60"
+  },
+  {
+    "id": "mage",
+    "name": "Маг",
+    "role": "ranged",
+    "primaryStat": "magic",
+    "secondaryStats": [
+      "resist",
+      "speed"
+    ],
+    "baseAttack": "basic_magic_bolt",
+    "statGrowth": {
+      "hp": 0.12,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/mage.png",
+    "color": "#2980b9"
+  },
+  {
+    "id": "priest",
+    "name": "Жрец",
+    "role": "support",
+    "primaryStat": "magic",
+    "secondaryStats": [
+      "maxHp",
+      "resist"
+    ],
+    "baseAttack": "basic_magic_bolt",
+    "statGrowth": {
+      "hp": 0.12,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/priest.png",
+    "color": "#ecf0f1"
+  },
+  {
+    "id": "warlock",
+    "name": "Чернокнижник",
+    "role": "support",
+    "primaryStat": "magic",
+    "secondaryStats": [
+      "maxHp",
+      "armor"
+    ],
+    "baseAttack": "basic_magic_bolt",
+    "statGrowth": {
+      "hp": 0.12,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/warlock.png",
+    "color": "#8e44ad"
+  },
+  {
+    "id": "rogue",
+    "name": "Разбойник",
+    "role": "melee",
+    "primaryStat": "critChance",
+    "secondaryStats": [
+      "attack",
+      "speed"
+    ],
+    "baseAttack": "basic_melee_physical",
+    "statGrowth": {
+      "hp": 0.25,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/rogue.png",
+    "color": "#5d6d7e"
+  },
+  {
+    "id": "monk",
+    "name": "Монах",
+    "role": "melee",
+    "primaryStat": "speed",
+    "secondaryStats": [
+      "attack",
+      "resist"
+    ],
+    "baseAttack": "basic_melee_physical",
+    "statGrowth": {
+      "hp": 0.2,
+      "primary": 0.1,
+      "secondary": 0.06
+    },
+    "portrait": "portraits/monk.png",
+    "color": "#e67e22"
+  },
+  {
+    "id": "imp",
+    "name": "Бес",
+    "role": "support",
+    "primaryStat": "magic",
+    "secondaryStats": [
+      "maxHp",
+      "armor"
+    ],
+    "baseAttack": "basic_magic_bolt",
+    "statGrowth": {
+      "hp": 0,
+      "primary": 0,
+      "secondary": 0
+    },
+    "portrait": "portraits/imp.png",
+    "color": "#e0603a",
+    "summonOnly": true
+  }
+]

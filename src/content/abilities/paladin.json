@@ -1,0 +1,274 @@
+[
+  {
+    "id": "paladin_hammer_strike",
+    "class": "paladin",
+    "name": "Удар молотом",
+    "description": "Наносит {0} физического и {1} магического урона.",
+    "icon": "/assets/game-icons/lorc/hammer-drop.svg",
+    "tier": 1,
+    "ap": 2,
+    "cooldown": 2,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "physical",
+        "scale": "attack",
+        "k": 0.5
+      },
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.2
+      }
+    ]
+  },
+  {
+    "id": "paladin_judgement",
+    "class": "paladin",
+    "name": "Правосудие",
+    "description": "Наносит {0} магического урона и ослабляет цель: Атака и Магия ниже на {1} на 2 хода.",
+    "icon": "/assets/game-icons/lorc/sun.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "enemy",
+    "requiresLos": true,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.4
+      },
+      {
+        "type": "status",
+        "status": "weaken",
+        "turns": 2,
+        "value": 0.2
+      }
+    ]
+  },
+  {
+    "id": "paladin_holy_wrath",
+    "class": "paladin",
+    "name": "Священный гнев",
+    "description": "Наносит {0} магического урона всем соседним врагам и снижает их Скорость на {1} на 2 хода.",
+    "icon": "/assets/game-icons/lorc/fire-ring.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "aura",
+      "radius": 1,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.1
+      },
+      {
+        "type": "status",
+        "status": "slow",
+        "turns": 2,
+        "value": 2
+      }
+    ]
+  },
+  {
+    "id": "paladin_retribution",
+    "class": "paladin",
+    "name": "Кара",
+    "description": "Наносит {0} магического урона и оглушает на 1 ход, если цель под дебаффом.",
+    "icon": "/assets/game-icons/lorc/holy-symbol.svg",
+    "tier": 3,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.6
+      },
+      {
+        "type": "status",
+        "status": "stun",
+        "turns": 1,
+        "if": {
+          "targetHas": "debuff"
+        }
+      }
+    ]
+  },
+  {
+    "id": "paladin_heavens_hammer",
+    "class": "paladin",
+    "name": "Молот небес",
+    "description": "Обрушивает молот на цель: {0} магического урона ей и всем врагам рядом с ней.",
+    "icon": "/assets/game-icons/lorc/flat-hammer.svg",
+    "tier": 4,
+    "ap": 3,
+    "cooldown": 6,
+    "range": 1,
+    "targets": "enemy",
+    "requiresLos": false,
+    "shape": {
+      "type": "blob",
+      "size": 7,
+      "filter": "enemies"
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "school": "magic",
+        "scale": "magic",
+        "k": 1.6
+      }
+    ]
+  },
+  {
+    "id": "paladin_steadfast",
+    "class": "paladin",
+    "name": "Стойкость веры",
+    "description": "Броня и Сопротивление паладина выше на {0} на 1 ход.",
+    "icon": "/assets/game-icons/lorc/checked-shield.svg",
+    "tier": 1,
+    "ap": 1,
+    "cooldown": 2,
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "status",
+        "status": "stoneskin",
+        "turns": 1,
+        "value": 15
+      }
+    ]
+  },
+  {
+    "id": "paladin_shield_of_faith",
+    "class": "paladin",
+    "name": "Щит веры",
+    "description": "Барьер на союзника, поглощает {0} урона в течение 3 ходов.",
+    "icon": "/assets/game-icons/lorc/edged-shield.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "barrier",
+        "scale": "magic",
+        "k": 2,
+        "turns": 3
+      }
+    ]
+  },
+  {
+    "id": "paladin_lay_on_hands",
+    "class": "paladin",
+    "name": "Возложение рук",
+    "description": "Лечит союзника на {0}.",
+    "icon": "/assets/game-icons/lorc/glowing-hands.svg",
+    "tier": 2,
+    "ap": 3,
+    "cooldown": 4,
+    "range": 2,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 2.2
+      }
+    ]
+  },
+  {
+    "id": "paladin_absolution",
+    "class": "paladin",
+    "name": "Отпущение",
+    "description": "Снимает все дебаффы с союзника и лечит его на {1}.",
+    "icon": "/assets/game-icons/lorc/prayer.svg",
+    "tier": 2,
+    "ap": 2,
+    "cooldown": 3,
+    "range": 3,
+    "targets": "ally",
+    "requiresLos": false,
+    "shape": {
+      "type": "single"
+    },
+    "effects": [
+      {
+        "type": "cleanse",
+        "what": "debuffs"
+      },
+      {
+        "type": "heal",
+        "scale": "magic",
+        "k": 0.8
+      }
+    ]
+  },
+  {
+    "id": "paladin_bulwark",
+    "class": "paladin",
+    "name": "Божественный оплот",
+    "description": "Вся команда, включая паладина, получает барьер на {0} урона на 2 хода. Раз за бой.",
+    "icon": "/assets/game-icons/lorc/magic-shield.svg",
+    "tier": 4,
+    "ap": 3,
+    "cooldown": "once",
+    "range": 0,
+    "targets": "self",
+    "requiresLos": false,
+    "shape": {
+      "type": "allAllies"
+    },
+    "effects": [
+      {
+        "type": "barrier",
+        "scale": "magic",
+        "k": 1.5,
+        "turns": 2
+      }
+    ]
+  }
+]
