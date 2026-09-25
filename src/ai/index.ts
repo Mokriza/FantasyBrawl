@@ -11,6 +11,7 @@ import { nextFloatBetween } from '../core/index.js';
 import type { AiProfile } from './evaluate.js';
 import { evaluate } from './evaluate.js';
 import { generatePlans } from './plans.js';
+import { playOut, plansToDeepen } from './lookahead.js';
 
 export type { AiProfile } from './evaluate.js';
 export { evaluate } from './evaluate.js';
@@ -50,21 +51,35 @@ export function chooseActions(
   if (side === 'N') return { actions: [], rng };
   const plans = generatePlans(state, content, profile.allowUltimates);
 
-  let bestScore = -Infinity;
-  let best: readonly Action[] = [];
   let current = rng;
-
+  const scored: Array<{ plan: (typeof plans)[number]; score: number; factor: number }> = [];
   for (const plan of plans) {
-    let score = evaluate(state, plan.state, side, content, profile);
-
     // Noise multiplies the score rather than picking a random plan, so a weak profile
     // makes reasonable-but-not-best moves instead of nonsense.
+    let factor = 1;
     if (profile.noise > 0) {
       const [jitter, next] = nextFloatBetween(current, -profile.noise, profile.noise);
       current = next;
-      score *= 1 + jitter;
+      factor = 1 + jitter;
     }
+    scored.push({ plan, score: evaluate(state, plan.state, side, content, profile) * factor, factor });
+  }
 
+  // The stronger profiles look further into the best few: each is scored again on the
+  // board after the next turns, played out by whoever acts then (ai/lookahead.ts).
+  if (profile.lookahead > 0 && scored.length > 1) {
+    scored.sort((a, b) => b.score - a.score);
+    const deep = scored.slice(0, plansToDeepen(profile.lookahead, content));
+    for (const entry of deep) {
+      const board = playOut(entry.plan.state, activeId, profile.lookahead, content, profile);
+      entry.score = evaluate(state, board, side, content, profile) * entry.factor;
+    }
+    scored.splice(0, scored.length, ...deep);
+  }
+
+  let best: readonly Action[] = [];
+  let bestScore = -Infinity;
+  for (const { plan, score } of scored) {
     if (score > bestScore) {
       bestScore = score;
       best = plan.actions;

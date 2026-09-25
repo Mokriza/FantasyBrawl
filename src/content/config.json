@@ -95,6 +95,7 @@
   },
   "ai": {
     "maxPlans": 5000,
+    "lookaheadTopPlans": [10, 5],
     "weights": {
       "damageDealt": 1,
       "kill": 80,
@@ -117,7 +118,7 @@
     },
     "profiles": {
       "novice": {
-        "noise": 0.4,
+        "noise": 8,
         "useThreat": false,
         "allowUltimates": false,
         "lookahead": 0
@@ -129,7 +130,7 @@
         "lookahead": 0
       },
       "veteran": {
-        "noise": 0.05,
+        "noise": 0,
         "useThreat": true,
         "allowUltimates": true,
         "lookahead": 1

@@ -64,6 +64,10 @@ export type Speed = 1 | 2 | 4 | 0;
 /** The main menu, a run with a draft and a series, or one battle on the stage-1 rosters. */
 export type Mode = 'menu' | 'run' | 'quick';
 
+/** The AI profiles offered in the menu, weakest first; config.ai.profiles holds them. */
+export const DIFFICULTIES = ['novice', 'normal', 'veteran', 'nightmare'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
 export interface UiState {
   readonly content: ContentRegistry;
   readonly mode: Mode;
@@ -91,10 +95,27 @@ export interface UiState {
   readonly pickDeadline: number | null;
   /** The hero the player is about to put on the board during placement. */
   readonly placingHeroId: HeroId | null;
+  /** The opponent's AI profile, chosen in the menu and remembered between visits. */
+  readonly difficulty: Difficulty;
 }
 
 const content = loadContent();
-const profile: AiProfile = profileByName(content, 'normal');
+const DIFFICULTY_KEY = 'arena.difficulty';
+
+/** The remembered difficulty; browser storage may be missing or blocked, so guard it. */
+function storedDifficulty(): Difficulty {
+  try {
+    const value = window.localStorage.getItem(DIFFICULTY_KEY);
+    return DIFFICULTIES.find((d) => d === value) ?? 'normal';
+  } catch {
+    return 'normal';
+  }
+}
+
+/** The battle AI of the current opponent. */
+function opponentProfile(): AiProfile {
+  return profileByName(content, state.difficulty);
+}
 
 let aiRng: RngState = createRng(1);
 let aiPlan: Action[] = [];
@@ -120,6 +141,7 @@ let state: UiState = {
   busy: false,
   pickDeadline: null,
   placingHeroId: null,
+  difficulty: storedDifficulty(),
 };
 const listeners = new Set<() => void>();
 
@@ -272,7 +294,7 @@ function stepAi(): boolean {
   if (battle.heroes[active]?.side === state.playerSide) return false;
 
   if (aiPlanFor !== active || aiPlan.length === 0) {
-    const decision = chooseActions(battle, content, aiRng, profile);
+    const decision = chooseActions(battle, content, aiRng, opponentProfile());
     aiRng = decision.rng;
     aiPlan = [...decision.actions];
     aiPlanFor = active;
@@ -563,6 +585,15 @@ export function swapHero(outId: HeroId, inId: HeroId): void {
 export function cancelSwap(): void {
   if (state.run?.upgrade?.swapped[state.playerSide] === undefined) return;
   applyRun({ type: 'cancelSwap', side: state.playerSide });
+}
+
+export function setDifficulty(difficulty: Difficulty): void {
+  set({ difficulty });
+  try {
+    window.localStorage.setItem(DIFFICULTY_KEY, difficulty);
+  } catch {
+    // Not remembered this time; the choice still holds for this visit.
+  }
 }
 
 export function setSpeed(speed: Speed): void {

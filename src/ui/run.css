@@ -105,6 +105,33 @@ button {
   color: var(--active);
 }
 
+.menu-difficulty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.menu-difficulty button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.menu-difficulty button:hover {
+  border-color: var(--active);
+}
+
+.menu-difficulty .speed-on {
+  border-color: var(--active);
+  color: var(--active);
+}
+
 .menu-seed {
   display: flex;
   align-items: center;

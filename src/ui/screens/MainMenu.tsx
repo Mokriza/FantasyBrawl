@@ -1,11 +1,10 @@
 /**
- * The main menu: a new run or a quick battle, with an optional seed so a run can be
- * replayed exactly. AI difficulty will join it once the other profiles are tuned
- * (stage 5); until then there is only "normal".
+ * The main menu: a new run or a quick battle, the opponent's difficulty, and an
+ * optional seed so a run can be replayed exactly.
  */
 
 import { useState } from 'react';
-import { startQuickBattle, startRun } from '../store.js';
+import { DIFFICULTIES, setDifficulty, startQuickBattle, startRun, useUi } from '../store.js';
 import { UI } from '../strings.ru.js';
 
 function parseSeed(text: string): number | undefined {
@@ -16,6 +15,7 @@ function parseSeed(text: string): number | undefined {
 }
 
 export function MainMenu(): JSX.Element {
+  const ui = useUi();
   const [seedText, setSeedText] = useState('');
   const seed = parseSeed(seedText);
   const invalid = seedText.trim() !== '' && seed === undefined;
@@ -35,6 +35,23 @@ export function MainMenu(): JSX.Element {
           <strong>{UI.menu.quickBattle}</strong>
           <span>{UI.menu.quickBattleHint}</span>
         </button>
+
+        <div className="menu-difficulty" role="radiogroup" aria-label={UI.menu.difficulty}>
+          <span className="dim">{UI.menu.difficulty}</span>
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d}
+              type="button"
+              role="radio"
+              aria-checked={ui.difficulty === d}
+              className={ui.difficulty === d ? 'speed-on' : undefined}
+              title={UI.menu.difficulties[d].hint}
+              onClick={() => setDifficulty(d)}
+            >
+              {UI.menu.difficulties[d].name}
+            </button>
+          ))}
+        </div>
 
         <label className="menu-seed" title={UI.menu.seedHint}>
           <span className="dim">{UI.menu.seedLabel}</span>

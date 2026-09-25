@@ -3,6 +3,7 @@
  *
  *   npm run sim -- --matches 1000 --seed 42 --profile normal --out sim-report.json
  *   npm run sim -- --mode draft --runs 200 --seed 1   whole runs: draft, placement, series
+ *   npm run sim -- --mode tournament --a veteran --b normal --matches 400   profile against profile
  */
 
 import { writeFileSync } from 'node:fs';
@@ -12,7 +13,9 @@ import { playMatch } from './match.js';
 import { playRun } from './series.js';
 
 interface Args {
-  mode: 'match' | 'draft';
+  mode: 'match' | 'draft' | 'tournament';
+  a: string;
+  b: string;
   matches: number;
   runs: number;
   seed: number;
@@ -21,7 +24,7 @@ interface Args {
 }
 
 function parseArgs(argv: readonly string[]): Args {
-  const args: Args = { mode: 'match', matches: 200, runs: 100, seed: 1, profile: 'normal', out: null };
+  const args: Args = { mode: 'match', a: 'veteran', b: 'normal', matches: 200, runs: 100, seed: 1, profile: 'normal', out: null };
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i];
     const value = argv[i + 1];
@@ -30,7 +33,9 @@ function parseArgs(argv: readonly string[]): Args {
     if (key === '--profile' && value !== undefined) args.profile = value;
     if (key === '--out' && value !== undefined) args.out = value;
     if (key === '--runs' && value !== undefined) args.runs = Number(value);
-    if (key === '--mode' && (value === 'match' || value === 'draft')) args.mode = value;
+    if (key === '--mode' && (value === 'match' || value === 'draft' || value === 'tournament')) args.mode = value;
+    if (key === '--a' && value !== undefined) args.a = value;
+    if (key === '--b' && value !== undefined) args.b = value;
   }
   return args;
 }
@@ -43,6 +48,10 @@ function main(): void {
   const args = parseArgs(process.argv.slice(2));
   if (args.mode === 'draft') {
     simulateRuns(args);
+    return;
+  }
+  if (args.mode === 'tournament') {
+    simulateTournament(args);
     return;
   }
   simulateMatches(args);
@@ -142,6 +151,39 @@ function simulateMatches(args: Args): void {
     writeFileSync(args.out, JSON.stringify(report, null, 2), 'utf8');
     console.log(`\nОтчёт записан в ${args.out}`);
   }
+}
+
+/**
+ * Profile against profile on the stage 1 rosters, a new arena every match. The two
+ * profiles swap sides every match, so neither the rosters nor side B's tie rule
+ * favours one of them. docs/ai/ai-opponent.md: veteran should beat normal in 65–80%,
+ * normal should beat novice in 75–90%.
+ */
+function simulateTournament(args: Args): void {
+  const content = loadContent();
+  const teams = loadTeams();
+  const a = profileByName(content, args.a);
+  const b = profileByName(content, args.b);
+  const started = process.hrtime.bigint();
+  let winsA = 0;
+  let rounds = 0;
+  for (let i = 0; i < args.matches; i++) {
+    const aIsSideA = i % 2 === 0;
+    const result = playMatch({
+      seed: args.seed + i,
+      teams,
+      content,
+      profileA: aIsSideA ? a : b,
+      profileB: aIsSideA ? b : a,
+    });
+    const winner = result.state.outcome?.winner;
+    if ((winner === 'A' && aIsSideA) || (winner === 'B' && !aIsSideA)) winsA++;
+    rounds += result.state.round;
+  }
+  const elapsed = (Number(process.hrtime.bigint() - started) / 1e9).toFixed(1);
+  console.log(`\nТурнир: ${args.a} против ${args.b} · матчей: ${args.matches} · сид ${args.seed} · ${elapsed} с`);
+  console.log(`Побед ${args.a}: ${percent(winsA, args.matches)}`);
+  console.log(`Средняя длина матча: ${(rounds / args.matches).toFixed(1)} раундов`);
 }
 
 /**

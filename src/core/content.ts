@@ -870,6 +870,8 @@ export const configSchema = z
     ai: z
       .object({
         maxPlans: z.number().int().positive(),
+        /** How many of the best plans lookahead depth 1, 2, ... looks into. */
+        lookaheadTopPlans: z.array(z.number().int().positive()),
         weights: z
           .object({
             damageDealt: z.number(),
