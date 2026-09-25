@@ -65,6 +65,7 @@ docs/
 | Интерфейс, отрисовка поля, анимации, ассеты | [docs/ai/ui-and-rendering.md](docs/ai/ui-and-rendering.md) |
 | Стиль кода, именование, типы | [docs/ai/code-style.md](docs/ai/code-style.md) |
 | Что делаем сейчас, что отложено, этапы | [docs/ai/roadmap.md](docs/ai/roadmap.md) |
+| Онлайн PvP: лобби, сервер, протокол | [docs/ai/online-pvp.md](docs/ai/online-pvp.md) |
 
 `docs/GAMEDESIGN.md` — дизайнерское намерение. `docs/ai/game-rules.md` — техническая спецификация для кода. Если они расходятся — **спроси**, какой вариант верный, и после ответа исправь отстающий документ.
 
