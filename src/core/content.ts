@@ -800,6 +800,12 @@ export const configSchema = z
         /** After which finished match the passive is chosen, and after which tier IV. */
         passiveAfterMatch: z.number().int().positive(),
         ultimateAfterMatch: z.number().int().positive(),
+        /** Candidates each side is offered to swap one hero for, once per upgrade phase. */
+        swapChoices: z.number().int().nonnegative(),
+        /** A side this many wins behind sees extraChoices more perks and rewards. */
+        catchUp: z
+          .object({ deficit: z.number().int().positive(), extraChoices: z.number().int().nonnegative() })
+          .strict(),
       })
       .strict(),
     ai: z
@@ -840,6 +846,8 @@ export const configSchema = z
             missingRoleBonus: z.number(),
             duplicateRolePenalty: z.number(),
             noise: z.number().min(0),
+            /** A swap candidate must score this share better than the hero it replaces. */
+            swapMargin: z.number().min(0),
           })
           .strict(),
       })

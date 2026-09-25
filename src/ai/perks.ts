@@ -5,7 +5,7 @@
  */
 
 import type { Ability, ContentRegistry, Item, Modifier, Passive, Perk, RngState, RunState, Side } from '../core/index.js';
-import { getAbility, getClass, itemFits, nextFloatBetween, perkTargets } from '../core/index.js';
+import { getAbility, getClass, itemFits, nextFloatBetween, perkTargets, teamAfterSwap } from '../core/index.js';
 import type { HeroId, HeroTemplate } from '../core/index.js';
 
 export interface PerkDecision {
@@ -181,7 +181,7 @@ function itemWorth(item: Item, hero: HeroTemplate, content: ContentRegistry): nu
 /**
  * The AI's reward: the artifact and the hero it fits where it gains the most over
  * what that hero already carries, since the new one replaces the old. Draft noise on
- * top, as everywhere between matches.
+ * top, as everywhere between matches. The swap is decided first, so it counts.
  */
 export function chooseReward(
   run: RunState,
@@ -190,9 +190,8 @@ export function chooseReward(
   rng: RngState,
 ): RewardDecision {
   const offered = run.upgrade?.rewards[side] ?? [];
-  const team = run.draft.picks[side]
-    .map((id) => run.draft.pool.find((h) => h.id === id))
-    .filter((h): h is HeroTemplate => h !== undefined);
+  // The team as it will play: after a swap the newcomer may take the reward.
+  const team = run.upgrade === null ? [] : teamAfterSwap(run.upgrade, run.draft, side);
 
   const noise = content.config.ai.draft.noise;
   let state = rng;

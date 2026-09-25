@@ -7,7 +7,7 @@
  * rather than a random one.
  */
 
-import type { ContentRegistry, DraftState, HeroTemplate, RngState, Side } from '../core/index.js';
+import type { ContentRegistry, DraftState, HeroTemplate, RngState, RunState, Side } from '../core/index.js';
 import {
   STAT_NAMES,
   abilityCost,
@@ -108,4 +108,44 @@ export function choosePick(
 
   if (best === null) throw new Error('choosePick: nothing to pick');
   return { heroId: best, rng: state };
+}
+
+export interface SwapDecision {
+  readonly outId: HeroId;
+  readonly inId: HeroId;
+}
+
+/**
+ * The swap between matches, by the same score as the draft: the hero who scores
+ * lowest against the rest of the team goes, if the best candidate scores at least
+ * config.ai.draft.swapMargin better in the same place. Otherwise no swap.
+ */
+export function chooseSwap(run: RunState, side: Side, content: ContentRegistry): SwapDecision | null {
+  const candidates = run.upgrade?.candidates[side] ?? [];
+  const team = teamOf(run.draft, side);
+  const others = (hero: HeroTemplate): HeroTemplate[] => team.filter((h) => h.id !== hero.id);
+
+  let weakest: HeroTemplate | null = null;
+  let weakestScore = Infinity;
+  for (const hero of team) {
+    const score = scoreHero(hero, others(hero), content);
+    if (score < weakestScore) {
+      weakestScore = score;
+      weakest = hero;
+    }
+  }
+  if (weakest === null) return null;
+
+  const rest = others(weakest);
+  let best: HeroTemplate | null = null;
+  let bestScore = -Infinity;
+  for (const hero of candidates) {
+    const score = scoreHero(hero, rest, content);
+    if (score > bestScore) {
+      bestScore = score;
+      best = hero;
+    }
+  }
+  if (best === null || bestScore < weakestScore * (1 + content.config.ai.draft.swapMargin)) return null;
+  return { outId: weakest.id, inId: best.id };
 }

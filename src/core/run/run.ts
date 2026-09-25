@@ -7,8 +7,8 @@
  * builds the starting BattleState for each match and is told how it ended.
  *
  * Between matches everyone is healed (a new battle starts from full health anyway),
- * gains a level and takes a perk in the upgrade phase. Artifacts and swapping a hero
- * are stage 4.
+ * gains a level and takes a perk in the upgrade phase, alongside the unlocks, the
+ * reward and an optional hero swap.
  */
 
 import { emptyArena, generateArena } from '../arena/generate.js';
@@ -34,9 +34,11 @@ import { IllegalActionError, assertNever } from '../types.js';
 import { statsAtLevel } from './levels.js';
 import { applyPlace, createPlacement } from './placement.js';
 import {
+  applyCancelSwap,
   applyChooseReward,
   applyChooseUnlock,
   applyChoosePerk,
+  applySwapHero,
   awaitingPerk,
   awaitingReward,
   awaitingUnlock,
@@ -167,7 +169,7 @@ export function applyRunAction(
     case 'nextMatch': {
       // A new level for everyone, then the perks that go with it.
       requirePhase(run, 'matchOver', 'nextMatch');
-      const [upgrade, rng] = createUpgrade(run.draft, content, run.rng, run.match);
+      const [upgrade, rng] = createUpgrade(run.draft, content, run.rng, run.match, run.wins);
       return { ...run, rng, match: run.match + 1, phase: 'upgrade', upgrade };
     }
 
@@ -197,12 +199,23 @@ export function applyRunAction(
       return { ...run, upgrade };
     }
 
+    case 'swapHero': {
+      requirePhase(run, 'upgrade', 'swapHero');
+      const upgrade = applySwapHero(requireUpgrade(run), run.draft, action.side, action.outId, action.inId);
+      return { ...run, upgrade };
+    }
+
+    case 'cancelSwap': {
+      requirePhase(run, 'upgrade', 'cancelSwap');
+      return { ...run, upgrade: applyCancelSwap(requireUpgrade(run), run.draft, action.side) };
+    }
+
     case 'endUpgrade': {
       requirePhase(run, 'upgrade', 'endUpgrade');
       const upgrade = requireUpgrade(run);
       for (const side of ['A', 'B'] as const) {
         const waiting: string[] = [...awaitingPerk(upgrade, run.draft, side), ...awaitingUnlock(upgrade, run.draft, side)];
-        if (awaitingReward(upgrade, side)) waiting.push('the reward');
+        if (awaitingReward(upgrade, run.draft, side, content)) waiting.push('the reward');
         if (waiting.length > 0) {
           throw new IllegalActionError(`endUpgrade: ${waiting.join(', ')} of side ${side} still to choose`);
         }

@@ -86,7 +86,9 @@
     "rewardTiers": ["rare", "rare", "legendary", "legendary"],
     "unlockChoices": 2,
     "passiveAfterMatch": 1,
-    "ultimateAfterMatch": 2
+    "ultimateAfterMatch": 2,
+    "swapChoices": 3,
+    "catchUp": { "deficit": 2, "extraChoices": 1 }
   },
   "ai": {
     "maxPlans": 5000,
@@ -136,7 +138,8 @@
       "abilityWeight": 1,
       "missingRoleBonus": 0.15,
       "duplicateRolePenalty": 0.1,
-      "noise": 0.05
+      "noise": 0.05,
+      "swapMargin": 0.15
     }
   }
 }

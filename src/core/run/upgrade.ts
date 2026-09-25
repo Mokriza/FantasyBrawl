@@ -11,11 +11,17 @@
  * first match and a tier IV ability after the second, each chosen from a few of its
  * class's options (config.run). One side also takes one artifact as the match reward
  * and hands it to one hero; it replaces what that hero carried.
+ *
+ * Each side may also swap one hero for one of a few candidates, who arrive ready at
+ * the team's level. A side far enough behind sees more perks and rewards to choose
+ * from (config.run.catchUp).
  */
 
 import type { Ability, ContentRegistry, Perk } from '../content.js';
 import { getAbility, getClass } from '../content.js';
-import { shuffle } from '../rng.js';
+import { availableHeroes } from '../draft/draft.js';
+import { generateHero } from '../draft/generate.js';
+import { pick, shuffle } from '../rng.js';
 import type { RngState } from '../rng.js';
 import type {
   AbilityId,
@@ -26,6 +32,7 @@ import type {
   Side,
   Stats,
   RewardPick,
+  SwapPick,
   UnlockOffer,
   UpgradeState,
 } from '../types.js';
@@ -101,6 +108,19 @@ function unlockDue(
   return null;
 }
 
+/** The side at least config.run.catchUp.deficit wins behind, or null. */
+export function trailingSide(wins: Readonly<Record<Side, number>>, content: ContentRegistry): Side | null {
+  const { deficit } = content.config.run.catchUp;
+  if (wins.B - wins.A >= deficit) return 'A';
+  if (wins.A - wins.B >= deficit) return 'B';
+  return null;
+}
+
+/** How many more perks and rewards this side is shown than usual. */
+function catchUpBonus(side: Side, wins: Readonly<Record<Side, number>>, content: ContentRegistry): number {
+  return trailingSide(wins, content) === side ? content.config.run.catchUp.extraChoices : 0;
+}
+
 /** Offers for every drafted hero, side A first, each in pick order. */
 export function createUpgrade(
   draft: DraftState,
@@ -108,6 +128,8 @@ export function createUpgrade(
   rng: RngState,
   /** The match just played, which decides what is unlocked now. */
   finishedMatch: number,
+  /** The score after that match, which decides who gets the catch-up. */
+  wins: Readonly<Record<Side, number>>,
 ): [UpgradeState, RngState] {
   const perks = Object.values(content.perks).sort((a, b) => (a.id < b.id ? -1 : 1));
   const offers: Record<string, string[]> = {};
@@ -115,12 +137,13 @@ export function createUpgrade(
 
   for (const side of ['A', 'B'] as const) {
     const team = draft.picks[side].map((id) => heroOf(draft, id));
+    const count = content.config.run.perkChoices + catchUpBonus(side, wins, content);
     for (const hero of team) {
       const teammates = team.filter((t) => t.id !== hero.id);
       const open = perks.filter((perk) => eligible(perk, hero, teammates, content));
       const [shuffled, next] = shuffle(state, open);
       state = next;
-      offers[hero.id] = shuffled.slice(0, content.config.run.perkChoices).map((p) => p.id);
+      offers[hero.id] = shuffled.slice(0, count).map((p) => p.id);
     }
   }
 
@@ -135,13 +158,180 @@ export function createUpgrade(
       unlocks[hero.id] = { kind: due.kind, options: shuffled.slice(0, content.config.run.unlockChoices) };
     }
   }
-  // Rewards are drawn last, so they did not shift the perks or the unlocks either.
-  const [rewards, afterRewards] = createRewards(draft, content, state, finishedMatch);
-  return [{ offers, chosen: {}, unlocks, unlocked: {}, rewards, rewarded: {} }, afterRewards];
+  // Rewards come after both, and swap candidates last, so each addition left the
+  // earlier draws where they were.
+  const [rewards, afterRewards] = createRewards(draft, content, state, finishedMatch, wins);
+  const [candidates, afterCandidates] = createCandidates(draft, content, afterRewards, finishedMatch);
+  return [
+    { offers, chosen: {}, unlocks, unlocked: {}, rewards, rewarded: {}, candidates, swapped: {} },
+    afterCandidates,
+  ];
 }
 
 /**
- * The artifacts each side is offered: config.run.rewardChoices of the tier this match
+ * The heroes each side may swap one of its own for: first the heroes nobody drafted,
+ * dealt to the two sides in turn, then new ones from the generator. Every one of them
+ * comes ready at the team's level (readyHero).
+ */
+function createCandidates(
+  draft: DraftState,
+  content: ContentRegistry,
+  rng: RngState,
+  finishedMatch: number,
+): [Record<Side, HeroTemplate[]>, RngState] {
+  const count = content.config.run.swapChoices;
+  const out: Record<Side, HeroTemplate[]> = { A: [], B: [] };
+  const [undrafted, afterShuffle] = shuffle(rng, availableHeroes(draft));
+  let state = afterShuffle;
+
+  const raw: Record<Side, HeroTemplate[]> = { A: [], B: [] };
+  undrafted.forEach((hero, i) => {
+    const side: Side = i % 2 === 0 ? 'A' : 'B';
+    if (raw[side].length < count) raw[side].push(hero);
+  });
+
+  // Names never repeat among the heroes of a run, the candidates included.
+  const used = new Set(draft.pool.map((h) => h.name));
+  const [names, afterNames] = shuffle(state, content.names.filter((n) => !used.has(n)));
+  state = afterNames;
+  let nameIndex = 0;
+  for (const side of ['A', 'B'] as const) {
+    for (let i = raw[side].length; i < count; i++) {
+      const name = names[nameIndex] ?? `#${finishedMatch}${side}${i + 1}`;
+      nameIndex += 1;
+      const [hero, next] = generateHero(content, state, `s${finishedMatch}${side}${i + 1}`, name);
+      state = next;
+      raw[side].push(hero);
+    }
+  }
+
+  for (const side of ['A', 'B'] as const) {
+    for (const hero of raw[side]) {
+      const [ready, next] = readyHero(hero, finishedMatch, content, state);
+      state = next;
+      out[side].push(ready);
+    }
+  }
+  return [out, state];
+}
+
+/**
+ * A candidate brought to the team's level: the passive and the tier IV ability its
+ * teammates have unlocked by now, and one perk per finished match. Chosen at random
+ * from what its class may take, from the run stream: core cannot ask the AI, and a
+ * side choosing for itself would be choosing twice. Unique perks are left out, since
+ * a candidate cannot know what its future teammates take in this same phase.
+ */
+function readyHero(
+  hero: HeroTemplate,
+  finishedMatch: number,
+  content: ContentRegistry,
+  rng: RngState,
+): [HeroTemplate, RngState] {
+  const run = content.config.run;
+  const byId = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+  let state = rng;
+  let next = hero;
+
+  if (finishedMatch >= run.passiveAfterMatch && next.passive === null) {
+    const passives = Object.values(content.passives)
+      .filter((p) => p.class === next.classId)
+      .map((p) => p.id)
+      .sort(byId);
+    if (passives.length > 0) {
+      const [passive, after] = pick(state, passives);
+      state = after;
+      next = { ...next, passive };
+    }
+  }
+  const hasUltimate = next.abilities.some((id) => getAbility(content, id).tier === 4);
+  if (finishedMatch >= run.ultimateAfterMatch && !hasUltimate) {
+    const ultimates = Object.values(content.abilities)
+      .filter((a) => a.class === next.classId && a.tier === 4 && a.basic !== true)
+      .map((a) => a.id)
+      .sort(byId);
+    if (ultimates.length > 0) {
+      const [ultimate, after] = pick(state, ultimates);
+      state = after;
+      next = { ...next, abilities: [...next.abilities, toAbilityId(ultimate)] };
+    }
+  }
+
+  const perks = Object.values(content.perks).sort((a, b) => byId(a.id, b.id));
+  while (next.perks.length < finishedMatch) {
+    const current = next;
+    const open = perks.filter((perk) => perk.unique !== true && eligible(perk, current, [], content));
+    if (open.length === 0) break;
+    const [perk, afterPerk] = pick(state, open);
+    state = afterPerk;
+    let choice: PerkPick = { perkId: perk.id };
+    if (perk.abilityMod !== undefined) {
+      const [target, afterTarget] = pick(state, perkTargets(current, perk, content));
+      state = afterTarget;
+      choice = { perkId: perk.id, abilityId: target };
+    }
+    next = { ...next, perks: [...next.perks, choice] };
+  }
+  return [next, state];
+}
+
+/** A side's team as it will be after the phase: with the lined-up swap made. */
+export function teamAfterSwap(upgrade: UpgradeState, draft: DraftState, side: Side): HeroTemplate[] {
+  const swap = upgrade.swapped[side];
+  return draft.picks[side].map((id) => {
+    if (swap?.outId === id) {
+      const incoming = upgrade.candidates[side].find((h) => h.id === swap.inId);
+      if (incoming === undefined) throw new Error(`Swap candidate ${swap.inId} is not on offer`);
+      return incoming;
+    }
+    return heroOf(draft, id);
+  });
+}
+
+/** Whether this hero is lined up to leave the team, and so chooses nothing more. */
+function leaving(upgrade: UpgradeState, side: Side, id: HeroId): boolean {
+  return upgrade.swapped[side]?.outId === id;
+}
+
+/**
+ * The swap takes back a reward given to a hero no longer in the team, so it cannot be
+ * lost with the hero who leaves.
+ */
+function keepRewardValid(upgrade: UpgradeState, draft: DraftState, side: Side): UpgradeState {
+  const reward = upgrade.rewarded[side];
+  if (reward === undefined) return upgrade;
+  if (teamAfterSwap(upgrade, draft, side).some((h) => h.id === reward.heroId)) return upgrade;
+  const rewarded = { ...upgrade.rewarded };
+  delete rewarded[side];
+  return { ...upgrade, rewarded };
+}
+
+export function applySwapHero(
+  upgrade: UpgradeState,
+  draft: DraftState,
+  side: Side,
+  outId: HeroId,
+  inId: HeroId,
+): UpgradeState {
+  const what = `swapHero ${outId} for ${inId}`;
+  if (!draft.picks[side].includes(outId)) throw new IllegalActionError(`${what}: not a hero of ${side}`);
+  if (!upgrade.candidates[side].some((h) => h.id === inId)) {
+    throw new IllegalActionError(`${what}: not a candidate of ${side}`);
+  }
+  // One swap per phase: a new one replaces the old; nothing is final until endUpgrade.
+  const swap: SwapPick = { outId, inId };
+  return keepRewardValid({ ...upgrade, swapped: { ...upgrade.swapped, [side]: swap } }, draft, side);
+}
+
+export function applyCancelSwap(upgrade: UpgradeState, draft: DraftState, side: Side): UpgradeState {
+  if (upgrade.swapped[side] === undefined) throw new IllegalActionError(`cancelSwap: ${side} has no swap`);
+  const swapped = { ...upgrade.swapped };
+  delete swapped[side];
+  return keepRewardValid({ ...upgrade, swapped }, draft, side);
+}
+
+/**
+ * The artifacts each side is offered: config.run.rewardChoices (more when catching up) of the tier this match
  * gives, each one fitting a different hero of the team where possible, so the choice
  * is between heroes and not only between items. A legendary never repeats in a run:
  * not one any hero carries, and not one already offered to the other side.
@@ -151,6 +341,7 @@ function createRewards(
   content: ContentRegistry,
   rng: RngState,
   finishedMatch: number,
+  wins: Readonly<Record<Side, number>>,
 ): [Record<Side, string[]>, RngState] {
   const out: Record<Side, string[]> = { A: [], B: [] };
   const tier = content.config.run.rewardTiers[finishedMatch - 1];
@@ -170,14 +361,15 @@ function createRewards(
     const [shuffled, afterItems] = shuffle(state, open);
     state = afterItems;
     const picked: string[] = [];
+    const count = content.config.run.rewardChoices + catchUpBonus(side, wins, content);
     // One per hero first, in a random hero order; then anything that fits anyone.
     for (const hero of team) {
-      if (picked.length >= content.config.run.rewardChoices) break;
+      if (picked.length >= count) break;
       const item = shuffled.find((i) => !picked.includes(i.id) && itemFits(i, hero.classId, content));
       if (item !== undefined) picked.push(item.id);
     }
     for (const item of shuffled) {
-      if (picked.length >= content.config.run.rewardChoices) break;
+      if (picked.length >= count) break;
       if (picked.includes(item.id)) continue;
       if (team.some((hero) => itemFits(item, hero.classId, content))) picked.push(item.id);
     }
@@ -197,9 +389,11 @@ export function applyChooseReward(
 ): UpgradeState {
   const what = `chooseReward ${itemId} for ${heroIdValue}`;
   if (!upgrade.rewards[side].includes(itemId)) throw new IllegalActionError(`${what}: not among the rewards`);
-  if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
+  // The team after the swap: a newcomer may take the reward, a leaving hero may not.
+  const hero = teamAfterSwap(upgrade, draft, side).find((h) => h.id === heroIdValue);
+  if (hero === undefined) throw new IllegalActionError(`${what}: not a hero of ${side} for the next match`);
   const item = content.items[itemId];
-  if (item === undefined || !itemFits(item, heroOf(draft, heroIdValue).classId, content)) {
+  if (item === undefined || !itemFits(item, hero.classId, content)) {
     throw new IllegalActionError(`${what}: the artifact does not fit this hero`);
   }
   // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
@@ -207,9 +401,22 @@ export function applyChooseReward(
   return { ...upgrade, rewarded: { ...upgrade.rewarded, [side]: pick } };
 }
 
-/** Whether a side still has its reward to take. */
-export function awaitingReward(upgrade: UpgradeState, side: Side): boolean {
-  return upgrade.rewards[side].length > 0 && upgrade.rewarded[side] === undefined;
+/**
+ * Whether a side still has its reward to take. A swap can leave nobody an offered
+ * artifact fits; then there is nothing to wait for.
+ */
+export function awaitingReward(
+  upgrade: UpgradeState,
+  draft: DraftState,
+  side: Side,
+  content: ContentRegistry,
+): boolean {
+  if (upgrade.rewarded[side] !== undefined) return false;
+  const team = teamAfterSwap(upgrade, draft, side);
+  return upgrade.rewards[side].some((id) => {
+    const item = content.items[id];
+    return item !== undefined && team.some((hero) => itemFits(item, hero.classId, content));
+  });
 }
 
 export function applyChooseUnlock(
@@ -221,6 +428,7 @@ export function applyChooseUnlock(
 ): UpgradeState {
   const what = `chooseUnlock ${optionId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
+  if (leaving(upgrade, side, heroIdValue)) throw new IllegalActionError(`${what}: the hero is being swapped out`);
   // Choosing again replaces the earlier choice; nothing is final until endUpgrade.
   if (!(upgrade.unlocks[heroIdValue]?.options ?? []).includes(optionId)) {
     throw new IllegalActionError(`${what}: not among the options`);
@@ -228,10 +436,11 @@ export function applyChooseUnlock(
   return { ...upgrade, unlocked: { ...upgrade.unlocked, [heroIdValue]: optionId } };
 }
 
-/** Heroes of a side with an unlock still to choose. */
+/** Heroes of a side with an unlock still to choose; a leaving hero chooses nothing. */
 export function awaitingUnlock(upgrade: UpgradeState, draft: DraftState, side: Side): HeroId[] {
   return draft.picks[side].filter(
-    (id) => upgrade.unlocks[id] !== undefined && upgrade.unlocked[id] === undefined,
+    (id) =>
+      !leaving(upgrade, side, id) && upgrade.unlocks[id] !== undefined && upgrade.unlocked[id] === undefined,
   );
 }
 
@@ -246,6 +455,7 @@ export function applyChoosePerk(
 ): UpgradeState {
   const what = `choosePerk ${perkId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
+  if (leaving(upgrade, side, heroIdValue)) throw new IllegalActionError(`${what}: the hero is being swapped out`);
   // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
   if (!(upgrade.offers[heroIdValue] ?? []).includes(perkId)) {
     throw new IllegalActionError(`${what}: not among the offers`);
@@ -275,18 +485,35 @@ export function applyChoosePerk(
   return { ...upgrade, chosen: { ...upgrade.chosen, [heroIdValue]: pick } };
 }
 
-/** Heroes of a side still to choose; a hero with no offers has nothing to choose. */
+/**
+ * Heroes of a side still to choose; a hero with no offers has nothing to choose, and
+ * a leaving one chooses nothing more.
+ */
 export function awaitingPerk(upgrade: UpgradeState, draft: DraftState, side: Side): HeroId[] {
   return draft.picks[side].filter(
-    (id) => upgrade.chosen[id] === undefined && (upgrade.offers[id] ?? []).length > 0,
+    (id) => !leaving(upgrade, side, id) && upgrade.chosen[id] === undefined && (upgrade.offers[id] ?? []).length > 0,
   );
 }
 
-/** The chosen perks and unlocks written into the heroes, ready for the next match. */
+/**
+ * The chosen perks and unlocks written into the heroes, ready for the next match.
+ * A swap puts the candidate in the leaving hero's place in the pick order; the one
+ * who leaves is gone from the pool and so from the run.
+ */
 export function commitUpgrade(upgrade: UpgradeState, draft: DraftState): DraftState {
+  let pool = [...draft.pool];
+  const picks = { A: [...draft.picks.A], B: [...draft.picks.B] };
+  for (const side of ['A', 'B'] as const) {
+    const swap = upgrade.swapped[side];
+    const incoming = swap === undefined ? undefined : upgrade.candidates[side].find((h) => h.id === swap.inId);
+    if (swap === undefined || incoming === undefined) continue;
+    pool = [...pool.filter((h) => h.id !== swap.outId && h.id !== swap.inId), incoming];
+    picks[side] = picks[side].map((id) => (id === swap.outId ? swap.inId : id));
+  }
   return {
     ...draft,
-    pool: draft.pool.map((hero) => {
+    picks,
+    pool: pool.map((hero) => {
       const pick = upgrade.chosen[hero.id];
       let next = pick === undefined ? hero : { ...hero, perks: [...hero.perks, pick] };
       const unlock = upgrade.unlocks[hero.id];

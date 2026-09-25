@@ -37,29 +37,29 @@ describe('a whole run, AI against AI', () => {
     }
   });
 
-  it('drafts six different heroes, three a side, and leaves four in reserve', () => {
+  it('ends with six different heroes, three a side, all of them in the pool', () => {
+    // Swaps between matches may have changed who they are, never how many.
     for (const { result } of results) {
       const { picks, pool } = result.run.draft;
       expect(picks.A).toHaveLength(3);
       expect(picks.B).toHaveLength(3);
       expect(new Set([...picks.A, ...picks.B]).size).toBe(6);
-      expect(pool.length - 6).toBe(4);
+      for (const id of [...picks.A, ...picks.B]) expect(pool.some((h) => h.id === id)).toBe(true);
     }
   });
 
-  it('every battle fields the drafted teams, levelled to the match number', () => {
+  it('every battle fields three heroes a side, levelled to the match number', () => {
     for (const { result } of results) {
       for (const [i, match] of result.matches.entries()) {
         // Summons join mid-battle; the drafted six are the heroes proper.
         const heroes = Object.values(match.state.heroes).filter((h) => h.summon === null);
         expect(heroes).toHaveLength(6);
-        for (const hero of heroes) {
-          expect(result.run.draft.picks[hero.side]).toContain(hero.id);
-        }
-        // Levels only ever add: Health at match i+1 is at least the generated number.
+        expect(heroes.filter((h) => h.side === 'A')).toHaveLength(3);
+        // Levels only ever add: Health at match i+1 is above the generated number. A
+        // hero swapped out later is no longer in the pool to compare with.
         for (const hero of heroes) {
           const template = result.run.draft.pool.find((h) => h.id === hero.id);
-          if (i > 0) expect(hero.base.maxHp).toBeGreaterThan(template?.stats.maxHp ?? Infinity);
+          if (i > 0 && template !== undefined) expect(hero.base.maxHp).toBeGreaterThan(template.stats.maxHp);
         }
       }
     }

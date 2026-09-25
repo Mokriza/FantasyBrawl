@@ -15,13 +15,15 @@ import {
   draftTurn,
 } from '../core/index.js';
 import type { AiProfile } from '../ai/index.js';
-import { choosePerk, choosePick, choosePlacement, chooseReward, chooseUnlock } from '../ai/index.js';
+import { choosePerk, choosePick, choosePlacement, chooseReward, chooseSwap, chooseUnlock } from '../ai/index.js';
 import type { MatchResult } from './match.js';
 import { playBattle } from './match.js';
 
 export interface RunResult {
   readonly run: RunState;
   readonly matches: readonly MatchResult[];
+  /** How many heroes the two sides swapped between matches, together. */
+  readonly swaps: number;
 }
 
 export interface RunOptions {
@@ -37,6 +39,7 @@ export function playRun(options: RunOptions): RunResult {
   // The AI's own stream for draft and placement, apart from the run and the battles.
   let aiRng = createRng(seed ^ 0x51ed270b);
   const matches: MatchResult[] = [];
+  let swaps = 0;
 
   // A run is at most maxMatches matches long; the guard only catches a rules bug.
   for (let step = 0; step < 1000 && run.phase !== 'finished'; step++) {
@@ -82,7 +85,13 @@ export function playRun(options: RunOptions): RunResult {
         break;
       case 'upgrade': {
         for (const side of ['A', 'B'] as const) {
-          if (run.upgrade !== null && awaitingReward(run.upgrade, side)) {
+          // The swap first: the newcomer may be the one the reward fits best.
+          const swap = chooseSwap(run, side, content);
+          if (swap !== null) {
+            run = applyRunAction(run, { type: 'swapHero', side, ...swap }, content);
+            swaps += 1;
+          }
+          if (run.upgrade !== null && awaitingReward(run.upgrade, run.draft, side, content)) {
             const decision = chooseReward(run, side, content, aiRng);
             aiRng = decision.rng;
             run = applyRunAction(run, { type: 'chooseReward', side, itemId: decision.itemId, heroId: decision.heroId }, content);
@@ -110,5 +119,5 @@ export function playRun(options: RunOptions): RunResult {
     }
   }
 
-  return { run, matches };
+  return { run, matches, swaps };
 }

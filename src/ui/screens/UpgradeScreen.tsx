@@ -25,10 +25,13 @@ import {
   perkTargets,
   previewBattle,
   statsAtLevel,
+  teamAfterSwap,
   teamOf,
+  trailingSide,
 } from '../../core/index.js';
 import { ClassIcon } from '../panels/ClassIcon.js';
-import { endUpgrade, takePerk, takeReward, takeUnlock } from '../store.js';
+import { DraftCard } from '../panels/DraftCard.js';
+import { cancelSwap, endUpgrade, swapHero, takePerk, takeReward, takeUnlock } from '../store.js';
 import type { UiState } from '../store.js';
 import { UI } from '../strings.ru.js';
 import { TopBar } from './TopBar.js';
@@ -168,7 +171,8 @@ function RewardBlock({ ui, run }: { ui: UiState; run: RunState }): JSX.Element |
   const offered = run.upgrade?.rewards[ui.playerSide] ?? [];
   if (offered.length === 0) return null;
   const pick = run.upgrade?.rewarded[ui.playerSide];
-  const team = teamOf(run.draft, ui.playerSide);
+  // The team that will play: a newcomer may take the reward, a leaving hero may not.
+  const team = run.upgrade === null ? [] : teamAfterSwap(run.upgrade, run.draft, ui.playerSide);
 
   return (
     <section className="reward-block">
@@ -221,8 +225,121 @@ function RewardBlock({ ui, run }: { ui: UiState; run: RunState }): JSX.Element |
   );
 }
 
+/**
+ * The optional swap: the candidates as full draft cards, each with the heroes it could
+ * replace. Folded away by default, since most phases will not use it.
+ */
+function SwapBlock({ ui, run }: { ui: UiState; run: RunState }): JSX.Element | null {
+  const { content } = ui;
+  const [open, setOpen] = useState(false);
+  const candidates = run.upgrade?.candidates[ui.playerSide] ?? [];
+  if (candidates.length === 0) return null;
+  const swap = run.upgrade?.swapped[ui.playerSide];
+  const team = teamOf(run.draft, ui.playerSide);
+
+  return (
+    <section className="swap-block">
+      <header>
+        <span className="unlock-title">{UI.upgrade.swapTitle}</span>
+        <button type="button" className="primary" onClick={() => setOpen(!open)}>
+          {open ? UI.upgrade.swapHide : UI.upgrade.swapShow}
+        </button>
+        {swap === undefined ? null : (
+          <button type="button" className="primary" onClick={cancelSwap}>
+            {UI.upgrade.swapCancel}
+          </button>
+        )}
+      </header>
+      {open ? (
+        <>
+          <span className="dim">{UI.upgrade.swapHint}</span>
+          <div className="swap-row">
+            {candidates.map((hero) => {
+              const chosen = swap?.inId === hero.id;
+              return (
+                <div key={hero.id} className={['swap-candidate', chosen ? 'perk-chosen' : ''].filter(Boolean).join(' ')}>
+                  <DraftCard hero={hero} content={content} level={heroLevel(run)} side={ui.playerSide} canPick={false} />
+                  <div className="swap-buttons">
+                    <span className="dim">{chosen ? UI.upgrade.swapChosen : UI.upgrade.swapInstead}</span>
+                    {team.map((mine) => (
+                      <button
+                        key={mine.id}
+                        type="button"
+                        className={['primary', chosen && swap?.outId === mine.id ? 'speed-on' : ''].filter(Boolean).join(' ')}
+                        onClick={() => swapHero(mine.id, hero.id)}
+                      >
+                        {mine.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+/** A newcomer from a swap: it arrived ready, so there is only something to look at. */
+function NewcomerCard({ ui, hero }: { ui: UiState; hero: HeroTemplate }): JSX.Element {
+  const { content } = ui;
+  const heroClass = getClass(content, hero.classId);
+  const passive = hero.passive === null ? undefined : content.passives[hero.passive];
+  return (
+    <section className="upgrade-hero upgrade-newcomer">
+      <header>
+        <ClassIcon classId={hero.classId} size={36} />
+        <div className="hero-title">
+          <strong>
+            {UI.upgrade.newcomer}: {hero.name}
+          </strong>
+          <span className="dim">
+            {content.races[hero.race]?.name ?? ''} · {heroClass.name}
+          </span>
+        </div>
+      </header>
+      <span className="dim">{UI.upgrade.newcomerHint}</span>
+      <p className="level-changes">
+        {passive === undefined ? null : (
+          <span title={passive.description}>
+            {UI.passive}: {passive.name}.{' '}
+          </span>
+        )}
+        {UI.upgrade.perks}: {hero.perks.map((p) => content.perks[p.perkId]?.name ?? p.perkId).join(', ')}.{' '}
+        {hero.item === null ? null : (
+          <span title={content.items[hero.item]?.description}>
+            {UI.item}: {content.items[hero.item]?.name ?? hero.item}
+          </span>
+        )}
+      </p>
+    </section>
+  );
+}
+
 function HeroUpgrade({ ui, run, hero }: { ui: UiState; run: RunState; hero: HeroTemplate }): JSX.Element {
   const { content } = ui;
+  const swap = run.upgrade?.swapped[ui.playerSide];
+  if (swap?.outId === hero.id) {
+    const incoming = run.upgrade?.candidates[ui.playerSide].find((h) => h.id === swap.inId);
+    return (
+      <>
+        <section className="upgrade-hero upgrade-leaving">
+          <header>
+            <ClassIcon classId={hero.classId} size={36} />
+            <div className="hero-title">
+              <strong>{hero.name}</strong>
+              <span className="dim">
+                {UI.upgrade.leaving} {incoming?.name}
+              </span>
+            </div>
+          </header>
+        </section>
+        {incoming === undefined ? null : <NewcomerCard ui={ui} hero={incoming} />}
+      </>
+    );
+  }
   const offers = run.upgrade?.offers[hero.id] ?? [];
   const pick = run.upgrade?.chosen[hero.id];
   const heroClass = getClass(content, hero.classId);
@@ -287,10 +404,13 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
       : [
           ...awaitingPerk(upgrade, run.draft, you),
           ...awaitingUnlock(upgrade, run.draft, you),
-          ...(awaitingReward(upgrade, you) ? ['reward'] : []),
+          ...(awaitingReward(upgrade, run.draft, you, ui.content) ? ['reward'] : []),
         ];
   const enemyReward = upgrade?.rewarded[otherSide(you)];
-  const enemy = teamOf(run.draft, otherSide(you));
+  const enemySwap = upgrade?.swapped[otherSide(you)];
+  // The team that will play, so the reward can name a newcomer.
+  const enemy = upgrade === null ? teamOf(run.draft, otherSide(you)) : teamAfterSwap(upgrade, run.draft, otherSide(you));
+  const trailing = trailingSide(run.wins, ui.content);
 
   return (
     <>
@@ -300,6 +420,7 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
           {UI.upgrade.title} {UI.upgrade.beforeMatch} {run.match}
         </h2>
         <span className="dim">{UI.upgrade.hint}</span>
+        {trailing === you ? <span className="catch-up">{UI.upgrade.catchUp}</span> : null}
         <button
           type="button"
           className="primary upgrade-done"
@@ -314,6 +435,7 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
       <main className="upgrade">
         <div className="upgrade-list">
           <RewardBlock ui={ui} run={run} />
+          <SwapBlock ui={ui} run={run} />
           {teamOf(run.draft, you).map((hero) => (
             <HeroUpgrade key={hero.id} ui={ui} run={run} hero={hero} />
           ))}
@@ -321,6 +443,13 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
 
         <aside className="upgrade-enemy">
           <h2>{UI.upgrade.enemy}</h2>
+          {trailing === otherSide(you) ? <p className="catch-up">{UI.upgrade.enemyCatchUp}</p> : null}
+          {enemySwap === undefined ? null : (
+            <p className="dim">
+              {UI.upgrade.enemySwap}: {run.draft.pool.find((h) => h.id === enemySwap.outId)?.name} →{' '}
+              {enemy.find((h) => h.id === enemySwap.inId)?.name}
+            </p>
+          )}
           {enemyReward === undefined ? null : (
             <p className="dim" title={ui.content.items[enemyReward.itemId]?.description}>
               {UI.upgrade.rewardTitleShort}: {ui.content.items[enemyReward.itemId]?.name} {UI.upgrade.rewardFor}{' '}
@@ -347,7 +476,7 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
                       <br />
                     </>
                   )}
-                  <span className="dim">{perk?.name ?? '…'}</span>
+                  <span className="dim">{enemySwap?.inId === hero.id ? UI.upgrade.newcomer : (perk?.name ?? '…')}</span>
                 </span>
               </div>
             );

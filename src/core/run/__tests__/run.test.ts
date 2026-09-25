@@ -11,7 +11,7 @@ import { IllegalActionError, heroId } from '../../types.js';
 import { statsAtLevel } from '../levels.js';
 import { legalPlacementHexes, placementTurn, startZone } from '../placement.js';
 import { applyRunAction, createRun, createRunBattle, heroLevel, runWinner } from '../run.js';
-import { awaitingPerk, awaitingReward, awaitingUnlock, perkTargets } from '../upgrade.js';
+import { awaitingPerk, awaitingReward, awaitingUnlock, perkTargets, teamAfterSwap } from '../upgrade.js';
 import { itemFits } from '../../draft/items.js';
 
 let content: ContentRegistry;
@@ -58,12 +58,12 @@ function placeAll(run: RunState): RunState {
 function upgradeAll(run: RunState): RunState {
   let current = run;
   for (const side of ['A', 'B'] as const) {
-    if (current.upgrade !== null && awaitingReward(current.upgrade, side)) {
+    if (current.upgrade !== null && awaitingReward(current.upgrade, current.draft, side, content)) {
       const itemId = current.upgrade.rewards[side][0];
       const item = itemId === undefined ? undefined : content.items[itemId];
-      const hero = current.draft.picks[side]
-        .map((id) => current.draft.pool.find((h) => h.id === id))
-        .find((h) => h !== undefined && item !== undefined && itemFits(item, h.classId, content));
+      const hero = teamAfterSwap(current.upgrade, current.draft, side).find(
+        (h) => item !== undefined && itemFits(item, h.classId, content),
+      );
       if (itemId === undefined || hero === undefined) throw new Error('no reward to take');
       current = applyRunAction(current, { type: 'chooseReward', side, itemId, heroId: hero.id }, content);
     }
@@ -426,7 +426,7 @@ describe('the upgrade phase', () => {
     );
     // Every perk taken, but the unlocks still open: not yet.
     for (const side of ['A', 'B'] as const) {
-      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {}, rewards: { A: [], B: [] }, rewarded: {} }, run.draft, side)) {
+      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {}, rewards: { A: [], B: [] }, rewarded: {}, candidates: { A: [], B: [] }, swapped: {} }, run.draft, side)) {
         const perkId = run.upgrade?.offers[hero]?.find((p) => content.perks[p]?.abilityMod === undefined);
         if (perkId !== undefined) run = applyRunAction(run, { type: 'choosePerk', side, heroId: hero, perkId }, content);
       }
@@ -543,5 +543,149 @@ describe('the upgrade phase', () => {
         for (const offered of run.upgrade?.offers[id] ?? []) expect(owned).not.toContain(offered);
       }
     }
+  });
+});
+
+/** The upgrade phase after the given winners, everything else taken as offered. */
+function upgradeAfter(seed: number, winners: readonly Side[]): RunState {
+  let run = placeAll(draftAll(createRun({ seed, content })));
+  winners.forEach((winner, i) => {
+    run = applyRunAction(win(run, winner), { type: 'nextMatch' }, content);
+    if (i < winners.length - 1) run = placeAll(upgradeAll(run));
+  });
+  return run;
+}
+
+describe('swapping a hero', () => {
+  function candidate(run: RunState, side: Side, index = 0): HeroTemplate {
+    const hero = run.upgrade?.candidates[side][index];
+    if (hero === undefined) throw new Error('no candidate');
+    return hero;
+  }
+
+  it('offers each side its own candidates, the heroes nobody drafted first', () => {
+    const run = upgradeAfter(4, ['A']);
+    const a = run.upgrade?.candidates.A ?? [];
+    const b = run.upgrade?.candidates.B ?? [];
+    expect(a).toHaveLength(content.config.run.swapChoices);
+    expect(b).toHaveLength(content.config.run.swapChoices);
+    const ids = [...a, ...b].map((h) => h.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    // Every undrafted hero is offered to one side or the other before anyone new.
+    for (const hero of availableHeroes(run.draft)) expect(ids).toContain(hero.id);
+    // Names stay unique across the run.
+    const names = [...run.draft.pool.filter((h) => !ids.includes(h.id)), ...a, ...b].map((h) => h.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('a candidate comes ready: perks for every level, the unlocks already due, a common artifact', () => {
+    const afterOne = upgradeAfter(4, ['A']);
+    for (const hero of [...(afterOne.upgrade?.candidates.A ?? []), ...(afterOne.upgrade?.candidates.B ?? [])]) {
+      expect(hero.perks).toHaveLength(1);
+      expect(hero.passive).not.toBeNull();
+      expect(hero.abilities.some((id) => content.abilities[id]?.tier === 4)).toBe(false);
+      expect(content.items[hero.item ?? '']?.tier).toBe('common');
+      for (const pick of hero.perks) expect(content.perks[pick.perkId]?.unique).not.toBe(true);
+    }
+    const afterTwo = upgradeAfter(4, ['A', 'B']);
+    for (const hero of afterTwo.upgrade?.candidates.A ?? []) {
+      expect(hero.perks).toHaveLength(2);
+      expect(new Set(hero.perks.map((p) => p.perkId)).size).toBe(2);
+      expect(hero.abilities.filter((id) => content.abilities[id]?.tier === 4)).toHaveLength(1);
+    }
+  });
+
+  it('the newcomer takes the place of the hero it replaces, who leaves the run', () => {
+    let run = upgradeAfter(4, ['A']);
+    const outId = run.draft.picks.A[1];
+    const incoming = candidate(run, 'A');
+    if (outId === undefined) throw new Error('setup');
+    run = applyRunAction(run, { type: 'swapHero', side: 'A', outId, inId: incoming.id }, content);
+    run = upgradeAll(run);
+    expect(run.draft.picks.A[1]).toBe(incoming.id);
+    expect(run.draft.pool.some((h) => h.id === outId)).toBe(false);
+    expect(run.draft.pool.find((h) => h.id === incoming.id)?.perks).toEqual(incoming.perks);
+
+    const battle = createRunBattle(placeAll(run), content);
+    expect(battle.heroes[incoming.id]?.side).toBe('A');
+    expect(battle.heroes[outId]).toBeUndefined();
+  });
+
+  it('one swap per phase: a new swap replaces the old, and cancelSwap undoes it', () => {
+    let run = upgradeAfter(4, ['A']);
+    const [first, second] = run.draft.picks.A;
+    if (first === undefined || second === undefined) throw new Error('setup');
+    run = applyRunAction(run, { type: 'swapHero', side: 'A', outId: first, inId: candidate(run, 'A', 0).id }, content);
+    run = applyRunAction(run, { type: 'swapHero', side: 'A', outId: second, inId: candidate(run, 'A', 1).id }, content);
+    expect(run.upgrade?.swapped.A).toEqual({ outId: second, inId: candidate(run, 'A', 1).id });
+    run = applyRunAction(run, { type: 'cancelSwap', side: 'A' }, content);
+    expect(run.upgrade?.swapped.A).toBeUndefined();
+    run = upgradeAll(run);
+    expect(run.draft.picks.A).toContain(first);
+    expect(run.draft.picks.A).toContain(second);
+  });
+
+  it('refuses a hero of the other side and a candidate that was not offered to this side', () => {
+    const run = upgradeAfter(4, ['A']);
+    const mine = run.draft.picks.A[0];
+    const theirs = run.draft.picks.B[0];
+    if (mine === undefined || theirs === undefined) throw new Error('setup');
+    const swap = (outId: string, inId: string) => () =>
+      applyRunAction(run, { type: 'swapHero', side: 'A', outId: heroId(outId), inId: heroId(inId) }, content);
+    expect(swap(theirs, candidate(run, 'A').id)).toThrow(IllegalActionError);
+    expect(swap(mine, candidate(run, 'B').id)).toThrow(IllegalActionError);
+    expect(swap(mine, theirs)).toThrow(IllegalActionError);
+  });
+
+  it('the leaving hero chooses nothing more; the reward may go to the newcomer instead', () => {
+    let run = upgradeAfter(6, ['A']);
+    const rewards = run.upgrade?.rewards.A ?? [];
+    // A candidate some offered artifact fits, and the artifact.
+    const pair = (run.upgrade?.candidates.A ?? [])
+      .map((hero) => ({ hero, itemId: rewards.find((id) => itemFits(itemById(id), hero.classId, content)) }))
+      .find((p) => p.itemId !== undefined);
+    const outId = run.draft.picks.A[0];
+    if (pair?.itemId === undefined || outId === undefined) throw new Error('setup');
+
+    // A reward already given to the leaving hero is taken back by the swap.
+    const outHero = run.draft.pool.find((h) => h.id === outId);
+    const forOut = rewards.find((id) => outHero !== undefined && itemFits(itemById(id), outHero.classId, content));
+    if (forOut !== undefined) {
+      run = applyRunAction(run, { type: 'chooseReward', side: 'A', itemId: forOut, heroId: outId }, content);
+    }
+    run = applyRunAction(run, { type: 'swapHero', side: 'A', outId, inId: pair.hero.id }, content);
+    expect(run.upgrade?.rewarded.A).toBeUndefined();
+    expect(run.upgrade === null ? [] : awaitingPerk(run.upgrade, run.draft, 'A')).not.toContain(outId);
+    expect(run.upgrade === null ? [] : awaitingUnlock(run.upgrade, run.draft, 'A')).not.toContain(outId);
+    const perkId = run.upgrade?.offers[outId]?.[0];
+    if (perkId !== undefined) {
+      expect(() => applyRunAction(run, { type: 'choosePerk', side: 'A', heroId: outId, perkId }, content)).toThrow(
+        IllegalActionError,
+      );
+    }
+
+    run = applyRunAction(run, { type: 'chooseReward', side: 'A', itemId: pair.itemId, heroId: pair.hero.id }, content);
+    run = upgradeAll(run);
+    expect(run.draft.pool.find((h) => h.id === pair.hero.id)?.item).toBe(pair.itemId);
+  });
+});
+
+describe('catch-up', () => {
+  it('a side two wins behind sees one more perk and one more reward, the leader does not', () => {
+    const run = upgradeAfter(4, ['B', 'B']);
+    const extra = content.config.run.catchUp.extraChoices;
+    for (const id of run.draft.picks.A) {
+      expect(run.upgrade?.offers[id]).toHaveLength(content.config.run.perkChoices + extra);
+    }
+    for (const id of run.draft.picks.B) {
+      expect(run.upgrade?.offers[id]).toHaveLength(content.config.run.perkChoices);
+    }
+    expect(run.upgrade?.rewards.A).toHaveLength(content.config.run.rewardChoices + extra);
+    expect(run.upgrade?.rewards.B).toHaveLength(content.config.run.rewardChoices);
+  });
+
+  it('one win behind is not enough', () => {
+    const run = upgradeAfter(4, ['B']);
+    expect(run.upgrade?.rewards.A).toHaveLength(content.config.run.rewardChoices);
   });
 });

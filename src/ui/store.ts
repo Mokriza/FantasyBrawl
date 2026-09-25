@@ -51,7 +51,7 @@ import {
   startBattle,
 } from '../core/index.js';
 import { loadContent, loadTeams } from '../content/load.js';
-import { chooseActions, choosePerk, choosePick, choosePlacement, chooseReward, chooseUnlock, profileByName } from '../ai/index.js';
+import { chooseActions, choosePerk, choosePick, choosePlacement, chooseReward, chooseSwap, chooseUnlock, profileByName } from '../ai/index.js';
 import type { AiProfile } from '../ai/index.js';
 import { EVENT_MS, FLOAT_MS, OPPONENT_PICK_MS } from './config.js';
 import { advanceDisplay, pruneFloats } from './playback.js';
@@ -393,9 +393,14 @@ function stepRun(): void {
 
     case 'upgrade': {
       // The opponent takes its unlocks and perks at once; the player's wait on the screen.
+      // The swap goes first: the newcomer may be the one the reward fits best.
       const opponent = state.playerSide === 'A' ? 'B' : 'A';
       let current = run;
-      if (current.upgrade !== null && awaitingReward(current.upgrade, opponent)) {
+      const swap = current.upgrade === null || current.upgrade.swapped[opponent] !== undefined
+        ? null
+        : chooseSwap(current, opponent, content);
+      if (swap !== null) current = applyRunAction(current, { type: 'swapHero', side: opponent, ...swap }, content);
+      if (current.upgrade !== null && awaitingReward(current.upgrade, current.draft, opponent, content)) {
         const decision = chooseReward(current, opponent, content, aiRng);
         aiRng = decision.rng;
         current = applyRunAction(
@@ -542,8 +547,20 @@ export function endUpgrade(): void {
   if (run?.phase !== 'upgrade' || run.upgrade === null) return;
   if (awaitingPerk(run.upgrade, run.draft, state.playerSide).length > 0) return;
   if (awaitingUnlock(run.upgrade, run.draft, state.playerSide).length > 0) return;
-  if (awaitingReward(run.upgrade, state.playerSide)) return;
+  if (awaitingReward(run.upgrade, run.draft, state.playerSide, content)) return;
   applyRun({ type: 'endUpgrade' });
+}
+
+/** The player's swap: this hero leaves, that candidate takes the place. */
+export function swapHero(outId: HeroId, inId: HeroId): void {
+  if (state.run?.phase !== 'upgrade') return;
+  applyRun({ type: 'swapHero', side: state.playerSide, outId, inId });
+}
+
+/** Undo the player's swap, if one is lined up. */
+export function cancelSwap(): void {
+  if (state.run?.upgrade?.swapped[state.playerSide] === undefined) return;
+  applyRun({ type: 'cancelSwap', side: state.playerSide });
 }
 
 export function setSpeed(speed: Speed): void {

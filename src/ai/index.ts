@@ -72,8 +72,8 @@ export function chooseActions(
   return { actions: [...best, { type: 'endTurn', heroId: activeId }], rng: current };
 }
 
-export { choosePick, scoreHero } from './draft.js';
-export type { DraftDecision } from './draft.js';
+export { choosePick, chooseSwap, scoreHero } from './draft.js';
+export type { DraftDecision, SwapDecision } from './draft.js';
 export { choosePlacement } from './placement.js';
 export type { PlacementDecision } from './placement.js';
 export { choosePerk, chooseReward, chooseUnlock } from './perks.js';

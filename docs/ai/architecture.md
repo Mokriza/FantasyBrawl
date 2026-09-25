@@ -152,7 +152,7 @@ interface RunState {
   readonly wins: Readonly<Record<Side, number>>;
   readonly history: readonly MatchRecord[];
   readonly placement: PlacementState | null;   // арена матча и кто где стоит
-  readonly upgrade: UpgradeState | null;       // предложения перков и открытий (пассивка, тир IV) и выборы в фазе усиления
+  readonly upgrade: UpgradeState | null;       // предложения перков, открытий, наград, кандидатов на замену и выборы в фазе усиления
 }
 
 type RunAction =
@@ -163,6 +163,8 @@ type RunAction =
   | { type: 'nextMatch' }                                 // в фазу усиления
   | { type: 'chooseUnlock'; side: Side; heroId: HeroId; optionId: string } // пассивка или тир IV из предложенных
   | { type: 'chooseReward'; side: Side; itemId: string; heroId: HeroId }   // артефакт-награда одному герою
+  | { type: 'swapHero'; side: Side; outId: HeroId; inId: HeroId }        // заменить героя кандидатом
+  | { type: 'cancelSwap'; side: Side }                                   // отменить замену
   | { type: 'choosePerk'; side: Side; heroId: HeroId; perkId: string; abilityId?: string }
   | { type: 'endUpgrade' };                               // к расстановке
 

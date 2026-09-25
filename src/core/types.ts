@@ -395,6 +395,16 @@ export interface UpgradeState {
   readonly rewards: Readonly<Record<Side, readonly string[]>>;
   /** The reward each side took, once taken. */
   readonly rewarded: Readonly<Partial<Record<Side, RewardPick>>>;
+  /** The heroes each side may swap one of its own for, ready at the team's level. */
+  readonly candidates: Readonly<Record<Side, readonly HeroTemplate[]>>;
+  /** The swap each side lined up, if any; undone by cancelSwap. */
+  readonly swapped: Readonly<Partial<Record<Side, SwapPick>>>;
+}
+
+/** A swap a side has lined up: who leaves the team and which candidate takes the place. */
+export interface SwapPick {
+  readonly outId: HeroId;
+  readonly inId: HeroId;
 }
 
 /**
@@ -433,6 +443,9 @@ export type RunAction =
   | { readonly type: 'nextMatch' }
   | { readonly type: 'chooseUnlock'; readonly side: Side; readonly heroId: HeroId; readonly optionId: string }
   | { readonly type: 'chooseReward'; readonly side: Side; readonly itemId: string; readonly heroId: HeroId }
+  /** Swap one hero of the side for one of its candidates; a new swap replaces the old. */
+  | { readonly type: 'swapHero'; readonly side: Side; readonly outId: HeroId; readonly inId: HeroId }
+  | { readonly type: 'cancelSwap'; readonly side: Side }
   | {
       readonly type: 'choosePerk';
       readonly side: Side;

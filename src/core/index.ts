@@ -124,8 +124,10 @@ export {
 export type { Trait } from './battle/modifiers.js';
 export { reactTo } from './battle/triggers.js';
 export {
+  applyCancelSwap,
   applyChoosePerk,
   applyChooseUnlock,
+  applySwapHero,
   awaitingPerk,
   awaitingReward,
   awaitingUnlock,
@@ -133,5 +135,7 @@ export {
   commitUpgrade,
   createUpgrade,
   perkTargets,
+  teamAfterSwap,
+  trailingSide,
   withPerkHealth,
 } from './run/upgrade.js';
