@@ -151,7 +151,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 1.9
+        "k": 2.2
       },
       {
         "type": "cooldown",
@@ -207,7 +207,7 @@
         "type": "damage",
         "school": "physical",
         "scale": "attack",
-        "k": 0.9,
+        "k": 1.05,
         "hits": 3
       }
     ]

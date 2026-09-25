@@ -40,7 +40,10 @@ export function abilityRange(
   // A perk's range goes only to abilities that already reach past the next hex, the
   // same limit rangeBonus applies to every other source of range.
   const perk = ability.range > 1 ? abilityModSum(hero, ability, content, 'range') : 0;
-  const range = ability.range + rangeBonus(state, hero, ability.range, content) + perk;
+  // However many sources stack, the reach grows by config.battle.maxRangeBonus at most;
+  // a penalty ("Ослепление") is not capped.
+  const bonus = Math.min(content.config.battle.maxRangeBonus, rangeBonus(state, hero, ability.range, content) + perk);
+  const range = ability.range + bonus;
   // A penalty ("Ослепление") can shorten a ranged ability, never below the next hex.
   return ability.range > 1 ? Math.max(1, range) : range;
 }
