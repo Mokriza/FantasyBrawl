@@ -3,7 +3,7 @@
  */
 
 import type { Action, BattleEvent, BattleState, ContentRegistry, Teams } from '../core/index.js';
-import { applyAction, createBattle, legalActions, startBattle } from '../core/index.js';
+import { applyAction, createBattle, isLegalAction, startBattle } from '../core/index.js';
 import { createRng } from '../core/index.js';
 import type { AiProfile } from '../ai/index.js';
 import { chooseActions } from '../ai/index.js';
@@ -66,8 +66,7 @@ export function playBattle(
       if (state.outcome !== null) break;
       // A trigger may have changed things since the plan was made, so every action is
       // re-checked against legalActions before it is applied.
-      const stillLegal = legalActions(state, content).some((a) => sameAction(a, action));
-      if (!stillLegal) break;
+      if (!isLegalAction(state, action, content)) break;
 
       const applied = applyAction(state, action, content);
       state = applied.state;
@@ -91,20 +90,4 @@ export function playBattle(
   }
 
   return { state, events, turns, abilitiesUsed };
-}
-
-function sameAction(a: Action, b: Action): boolean {
-  if (a.type !== b.type) return false;
-  // The hero matters: a queued endTurn belongs to the hero that planned it, and by
-  // the time it runs the turn may already have passed to somebody else.
-  if (a.heroId !== b.heroId) return false;
-  if (a.type === 'endTurn') return true;
-  if (a.type === 'ability' && b.type === 'ability') {
-    return a.abilityId === b.abilityId && a.target.q === b.target.q && a.target.r === b.target.r;
-  }
-  if (a.type === 'move' && b.type === 'move') {
-    if (a.path.length !== b.path.length) return false;
-    return a.path.every((h, i) => h.q === b.path[i]?.q && h.r === b.path[i]?.r);
-  }
-  return false;
 }

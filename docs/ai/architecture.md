@@ -16,7 +16,10 @@ content (JSON)  ──►  core  ──►  ai  ──►  ui
 | `core` | `content` (типы и загрузчик), стандартная библиотека TS | всё остальное |
 | `ai` | `core` | `ui`, `sim`, DOM |
 | `sim` | `core`, `ai`, Node API | `ui`, DOM |
+| `net` | `core` | `ui`, `ai`, `sim`, `server`, DOM, Node API, `Math.random` |
 | `ui` | всё | — |
+
+`net` — общее для игры по сети: лог принятых действий и его воспроизведение (`applyEntry`, `replay`), кто вправе прислать действие (`actorOf`, `isLegalEntry`), отпечаток контента и схемы сообщений. Его используют и сервер, и клиент, поэтому они не могут разойтись. См. `online-pvp.md`.
 
 Проверка — правило `no-restricted-imports` в ESLint по путям. Если тебе кажется, что `core` нужно что-то из `ui`, — ошибка в дизайне, а не в правиле. Остановись и предложи другое решение.
 
@@ -168,7 +171,8 @@ type RunAction =
   | { type: 'swapHero'; side: Side; outId: HeroId; inId: HeroId }        // заменить героя кандидатом
   | { type: 'cancelSwap'; side: Side }                                   // отменить замену
   | { type: 'choosePerk'; side: Side; heroId: HeroId; perkId: string; abilityId?: string }
-  | { type: 'endUpgrade' };                               // к расстановке
+  | { type: 'readyUpgrade'; side: Side }                 // сторона выбрала всё; обе готовы — к расстановке
+  | { type: 'unreadyUpgrade'; side: Side };              // забрать готовность, чтобы выбрать заново
 
 function applyRunAction(run: RunState, action: RunAction, content: ContentRegistry): RunState;
 ```

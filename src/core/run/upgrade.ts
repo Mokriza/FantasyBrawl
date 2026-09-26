@@ -163,7 +163,7 @@ export function createUpgrade(
   const [rewards, afterRewards] = createRewards(draft, content, state, finishedMatch, wins);
   const [candidates, afterCandidates] = createCandidates(draft, content, afterRewards, finishedMatch);
   return [
-    { offers, chosen: {}, unlocks, unlocked: {}, rewards, rewarded: {}, candidates, swapped: {} },
+    { offers, chosen: {}, unlocks, unlocked: {}, rewards, rewarded: {}, candidates, swapped: {}, ready: {} },
     afterCandidates,
   ];
 }
@@ -318,7 +318,7 @@ export function applySwapHero(
   if (!upgrade.candidates[side].some((h) => h.id === inId)) {
     throw new IllegalActionError(`${what}: not a candidate of ${side}`);
   }
-  // One swap per phase: a new one replaces the old; nothing is final until endUpgrade.
+  // One swap per phase: a new one replaces the old; nothing is final until both sides are ready.
   const swap: SwapPick = { outId, inId };
   return keepRewardValid({ ...upgrade, swapped: { ...upgrade.swapped, [side]: swap } }, draft, side);
 }
@@ -396,7 +396,7 @@ export function applyChooseReward(
   if (item === undefined || !itemFits(item, hero.classId, content)) {
     throw new IllegalActionError(`${what}: the artifact does not fit this hero`);
   }
-  // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
+  // Choosing again replaces the earlier pick; nothing is final until both sides are ready.
   const pick: RewardPick = { itemId, heroId: heroIdValue };
   return { ...upgrade, rewarded: { ...upgrade.rewarded, [side]: pick } };
 }
@@ -429,7 +429,7 @@ export function applyChooseUnlock(
   const what = `chooseUnlock ${optionId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
   if (leaving(upgrade, side, heroIdValue)) throw new IllegalActionError(`${what}: the hero is being swapped out`);
-  // Choosing again replaces the earlier choice; nothing is final until endUpgrade.
+  // Choosing again replaces the earlier choice; nothing is final until both sides are ready.
   if (!(upgrade.unlocks[heroIdValue]?.options ?? []).includes(optionId)) {
     throw new IllegalActionError(`${what}: not among the options`);
   }
@@ -456,7 +456,7 @@ export function applyChoosePerk(
   const what = `choosePerk ${perkId} for ${heroIdValue}`;
   if (sideOf(draft, heroIdValue) !== side) throw new IllegalActionError(`${what}: not a hero of ${side}`);
   if (leaving(upgrade, side, heroIdValue)) throw new IllegalActionError(`${what}: the hero is being swapped out`);
-  // Choosing again replaces the earlier pick; nothing is final until endUpgrade.
+  // Choosing again replaces the earlier pick; nothing is final until both sides are ready.
   if (!(upgrade.offers[heroIdValue] ?? []).includes(perkId)) {
     throw new IllegalActionError(`${what}: not among the offers`);
   }
@@ -493,6 +493,21 @@ export function awaitingPerk(upgrade: UpgradeState, draft: DraftState, side: Sid
   return draft.picks[side].filter(
     (id) => !leaving(upgrade, side, id) && upgrade.chosen[id] === undefined && (upgrade.offers[id] ?? []).length > 0,
   );
+}
+
+/** What a side still has to choose before it may say it is ready; empty when nothing. */
+export function waitingFor(upgrade: UpgradeState, draft: DraftState, side: Side, content: ContentRegistry): string[] {
+  const waiting: string[] = [...awaitingPerk(upgrade, draft, side), ...awaitingUnlock(upgrade, draft, side)];
+  if (awaitingReward(upgrade, draft, side, content)) waiting.push('the reward');
+  return waiting;
+}
+
+/** A side changed a choice, so it is not ready any more: its ready is taken back. */
+export function clearReady(upgrade: UpgradeState, side: Side): UpgradeState {
+  if (upgrade.ready[side] === undefined) return upgrade;
+  const ready = { ...upgrade.ready };
+  delete ready[side];
+  return { ...upgrade, ready };
 }
 
 /**

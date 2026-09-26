@@ -316,3 +316,25 @@ export function legalActions(state: BattleState, content: ContentRegistry): Acti
 
   return out;
 }
+
+/** Two actions are the same move: same kind, same hero, same target or the same path. */
+export function sameAction(a: Action, b: Action): boolean {
+  if (a.type !== b.type) return false;
+  // The hero matters: a queued endTurn belongs to the hero that planned it, and by the
+  // time it runs the turn may already have passed to somebody else.
+  if (a.heroId !== b.heroId) return false;
+  if (a.type === 'endTurn') return true;
+  if (a.type === 'ability' && b.type === 'ability') {
+    return a.abilityId === b.abilityId && a.target.q === b.target.q && a.target.r === b.target.r;
+  }
+  if (a.type === 'move' && b.type === 'move') {
+    if (a.path.length !== b.path.length) return false;
+    return a.path.every((h, i) => h.q === b.path[i]?.q && h.r === b.path[i]?.r);
+  }
+  return false;
+}
+
+/** Whether this very action is one of legalActions right now: the one test of a move. */
+export function isLegalAction(state: BattleState, action: Action, content: ContentRegistry): boolean {
+  return legalActions(state, content).some((a) => sameAction(a, action));
+}

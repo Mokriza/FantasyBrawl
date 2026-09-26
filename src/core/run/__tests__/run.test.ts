@@ -95,7 +95,8 @@ function upgradeAll(run: RunState): RunState {
       );
     }
   }
-  return applyRunAction(current, { type: 'endUpgrade' }, content);
+  current = applyRunAction(current, { type: 'readyUpgrade', side: 'A' }, content);
+  return applyRunAction(current, { type: 'readyUpgrade', side: 'B' }, content);
 }
 
 /** An artifact that must exist in the content. */
@@ -338,7 +339,7 @@ describe('the upgrade phase', () => {
     expect(() =>
       applyRunAction(run, { type: 'choosePerk', side: 'A', heroId: id, perkId: notOffered }, content),
     ).toThrow(IllegalActionError);
-    expect(() => applyRunAction(run, { type: 'endUpgrade' }, content)).toThrow(IllegalActionError);
+    expect(() => applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content)).toThrow(IllegalActionError);
     expect(() =>
       applyRunAction(run, { type: 'choosePerk', side: 'B', heroId: id, perkId: offered[0] ?? '' }, content),
     ).toThrow(IllegalActionError);
@@ -433,12 +434,12 @@ describe('the upgrade phase', () => {
     );
     // Every perk taken, but the unlocks still open: not yet.
     for (const side of ['A', 'B'] as const) {
-      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {}, rewards: { A: [], B: [] }, rewarded: {}, candidates: { A: [], B: [] }, swapped: {} }, run.draft, side)) {
+      for (const hero of awaitingPerk(run.upgrade ?? { offers: {}, chosen: {}, unlocks: {}, unlocked: {}, rewards: { A: [], B: [] }, rewarded: {}, candidates: { A: [], B: [] }, swapped: {}, ready: {} }, run.draft, side)) {
         const perkId = run.upgrade?.offers[hero]?.find((p) => content.perks[p]?.abilityMod === undefined);
         if (perkId !== undefined) run = applyRunAction(run, { type: 'choosePerk', side, heroId: hero, perkId }, content);
       }
     }
-    expect(() => applyRunAction(run, { type: 'endUpgrade' }, content)).toThrow(IllegalActionError);
+    expect(() => applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content)).toThrow(IllegalActionError);
   });
 
   it('the chosen passive goes into the hero and into the next battle', () => {
@@ -741,5 +742,67 @@ describe('loot from a match', () => {
       content,
     );
     expect(after.draft.pool.find((h) => h.id === heroIdValue)?.item).toBe(legendary.id);
+  });
+});
+
+describe('readiness in the upgrade phase', () => {
+  /** Every choice of one side made, taking the first option each time; not yet ready. */
+  function chooseAll(run: RunState, side: Side): RunState {
+    let current = run;
+    if (current.upgrade !== null && awaitingReward(current.upgrade, current.draft, side, content)) {
+      const team = teamAfterSwap(current.upgrade, current.draft, side);
+      for (const id of current.upgrade.rewards[side]) {
+        const item = content.items[id];
+        const hero = item === undefined ? undefined : team.find((h) => itemFits(item, h.classId, content));
+        if (hero !== undefined) {
+          current = applyRunAction(current, { type: 'chooseReward', side, itemId: id, heroId: hero.id }, content);
+          break;
+        }
+      }
+    }
+    for (const id of current.upgrade === null ? [] : awaitingUnlock(current.upgrade, current.draft, side)) {
+      const optionId = current.upgrade?.unlocks[id]?.options[0] ?? '';
+      current = applyRunAction(current, { type: 'chooseUnlock', side, heroId: id, optionId }, content);
+    }
+    for (const id of current.upgrade === null ? [] : awaitingPerk(current.upgrade, current.draft, side)) {
+      const perkId = current.upgrade?.offers[id]?.find((p) => content.perks[p]?.abilityMod === undefined);
+      if (perkId === undefined) throw new Error('setup: only ability perks on offer');
+      current = applyRunAction(current, { type: 'choosePerk', side, heroId: id, perkId }, content);
+    }
+    return current;
+  }
+
+  function upgradePhase(): RunState {
+    const first = placeAll(draftAll(createRun({ seed: 4, content })));
+    return applyRunAction(win(first, 'A'), { type: 'nextMatch' }, content);
+  }
+
+  it('each side says it is ready; the phase ends only when both have', () => {
+    let run = chooseAll(chooseAll(upgradePhase(), 'A'), 'B');
+    run = applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content);
+    expect(run.phase).toBe('upgrade');
+    expect(run.upgrade?.ready).toEqual({ A: true });
+    run = applyRunAction(run, { type: 'readyUpgrade', side: 'B' }, content);
+    expect(run.phase).toBe('placement');
+  });
+
+  it('a side cannot say it is ready with a choice still open', () => {
+    const run = chooseAll(upgradePhase(), 'B');
+    expect(() => applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content)).toThrow(IllegalActionError);
+    expect(applyRunAction(run, { type: 'readyUpgrade', side: 'B' }, content).upgrade?.ready.B).toBe(true);
+  });
+
+  it('a new choice takes the ready back, and so does unready', () => {
+    let run = chooseAll(upgradePhase(), 'A');
+    run = applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content);
+    const id = run.draft.picks.A[0];
+    const other = id === undefined ? undefined : run.upgrade?.offers[id]?.find(
+      (p) => p !== run.upgrade?.chosen[id]?.perkId && content.perks[p]?.abilityMod === undefined,
+    );
+    if (id === undefined || other === undefined) throw new Error('setup');
+    const changed = applyRunAction(run, { type: 'choosePerk', side: 'A', heroId: id, perkId: other }, content);
+    expect(changed.upgrade?.ready.A).toBeUndefined();
+    const unready = applyRunAction(run, { type: 'unreadyUpgrade', side: 'A' }, content);
+    expect(unready.upgrade?.ready.A).toBeUndefined();
   });
 });

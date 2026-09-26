@@ -113,7 +113,8 @@ export function playRun(options: RunOptions): RunResult {
             );
           }
         }
-        run = applyRunAction(run, { type: 'endUpgrade' }, content);
+        run = applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content);
+        run = applyRunAction(run, { type: 'readyUpgrade', side: 'B' }, content);
         break;
       }
     }

@@ -420,6 +420,8 @@ export interface UpgradeState {
   readonly candidates: Readonly<Record<Side, readonly HeroTemplate[]>>;
   /** The swap each side lined up, if any; undone by cancelSwap. */
   readonly swapped: Readonly<Partial<Record<Side, SwapPick>>>;
+  /** Sides that said they are done; the phase ends when both have. */
+  readonly ready: Readonly<Partial<Record<Side, true>>>;
 }
 
 /** A swap a side has lined up: who leaves the team and which candidate takes the place. */
@@ -486,8 +488,10 @@ export type RunAction =
       /** For a perk that changes one ability: which one. */
       readonly abilityId?: string;
     }
-  /** Every hero has chosen: on to placement. */
-  | { readonly type: 'endUpgrade' };
+  /** This side has chosen everything; when both have, on to placement. */
+  | { readonly type: 'readyUpgrade'; readonly side: Side }
+  /** This side takes its ready back, to choose again. */
+  | { readonly type: 'unreadyUpgrade'; readonly side: Side };
 
 /** Exhaustiveness check for discriminated unions, see docs/ai/code-style.md. */
 export function assertNever(x: never): never {

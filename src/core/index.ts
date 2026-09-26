@@ -25,7 +25,9 @@ export {
   abilityTargets,
   hasNoTarget,
   cooldownLeft,
+  isLegalAction,
   legalActions,
+  sameAction,
   moveBudget,
   moveLegality,
   reachableFor,
@@ -140,5 +142,6 @@ export {
   perkTargets,
   teamAfterSwap,
   trailingSide,
+  waitingFor,
   withPerkHealth,
 } from './run/upgrade.js';

@@ -39,11 +39,10 @@ import {
   applyChooseUnlock,
   applyChoosePerk,
   applySwapHero,
-  awaitingPerk,
-  awaitingReward,
-  awaitingUnlock,
+  clearReady,
   commitUpgrade,
   createUpgrade,
+  waitingFor,
   withPerkHealth,
 } from './upgrade.js';
 
@@ -214,44 +213,50 @@ export function applyRunAction(
         action.abilityId,
         content,
       );
-      return { ...run, upgrade };
+      return { ...run, upgrade: clearReady(upgrade, action.side) };
     }
 
     case 'chooseUnlock': {
       requirePhase(run, 'upgrade', 'chooseUnlock');
       const upgrade = applyChooseUnlock(requireUpgrade(run), run.draft, action.side, action.heroId, action.optionId);
-      return { ...run, upgrade };
+      return { ...run, upgrade: clearReady(upgrade, action.side) };
     }
 
     case 'chooseReward': {
       requirePhase(run, 'upgrade', 'chooseReward');
       const upgrade = applyChooseReward(requireUpgrade(run), run.draft, action.side, action.itemId, action.heroId, content);
-      return { ...run, upgrade };
+      return { ...run, upgrade: clearReady(upgrade, action.side) };
     }
 
     case 'swapHero': {
       requirePhase(run, 'upgrade', 'swapHero');
       const upgrade = applySwapHero(requireUpgrade(run), run.draft, action.side, action.outId, action.inId);
-      return { ...run, upgrade };
+      return { ...run, upgrade: clearReady(upgrade, action.side) };
     }
 
     case 'cancelSwap': {
       requirePhase(run, 'upgrade', 'cancelSwap');
-      return { ...run, upgrade: applyCancelSwap(requireUpgrade(run), run.draft, action.side) };
+      return { ...run, upgrade: clearReady(applyCancelSwap(requireUpgrade(run), run.draft, action.side), action.side) };
     }
 
-    case 'endUpgrade': {
-      requirePhase(run, 'upgrade', 'endUpgrade');
+    case 'readyUpgrade': {
+      // Each side says when it is done, so neither has to wait on the other to click
+      // for both; the phase moves on once both have (docs/ai/game-rules.md section 10).
+      requirePhase(run, 'upgrade', 'readyUpgrade');
       const upgrade = requireUpgrade(run);
-      for (const side of ['A', 'B'] as const) {
-        const waiting: string[] = [...awaitingPerk(upgrade, run.draft, side), ...awaitingUnlock(upgrade, run.draft, side)];
-        if (awaitingReward(upgrade, run.draft, side, content)) waiting.push('the reward');
-        if (waiting.length > 0) {
-          throw new IllegalActionError(`endUpgrade: ${waiting.join(', ')} of side ${side} still to choose`);
-        }
+      const waiting = waitingFor(upgrade, run.draft, action.side, content);
+      if (waiting.length > 0) {
+        throw new IllegalActionError(`readyUpgrade: ${waiting.join(', ')} of side ${action.side} still to choose`);
       }
-      const draft = commitUpgrade(upgrade, run.draft);
+      const next = { ...upgrade, ready: { ...upgrade.ready, [action.side]: true as const } };
+      if (next.ready.A !== true || next.ready.B !== true) return { ...run, upgrade: next };
+      const draft = commitUpgrade(next, run.draft);
       return toPlacement({ ...run, draft, upgrade: null }, content);
+    }
+
+    case 'unreadyUpgrade': {
+      requirePhase(run, 'upgrade', 'unreadyUpgrade');
+      return { ...run, upgrade: clearReady(requireUpgrade(run), action.side) };
     }
 
     default:

@@ -39,6 +39,7 @@ import {
   awaitingPerk,
   awaitingReward,
   awaitingUnlock,
+  waitingFor,
   createBattle,
   createRng,
   createRun,
@@ -453,6 +454,10 @@ function stepRun(): void {
           content,
         );
       }
+      // Everything chosen: the opponent says it is ready and waits for the player.
+      if (current.upgrade !== null && current.upgrade.ready[opponent] !== true) {
+        current = applyRunAction(current, { type: 'readyUpgrade', side: opponent }, content);
+      }
       if (current !== run) set({ run: current, battle: null });
       return;
     }
@@ -565,14 +570,15 @@ export function takeReward(itemId: string, heroId: HeroId): void {
   applyRun({ type: 'chooseReward', side: state.playerSide, itemId, heroId });
 }
 
-/** On to placement, once every hero has its perk and its unlock, and the reward is taken. */
+/**
+ * The player is done with the upgrade phase: every hero has its perk and its unlock,
+ * and the reward is taken. The AI opponent is already ready, so this moves on.
+ */
 export function endUpgrade(): void {
   const run = state.run;
   if (run?.phase !== 'upgrade' || run.upgrade === null) return;
-  if (awaitingPerk(run.upgrade, run.draft, state.playerSide).length > 0) return;
-  if (awaitingUnlock(run.upgrade, run.draft, state.playerSide).length > 0) return;
-  if (awaitingReward(run.upgrade, run.draft, state.playerSide, content)) return;
-  applyRun({ type: 'endUpgrade' });
+  if (waitingFor(run.upgrade, run.draft, state.playerSide, content).length > 0) return;
+  applyRun({ type: 'readyUpgrade', side: state.playerSide });
 }
 
 /** The player's swap: this hero leaves, that candidate takes the place. */
