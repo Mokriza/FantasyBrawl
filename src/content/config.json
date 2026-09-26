@@ -94,6 +94,19 @@
     "swapChoices": 3,
     "catchUp": { "deficit": 2, "extraChoices": 1 }
   },
+  "online": {
+    "placeSeconds": 30,
+    "upgradeSeconds": 120,
+    "turnSeconds": 30,
+    "continueSeconds": 20,
+    "reconnectSeconds": 120,
+    "chatMax": 200,
+    "chatKeep": 50,
+    "chatEverySeconds": 1,
+    "messagesPerSecond": 20,
+    "maxRooms": 200,
+    "emptyRoomMinutes": 10
+  },
   "ai": {
     "maxPlans": 5000,
     "lookaheadTopPlans": [10, 5],

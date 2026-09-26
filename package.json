@@ -13,18 +13,21 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sim": "tsx src/sim/run.ts",
-    "validate-content": "tsx scripts/validateContent.ts"
+    "validate-content": "tsx scripts/validateContent.ts",
+    "server": "tsx src/server/main.ts"
   },
   "dependencies": {
     "pixi.js": "^8.6.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "ws": "^8.22.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.18.0",
     "prettier": "^3.4.2",

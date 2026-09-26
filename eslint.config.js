@@ -8,6 +8,7 @@ import tseslint from 'typescript-eslint';
  * ai   -> core only
  * sim  -> core, ai, node
  * net  -> core only: the online log, its replay and the message schemas
+ * server -> core, net, node, ws: the online lobby, never the interface
  * ui   -> everything
  *
  * These rules are a hard requirement of CLAUDE.md. Do not disable them.
@@ -26,6 +27,11 @@ const forbiddenInAi = [
 const forbiddenInNet = [
   { group: ['**/ui/**', '**/ai/**', '**/sim/**', '**/server/**'], message: 'net depends on core only: server and client both use it.' },
   { group: ['react', 'react-dom', 'pixi.js', 'node:*', 'ws'], message: 'net must run in the browser and in Node alike.' },
+];
+
+const forbiddenInServer = [
+  { group: ['**/ui/**'], message: 'the server never loads the interface.' },
+  { group: ['react', 'react-dom', 'pixi.js'], message: 'the server runs in Node without a browser.' },
 ];
 
 const forbiddenInSim = [
@@ -86,6 +92,12 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': ['error', { patterns: forbiddenInSim }],
       'no-restricted-syntax': ['error', ...noAmbientNondeterminism],
+    },
+  },
+  {
+    files: ['src/server/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbiddenInServer }],
     },
   },
   {

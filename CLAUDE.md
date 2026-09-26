@@ -20,6 +20,7 @@ npm test             # Vitest, однократно
 npm run test:watch   # Vitest в watch-режиме
 npm run sim -- --matches 1000 --seed 42   # балансная симуляция в Node
 npm run validate-content                  # проверить все JSON контента по схемам
+npm run server                            # сервер игры по сети, порт 8787 (PORT, ALLOWED_ORIGINS)
 ```
 
 Перед тем как сказать «готово»: `npm run typecheck && npm run lint && npm test`. Всё зелёное — иначе задача не закончена.
@@ -32,6 +33,8 @@ src/
   content/   JSON: классы, способности, предметы, перки, расы, модификаторы, config
   ai/        utility AI для боя и драфта. Зависит только от core
   sim/       headless-прогон матчей для баланса. Запускается в Node
+  net/       общее для игры по сети: лог действий и его прогон, схемы сообщений
+  server/    сервер игры по сети: комнаты, проверка ходов, таймеры, чат
   ui/        React + Pixi. Единственное место, где есть браузер
 docs/
   GAMEDESIGN.md  геймдизайн-документ (экспорт из Word). Намерение дизайнера

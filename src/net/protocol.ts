@@ -66,7 +66,13 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leave') }).strict(),
 ]);
 
-export type ClientMessage = z.infer<typeof clientMessageSchema>;
+/** A message as it comes off the wire, after the schema. */
+export type ParsedClientMessage = z.infer<typeof clientMessageSchema>;
+
+/** A message as a client builds it: the entry in core types. */
+export type ClientMessage =
+  | Exclude<ParsedClientMessage, { type: 'act' }>
+  | { readonly type: 'act'; readonly seq: number; readonly entry: LogEntry };
 
 export interface SeatView {
   readonly name: string;

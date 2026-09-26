@@ -873,6 +873,22 @@ export const configSchema = z
           .strict(),
       })
       .strict(),
+    /** Online play: clocks and limits the server keeps. The draft clock is draft.pickSeconds. */
+    online: z
+      .object({
+        placeSeconds: z.number().positive(),
+        upgradeSeconds: z.number().positive(),
+        turnSeconds: z.number().positive(),
+        continueSeconds: z.number().positive(),
+        reconnectSeconds: z.number().positive(),
+        chatMax: z.number().int().positive(),
+        chatKeep: z.number().int().positive(),
+        chatEverySeconds: z.number().nonnegative(),
+        messagesPerSecond: z.number().int().positive(),
+        maxRooms: z.number().int().positive(),
+        emptyRoomMinutes: z.number().positive(),
+      })
+      .strict(),
     ai: z
       .object({
         maxPlans: z.number().int().positive(),
