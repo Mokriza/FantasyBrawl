@@ -310,7 +310,7 @@ const baseStatNames = ['maxHp', 'attack', 'magic', 'armor', 'resist', 'speed', '
  *  damageDealt / damageTaken / healDone — shares added to the damage and heal formulas
  *  critMult — added to the crit multiplier
  *  range — added to the range of abilities that reach further than one hex
- *  firstMoveCost — added to the cost of the first move of a turn (negative is a discount)
+ *  freeSteps     — action points of walking every turn that cost nothing, over all its moves
  *  startAtb — initiative the hero starts the battle with
  *  cooldownRecovery — extra turns every cooldown ticks down at the end of a turn
  *  apPerTurn — action points added at the start of every turn
@@ -322,7 +322,7 @@ export const modifierStatSchema = z.enum([
   'healDone',
   'critMult',
   'range',
-  'firstMoveCost',
+  'freeSteps',
   'startAtb',
   'cooldownRecovery',
   'apPerTurn',
@@ -716,6 +716,8 @@ export const heroClassSchema = z
     statGrowth: z.object({ hp: z.number(), primary: z.number(), secondary: z.number() }).strict(),
     /** Battle modifiers every hero of the class carries, like a passive nobody chooses. */
     modifiers: z.array(modifierSchema).optional(),
+    /** What those modifiers do, for the player; required with modifiers. */
+    traitDescription: z.string().min(1).optional(),
     portrait: z.string(),
     color: z.string(),
     /** A class only summons use: never drafted, never generated, no pool rules. */

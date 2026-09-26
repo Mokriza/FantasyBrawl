@@ -18,6 +18,7 @@ import {
   basicAttackOf,
   cooldownLeft,
   describeAbility,
+  freeStepsLeft,
   getAbility,
   heroById,
   hexKey,
@@ -74,12 +75,14 @@ function hoverHint(
   const entry = reachableFor(battle, hero, content).get(hexKey(hoverHex));
   if (entry === undefined) return { text: UI.hint.selectAbility, warn: false };
 
+  // Free steps (tank and melee classes, «Ловкость») come off the price first.
+  const paid = Math.max(0, entry.cost - freeStepsLeft(battle, hero, content));
   const names = entry.provokes.map((id) => heroById(battle, id).name);
   if (names.length === 0) {
-    return { text: `${UI.hint.moveCost}: ${entry.cost} ${UI.ap}`, warn: false };
+    return { text: `${UI.hint.moveCost}: ${paid} ${UI.ap}`, warn: false };
   }
   return {
-    text: `${UI.hint.moveCost}: ${entry.cost} ${UI.ap} · ${UI.hint.provokes}: ${names.join(', ')}`,
+    text: `${UI.hint.moveCost}: ${paid} ${UI.ap} · ${UI.hint.provokes}: ${names.join(', ')}`,
     warn: true,
   };
 }

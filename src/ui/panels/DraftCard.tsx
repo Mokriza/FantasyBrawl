@@ -107,6 +107,11 @@ export function DraftCard({
         </div>
       </header>
 
+      {/* What every hero of the class carries, such as the free first step. */}
+      {heroClass.traitDescription === undefined ? null : (
+        <p className="draft-class-trait dim">{heroClass.traitDescription}</p>
+      )}
+
       <dl className="draft-stats">
         {statRows(stats, content, true).map((row) => {
           const stat = row.key as keyof HeroTemplate['statPoints'];

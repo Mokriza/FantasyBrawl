@@ -14,6 +14,8 @@
       "primary": 0.1,
       "secondary": 0.06
     },
+    "modifiers": [{ "stat": "freeSteps", "add": 1 }],
+    "traitDescription": "Первый шаг за ход бесплатный.",
     "portrait": "portraits/warrior.png",
     "color": "#c0392b"
   },
@@ -32,6 +34,8 @@
       "primary": 0.1,
       "secondary": 0.06
     },
+    "modifiers": [{ "stat": "freeSteps", "add": 1 }],
+    "traitDescription": "Первый шаг за ход бесплатный.",
     "portrait": "portraits/paladin.png",
     "color": "#d4ac0d"
   },
@@ -122,6 +126,8 @@
       "primary": 0.1,
       "secondary": 0.06
     },
+    "modifiers": [{ "stat": "freeSteps", "add": 1 }],
+    "traitDescription": "Первый шаг за ход бесплатный.",
     "portrait": "portraits/rogue.png",
     "color": "#5d6d7e"
   },
@@ -140,6 +146,8 @@
       "primary": 0.1,
       "secondary": 0.06
     },
+    "modifiers": [{ "stat": "freeSteps", "add": 1 }],
+    "traitDescription": "Первый шаг за ход бесплатный.",
     "portrait": "portraits/monk.png",
     "color": "#e67e22"
   },

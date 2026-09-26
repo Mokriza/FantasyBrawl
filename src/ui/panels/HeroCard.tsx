@@ -39,7 +39,7 @@ export function HeroCard({ hero, battle, content, shown, compact }: Props): JSX.
         <ClassIcon classId={hero.classId} />
         <div className="hero-title">
           <strong>{hero.name}</strong>
-          <span className="dim" title={race?.description}>
+          <span className="dim" title={[race?.description, heroClass.traitDescription].filter(Boolean).join('\n')}>
             {race === undefined ? '' : `${race.name} · `}
             {heroClass.name}
           </span>

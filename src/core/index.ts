@@ -115,6 +115,7 @@ export type { CreateRunOptions } from './run/run.js';
 
 export {
   critMultiplier,
+  freeStepsLeft,
   dealtFactor,
   healFactor,
   modifierSum,

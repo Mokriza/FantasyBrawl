@@ -133,12 +133,12 @@
   {
     "id": "perk_light_step",
     "name": "Лёгкий шаг",
-    "description": "Первое перемещение за ход стоит на 1 ОД меньше.",
+    "description": "+1 бесплатный шаг за ход: он не стоит ОД, в каком бы перемещении хода ни был.",
     "category": "rules",
     "modifiers": [
       {
-        "stat": "firstMoveCost",
-        "add": -1
+        "stat": "freeSteps",
+        "add": 1
       }
     ]
   },

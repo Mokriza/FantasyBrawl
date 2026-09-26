@@ -45,7 +45,7 @@ import { basicAttackOf, reactorsForStep } from './opportunity.js';
 import { pitImmune, stepCost } from './pathing.js';
 import { heroById, livingHeroes, updateHero } from './query.js';
 import { DOT, ROOT, STUN, hasStatus, hiddenFrom, statusesOf, tickHeroAtTurnEnd } from './statuses.js';
-import { MOVES_THIS_TURN, firstMoveDiscount, freeDisengage, modifierSum, startAtbBonus } from './modifiers.js';
+import { FREE_STEPS_USED, MOVES_THIS_TURN, freeDisengage, freeStepsLeft, modifierSum, startAtbBonus } from './modifiers.js';
 import { reactTo } from './triggers.js';
 import type { Reaction, Rerun } from './triggers.js';
 import { resolveTargets } from './targeting.js';
@@ -632,7 +632,7 @@ function finishTurn(state: BattleState, content: ContentRegistry, mode: RollMode
   run.state = updateHero(run.state, id, (hero) => ({
     ...hero,
     atb: hero.atb - threshold,
-    counters: { ...hero.counters, [MOVES_THIS_TURN]: 0, [HURT_SINCE_TURN]: 0 },
+    counters: { ...hero.counters, [MOVES_THIS_TURN]: 0, [FREE_STEPS_USED]: 0, [HURT_SINCE_TURN]: 0 },
   }));
   const leftovers = tickLeftovers(run.state, id);
   run.state = leftovers.state;
@@ -745,8 +745,10 @@ function applyMoveAction(
   }
 
   const run: EffectRun = { state, events: [] };
-  // "Ловкость" and the like: the first move of a turn is cheaper by this much.
-  let discount = firstMoveDiscount(state, hero, content);
+  // Free steps ("Ловкость", tank and melee classes): spent step by step, the rest kept
+  // for a later move this turn.
+  const freeAtStart = freeStepsLeft(state, hero, content);
+  let discount = freeAtStart;
   // "Плащ теней": decided before the move counter goes up, for the whole walk.
   const free = freeDisengage(state, hero, content);
   run.state = updateHero(run.state, hero.id, (h) => ({
@@ -812,6 +814,14 @@ function applyMoveAction(
       run.events.push(...reacted.events);
       if (!isAlive(heroById(run.state, hero.id))) break;
     }
+  }
+
+  const spent = freeAtStart - discount;
+  if (spent > 0) {
+    run.state = updateHero(run.state, hero.id, (h) => ({
+      ...h,
+      counters: { ...h.counters, [FREE_STEPS_USED]: (h.counters[FREE_STEPS_USED] ?? 0) + spent },
+    }));
   }
 
   answerEnemyAction(run, hero.id, content);

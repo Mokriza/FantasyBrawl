@@ -21,14 +21,14 @@
     "class": "rogue",
     "modifiers": [
       {
-        "stat": "firstMoveCost",
-        "add": -1
+        "stat": "freeSteps",
+        "add": 1
       }
     ],
     "triggers": [],
     "id": "rogue_passive_agility",
     "name": "Ловкость",
-    "description": "Первое перемещение за ход стоит на 1 ОД меньше.",
+    "description": "Ещё один бесплатный шаг за ход: вместе с классовым первые два шага за ход бесплатны.",
     "tier": 2
   },
   {

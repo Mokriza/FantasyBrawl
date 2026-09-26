@@ -88,6 +88,12 @@ function validate(content: ContentRegistry): void {
       }
     }
 
+    // Rule 20: a class trait the player cannot read about is a hidden rule.
+    const classDef = content.classes[classId];
+    if ((classDef?.modifiers ?? []).length > 0 && classDef?.traitDescription === undefined) {
+      fail(`${classId}: у класса есть модификаторы, но нет traitDescription`);
+    }
+
     // Rule 17: there must be something to choose between matches.
     const passives = Object.values(content.passives).filter((p) => p.class === classId).length;
     if (passives < content.config.run.unlockChoices) {

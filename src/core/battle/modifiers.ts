@@ -367,10 +367,14 @@ export function rangeBonus(state: BattleState, hero: BattleHero, baseRange: numb
   return modifierSum(state, hero, 'range', content).add + high;
 }
 
-/** How much cheaper (negative) the first move of this turn is. */
-export function firstMoveDiscount(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
-  if ((hero.counters[MOVES_THIS_TURN] ?? 0) > 0) return 0;
-  return Math.max(0, -modifierSum(state, hero, 'firstMoveCost', content).add);
+/**
+ * Free steps left this turn: action points of walking that cost nothing ("Ловкость",
+ * the tank and melee classes). They are a pool for the whole turn, spent step by step
+ * over however many moves, and refilled when the turn ends.
+ */
+export function freeStepsLeft(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
+  const total = Math.max(0, Math.floor(modifierSum(state, hero, 'freeSteps', content).add));
+  return Math.max(0, total - (hero.counters[FREE_STEPS_USED] ?? 0));
 }
 
 export function startAtbBonus(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
@@ -388,6 +392,9 @@ export function zoneGrowth(state: BattleState, hero: BattleHero, content: Conten
   return Math.max(0, Math.floor(modifierSum(state, hero, 'zoneSize', content).add));
 }
 
-/** Counter key for the first-move discount; reset at every turn end. */
+/** Counter key for the moves made this turn ("Плащ теней"); reset at every turn end. */
 export const MOVES_THIS_TURN = 'movesThisTurn';
+
+/** Counter key for the free steps spent this turn; reset at every turn end. */
+export const FREE_STEPS_USED = 'freeStepsUsed';
 

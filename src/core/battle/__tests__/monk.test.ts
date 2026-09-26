@@ -171,7 +171,8 @@ describe('passives of the Monk', () => {
     expect(reach?.cost).toBe(1);
     const moved = applyAction(state, { type: 'move', heroId: heroId('m'), path: [pit] }, content, FROZEN);
     expect(dealt(moved.events, 'm')).toBe(0);
-    expect(moved.state.apLeft).toBe(3);
+    // One ordinary point, and the monk's class makes the first step of a turn free.
+    expect(moved.state.apLeft).toBe(4);
   });
 
   it('Равновесие: +3 Speed for every enemy next to the monk', () => {

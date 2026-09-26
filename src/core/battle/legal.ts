@@ -19,7 +19,7 @@ import { isPassable, reachableHexes } from './pathing.js';
 import type { Reachable } from './pathing.js';
 import { activeHero, heroAt } from './query.js';
 import { ROOT, SILENCE, hasStatus, hasStatusFlag, hiddenFrom } from './statuses.js';
-import { firstMoveDiscount, rangeBonus } from './modifiers.js';
+import { freeStepsLeft, rangeBonus } from './modifiers.js';
 import { hasLineOfSight } from './targeting.js';
 
 export const READY: Legality = { ok: true };
@@ -86,9 +86,9 @@ export function abilityCooldown(
   return Math.max(1, ability.cooldown + abilityModSum(hero, ability, content, 'cooldown'));
 }
 
-/** Action points a move may spend this turn: what is left plus any first-move discount. */
+/** Action points a move may spend this turn: what is left plus the free steps left. */
 export function moveBudget(state: BattleState, hero: BattleHero, content: ContentRegistry): number {
-  return state.apLeft + firstMoveDiscount(state, hero, content);
+  return state.apLeft + freeStepsLeft(state, hero, content);
 }
 
 export function cooldownLeft(hero: BattleHero, ability: Ability): number {

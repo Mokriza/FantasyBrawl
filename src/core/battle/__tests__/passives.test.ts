@@ -421,3 +421,33 @@ describe('class traits', () => {
     expect(statsInBattle(state, heroById(state, heroId('c')), withTrait).speed).toBe(13);
   });
 });
+
+describe('free steps', () => {
+  /** A hero of this class on an open board with 4 action points, a far enemy. */
+  function walker(cls: string, passive?: string): BattleState {
+    return scenario(content)
+      .hero('w', passive === undefined ? { cls, side: 'A', at: [2, 4] } : { cls, side: 'A', at: [2, 4], passive })
+      .hero('far', { cls: 'mage', side: 'B', at: [8, 0] })
+      .active('w', { ap: 4 })
+      .build();
+  }
+  const step = (state: BattleState, to: [number, number]) =>
+    applyAction(state, { type: 'move', heroId: heroId('w'), path: [at(...to)] }, content).state;
+
+  it('tanks and melee classes take the first step of every turn for free', () => {
+    for (const cls of ['warrior', 'paladin', 'rogue', 'monk']) {
+      const once = step(walker(cls), [2, 3]);
+      expect(once.apLeft, cls).toBe(4);
+      expect(step(once, [2, 2]).apLeft, cls).toBe(3);
+    }
+    expect(step(walker('mage'), [2, 3]).apLeft).toBe(3);
+  });
+
+  it('«Ловкость» adds one more: the rogue\'s first two steps are free, even split over two moves', () => {
+    const one = step(walker('rogue', 'rogue_passive_agility'), [2, 3]);
+    expect(one.apLeft).toBe(4);
+    const two = step(one, [2, 2]);
+    expect(two.apLeft).toBe(4);
+    expect(step(two, [2, 1]).apLeft).toBe(3);
+  });
+});

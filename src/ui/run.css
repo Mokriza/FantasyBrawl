@@ -853,3 +853,8 @@ button {
   color: var(--active);
   font-size: 12.5px;
 }
+
+.draft-class-trait {
+  margin: 2px 0 4px;
+  font-size: 12px;
+}
