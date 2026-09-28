@@ -688,3 +688,14 @@ button.primary:hover {
   border-color: var(--active);
   color: var(--active);
 }
+
+/* Shown instead of the board when the renderer could not start or lost the GPU. */
+.board-failed {
+  max-width: 420px;
+  margin: 24px;
+  padding: 12px 16px;
+  border: 1px solid #6a2a22;
+  border-radius: 8px;
+  background: #3a1f1c;
+  color: #ffd7cf;
+}

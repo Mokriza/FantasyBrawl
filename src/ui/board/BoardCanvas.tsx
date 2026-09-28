@@ -7,7 +7,7 @@
  * move is a walk across hexes rather than a teleport. Nothing here decides anything.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Application, Assets, Container, Rectangle, Texture } from 'pixi.js';
 import type { Ability, Arena, BattleState, Hex } from '../../core/index.js';
 import {
@@ -32,7 +32,11 @@ import type { UiState } from '../store.js';
 import { classFigure, tileOrigin } from '../assets/sprites.js';
 import { boardMetrics, pixelToHex } from './pixelHex.js';
 import { EMPTY_HIGHLIGHTS, drawBoard } from './render.js';
+import { UI } from '../strings.ru.js';
 import type { ClassTextures, Highlights } from './render.js';
+
+/** How long the board waits for its renderer before saying it cannot draw. */
+const RENDERER_TIMEOUT_MS = 8000;
 
 /**
  * During placement the free hexes of the player's zone are the clickable targets and
@@ -135,6 +139,8 @@ export function BoardCanvas(): JSX.Element {
   const spritesRef = useRef<Record<string, ClassTextures>>({});
   const uiRef = useRef(ui);
   uiRef.current = ui;
+  // Why the board cannot be drawn, if it cannot: no WebGL, or the GPU dropped the context.
+  const [failure, setFailure] = useState<'init' | 'lost' | null>(null);
 
   function hexUnderPointer(event: PointerEvent): Hex | null {
     const app = appRef.current;
@@ -195,7 +201,12 @@ export function BoardCanvas(): JSX.Element {
   // Create the Pixi application once and destroy it explicitly on unmount.
   useEffect(() => {
     let cancelled = false;
+    let started = false;
     const app = new Application();
+    // A renderer that has not started in this long is not going to.
+    const watchdog = window.setTimeout(() => {
+      if (!started && !cancelled) setFailure('init');
+    }, RENDERER_TIMEOUT_MS);
     const metrics = boardMetrics(arenaOf(uiRef.current), HEX_SIZE);
 
     void app
@@ -204,12 +215,19 @@ export function BoardCanvas(): JSX.Element {
         height: metrics.height,
         background: COLORS.background,
         antialias: true,
+        // WebGL, or plain 2D canvas when the browser has none. Not WebGPU: the board does
+        // not need it, and asking a GPU that has just crashed for an adapter can hang for
+        // good, leaving no board and no error.
+        preference: ['webgl', 'canvas'],
       })
       .then(() => {
         if (cancelled) {
           app.destroy(true, { children: true });
           return;
         }
+        started = true;
+        window.clearTimeout(watchdog);
+        setFailure(null);
         appRef.current = app;
         const layer = new Container();
         app.stage.addChild(layer);
@@ -221,6 +239,8 @@ export function BoardCanvas(): JSX.Element {
         app.canvas.style.height = 'auto';
         app.canvas.style.maxWidth = '100%';
         hostRef.current?.appendChild(app.canvas);
+        // A GPU reset takes the drawing with it; say so instead of showing a dead canvas.
+        app.canvas.addEventListener('webglcontextlost', () => setFailure('lost'));
 
         app.canvas.addEventListener('pointermove', onPointerMove);
         app.canvas.addEventListener('pointerleave', onPointerLeave);
@@ -241,10 +261,17 @@ export function BoardCanvas(): JSX.Element {
           spritesRef.current = sprites;
           redraw();
         });
+      })
+      .catch((error: unknown) => {
+        // Chrome takes WebGL away from a site whose tab crashed the GPU process, until the
+        // browser restarts; without this the board would just be missing, silently.
+        console.error('The board could not start its renderer', error);
+        if (!cancelled) setFailure('init');
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
       const current = appRef.current;
       if (current !== null) {
         current.canvas.removeEventListener('pointermove', onPointerMove);
@@ -259,7 +286,15 @@ export function BoardCanvas(): JSX.Element {
 
   useEffect(redraw);
 
-  return <div ref={hostRef} className="board" />;
+  return (
+    <div ref={hostRef} className="board">
+      {failure === null ? null : (
+        <p className="board-failed" role="alert">
+          {failure === 'init' ? UI.boardFailed : UI.boardLost}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Turns a click into an Action and checks it through core before dispatching. */
