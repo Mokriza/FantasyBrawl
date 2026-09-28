@@ -37,10 +37,13 @@ jobs:
       - uses: actions/configure-pages@v5
 
       # Pages serves the site from /<repository>/, and every asset path has to know it.
+      # VITE_SERVER_URL is the online server (Settings → Secrets and variables → Actions
+      # → Variables); without it the site is built without online play.
       - name: Build
         run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

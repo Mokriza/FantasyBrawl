@@ -1,0 +1,22 @@
+# The online server on Render (https://render.com), as a Blueprint: New → Blueprint,
+# pick this repository, and Render reads this file. See README, "Игра по сети".
+#
+# The server keeps rooms in memory only. The free plan sleeps after a while without
+# traffic; the first connection then waits up to a minute, and the client says so.
+services:
+  - type: web
+    name: fantasy-brawl-server
+    runtime: node
+    plan: free
+    # tsx, which runs the TypeScript server, is a dev dependency.
+    buildCommand: npm ci --include=dev
+    startCommand: npm run server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Sites allowed to connect, comma-separated, such as https://mokriza.github.io
+      # (an origin has no path). Render asks for the value when the Blueprint is created.
+      - key: ALLOWED_ORIGINS
+        sync: false
