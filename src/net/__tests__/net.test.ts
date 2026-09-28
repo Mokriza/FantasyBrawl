@@ -88,21 +88,40 @@ function nextEntry(game: NetGame): LogEntry | null {
   }
 }
 
-function playOut(seed: number): { game: NetGame; log: LogEntry[] } {
+/** What the log knew each time a match was reported: which battle and how long it ran. */
+interface Report {
+  readonly match: number;
+  readonly rounds: number;
+  readonly battleMatch: number;
+  readonly battleRound: number | undefined;
+  /** Battle entries logged since the previous report. */
+  readonly battleEntries: number;
+}
+
+function playOut(seed: number): { game: NetGame; log: LogEntry[]; reports: Report[] } {
   let game = createNetGame(seed, content);
   const log: LogEntry[] = [];
+  const reports: Report[] = [];
+  let battleEntries = 0;
   for (let step = 0; step < 20000; step++) {
     const entry = nextEntry(game);
     if (entry === null) break;
     expect(isLegalEntry(game, entry, content)).toBe(true);
-    game = applyEntry(game, entry, content).game;
+    const next = applyEntry(game, entry, content).game;
+    if (entry.kind === 'battle') battleEntries++;
+    const last = next.run.history[next.run.history.length - 1];
+    if (next.run.history.length > game.run.history.length && last !== undefined) {
+      reports.push({ match: last.match, rounds: last.rounds, battleMatch: next.battleMatch, battleRound: next.battle?.round, battleEntries });
+      battleEntries = 0;
+    }
+    game = next;
     log.push(entry);
   }
-  return { game, log };
+  return { game, log, reports };
 }
 
 describe('the online log', () => {
-  let played: { game: NetGame; log: LogEntry[] };
+  let played: ReturnType<typeof playOut>;
   beforeAll(() => {
     played = playOut(21);
   }, 120_000);
@@ -110,6 +129,15 @@ describe('the online log', () => {
   it('plays a whole run: the battle starts and reports itself', () => {
     expect(played.game.run.phase).toBe('finished');
     expect(played.game.run.history.length).toBeGreaterThanOrEqual(content.config.run.winsToFinish);
+  });
+
+  it('every match is reported from its own battle, after that battle was played', () => {
+    expect(played.reports.length).toBe(played.game.run.history.length);
+    for (const report of played.reports) {
+      expect(report.battleMatch).toBe(report.match);
+      expect(report.battleRound).toBe(report.rounds);
+      expect(report.battleEntries).toBeGreaterThan(0);
+    }
   });
 
   it('replaying the log from the seed gives the very same game', () => {

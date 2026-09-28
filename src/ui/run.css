@@ -858,3 +858,180 @@ button {
   margin: 2px 0 4px;
   font-size: 12px;
 }
+
+/* --- online play --- */
+
+.online-card .menu-seed button,
+.room-code button,
+.upgrade-done button {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.upgrade-done button.primary {
+  border-color: var(--active);
+  color: var(--active);
+}
+
+.online-card button:disabled,
+.upgrade-done button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.online-status,
+.online-problem {
+  margin: 0;
+}
+
+.online-problem {
+  color: var(--theirs);
+}
+
+.room-code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-code strong {
+  font-size: 28px;
+  letter-spacing: 4px;
+  color: var(--active);
+  font-variant-numeric: tabular-nums;
+}
+
+.room-seats {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-seats li {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #22262f;
+}
+
+.room-seats li.seat-ready {
+  border-color: #4f9a5a;
+}
+
+.seat-mark {
+  color: #7fd08a;
+}
+
+/* Fixed, so it never takes a row of the screen grid. */
+.online-banner {
+  position: fixed;
+  top: 52px;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border: 1px solid #6a2a22;
+  border-radius: 8px;
+  background: #3a1f1c;
+  color: #ffd7cf;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
+}
+
+.chat-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chat-unread {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--theirs);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chat-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(320px, calc(100vw - 32px));
+  height: 300px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
+}
+
+.chat-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-panel header button {
+  border: none;
+  background: none;
+  color: var(--dim);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.chat-panel ol {
+  margin: 0;
+  padding: 6px 10px;
+  overflow-y: auto;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.chat-panel form {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-panel input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.chat-panel form button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}

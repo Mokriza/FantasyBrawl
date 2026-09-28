@@ -31,7 +31,7 @@ import {
 } from '../../core/index.js';
 import { ClassIcon } from '../panels/ClassIcon.js';
 import { DraftCard } from '../panels/DraftCard.js';
-import { cancelSwap, endUpgrade, swapHero, takePerk, takeReward, takeUnlock } from '../store.js';
+import { cancelSwap, endUpgrade, swapHero, takePerk, takeReward, takeUnlock, unreadyUpgrade } from '../store.js';
 import type { UiState } from '../store.js';
 import { UI } from '../strings.ru.js';
 import { TopBar } from './TopBar.js';
@@ -427,15 +427,36 @@ export function UpgradeScreen({ ui, run }: { ui: UiState; run: RunState }): JSX.
             {ui.content.arenaModifiers[run.modifier]?.description}
           </span>
         )}
-        <button
-          type="button"
-          className="primary upgrade-done"
-          disabled={waiting.length > 0}
-          title={waiting.length > 0 ? UI.upgrade.waiting : undefined}
-          onClick={endUpgrade}
-        >
-          {UI.upgrade.toPlacement}
-        </button>
+        {ui.online === null ? (
+          <button
+            type="button"
+            className="primary upgrade-done"
+            disabled={waiting.length > 0}
+            title={waiting.length > 0 ? UI.upgrade.waiting : undefined}
+            onClick={endUpgrade}
+          >
+            {UI.upgrade.toPlacement}
+          </button>
+        ) : (
+          <span className="upgrade-done">
+            <span className="dim">{upgrade?.ready[otherSide(you)] === true ? UI.online.upgradeEnemyReady : UI.online.upgradeEnemyChoosing}</span>{' '}
+            {upgrade?.ready[you] === true ? (
+              <button type="button" onClick={unreadyUpgrade}>
+                {UI.online.upgradeUnready}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="primary"
+                disabled={waiting.length > 0}
+                title={waiting.length > 0 ? UI.upgrade.waiting : undefined}
+                onClick={endUpgrade}
+              >
+                {UI.online.upgradeReady}
+              </button>
+            )}
+          </span>
+        )}
       </section>
 
       <main className="upgrade">

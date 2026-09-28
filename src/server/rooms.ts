@@ -103,16 +103,22 @@ export function createLobby(deps: LobbyDeps): Lobby {
     return room.sides[0] === 'A' ? { A: name(0), B: name(1) } : { A: name(1), B: name(0) };
   };
 
-  function roomView(room: Room): ServerMessage {
+  /** The room as one of its players sees it. */
+  function roomView(room: Room, player: Player): ServerMessage {
     return {
       type: 'room',
       code: room.code,
+      you: seatOf(room, player) ?? 0,
       started: room.started,
       seats: room.seats.map((id, seat) => {
         const p = id === null ? undefined : players.get(id);
         return p === undefined ? null : { name: p.name, ready: room.lobbyReady[seat] ?? false, connected: p.connId !== null };
       }),
     };
+  }
+
+  function broadcastRoom(room: Room): void {
+    for (const player of seatsOf(room)) send(player, roomView(room, player));
   }
 
   function newCode(): string {
@@ -127,7 +133,8 @@ export function createLobby(deps: LobbyDeps): Lobby {
     room.cancelClock?.();
     room.cancelForfeit.forEach((cancel) => cancel?.());
     room.cancelCleanup?.();
-    for (const player of seatsOf(room)) player.room = null;
+    // Only those still here: a player who has moved on to another room stays there.
+    for (const player of seatsOf(room)) if (player.room === room.code) player.room = null;
     rooms.delete(room.code);
   }
 
@@ -204,7 +211,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
       const player = id === null ? undefined : players.get(id);
       if (player !== undefined) send(player, { type: 'started', seed: room.seed, you: room.sides[seat as 0 | 1], names });
     });
-    broadcast(room, roomView(room));
+    broadcastRoom(room);
     runClock(room);
   }
 
@@ -253,7 +260,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
     room.cancelForfeit[seat] = null;
     room.cancelCleanup?.();
     room.cancelCleanup = null;
-    send(player, roomView(room));
+    send(player, roomView(room, player));
     if (!room.started) return;
     send(player, {
       type: 'snapshot',
@@ -297,7 +304,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
     };
     rooms.set(room.code, room);
     player.room = room.code;
-    send(player, roomView(room));
+    send(player, roomView(room, player));
   }
 
   function joinRoom(player: Player, connId: string, code: string): void {
@@ -307,7 +314,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
       return;
     }
     if (seatOf(room, player) !== null) {
-      send(player, roomView(room));
+      send(player, roomView(room, player));
       return;
     }
     if (room.started || room.seats[1] !== null) {
@@ -317,7 +324,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
     if (player.room !== null) leaveRoom(player);
     room.seats[1] = player.id;
     player.room = room.code;
-    broadcast(room, roomView(room));
+    broadcastRoom(room);
   }
 
   function leaveRoom(player: Player): void {
@@ -343,7 +350,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
         dropRoom(room);
         return;
       }
-      broadcast(room, roomView(room));
+      broadcastRoom(room);
       return;
     }
     if (seatsOf(room).every((p) => p.room !== room.code)) dropRoom(room);
@@ -447,7 +454,7 @@ export function createLobby(deps: LobbyDeps): Lobby {
           const seat = seatOf(room, player);
           if (seat === null || room.started) return;
           room.lobbyReady[seat] = message.ready;
-          broadcast(room, roomView(room));
+          broadcastRoom(room);
           if (room.seats[1] !== null && room.lobbyReady[0] && room.lobbyReady[1]) start(room);
           return;
         }

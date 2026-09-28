@@ -105,6 +105,8 @@ export type ServerMessage =
       readonly type: 'room';
       readonly code: string;
       readonly seats: readonly (SeatView | null)[];
+      /** Which of the seats is the receiver's. */
+      readonly you: 0 | 1;
       readonly started: boolean;
     }
   | { readonly type: 'started'; readonly seed: number; readonly you: 'A' | 'B'; readonly names: Readonly<Record<'A' | 'B', string>> }

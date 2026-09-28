@@ -15,7 +15,8 @@ import {
   statsAtLevel,
   teamOf,
 } from '../../core/index.js';
-import { nextMatch, startRun, toMenu } from '../store.js';
+import { leaveRoom, nextMatch, startRun, toMenu } from '../store.js';
+import type { OnlineView } from '../store.js';
 import { UI, matchTitle, roundsText, victoryText } from '../strings.ru.js';
 import { ClassIcon } from './ClassIcon.js';
 
@@ -73,13 +74,18 @@ export function MatchOverOverlay({
   run,
   you,
   content,
+  online,
 }: {
   run: RunState;
   you: Side;
   content: ContentRegistry;
+  /** Online, both players press "Далее"; this shows who already has. */
+  online: OnlineView | null;
 }): JSX.Element {
   const last = run.history[run.history.length - 1];
   const won = last?.winner === you;
+  const pressed = online?.continued.includes(you) === true;
+  const enemyPressed = online?.continued.includes(otherSide(you)) === true;
 
   return (
     <div className="overlay">
@@ -100,9 +106,10 @@ export function MatchOverOverlay({
         <p className="dim">{UI.matchOver.healed}</p>
 
         <div className="overlay-buttons">
-          <button type="button" className="primary" onClick={nextMatch}>
-            {UI.matchOver.next}
+          <button type="button" className="primary" onClick={nextMatch} disabled={pressed}>
+            {pressed ? UI.online.nextWaiting : UI.matchOver.next}
           </button>
+          {enemyPressed ? <span className="dim">{UI.online.nextEnemyReady}</span> : null}
         </div>
       </div>
     </div>
@@ -113,10 +120,12 @@ export function RunOverOverlay({
   run,
   you,
   content,
+  online,
 }: {
   run: RunState;
   you: Side;
   content: ContentRegistry;
+  online: OnlineView | null;
 }): JSX.Element {
   const won = runWinner(run, content) === you;
 
@@ -140,9 +149,15 @@ export function RunOverOverlay({
         </p>
 
         <div className="overlay-buttons">
-          <button type="button" className="primary" onClick={() => startRun()}>
-            {UI.runOver.newRun}
-          </button>
+          {online === null ? (
+            <button type="button" className="primary" onClick={() => startRun()}>
+              {UI.runOver.newRun}
+            </button>
+          ) : (
+            <button type="button" className="primary" onClick={leaveRoom}>
+              {UI.online.toLobby}
+            </button>
+          )}
           <button type="button" onClick={toMenu}>
             {UI.toMenu}
           </button>

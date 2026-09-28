@@ -69,6 +69,7 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
     ...Object.values(battle.heroes).filter((h) => h.side === 'N'),
   ];
 
+  // Online the opponent's turn may be quiet, with nothing playing: still their turn.
   const status =
     battle.outcome !== null
       ? ''
@@ -76,7 +77,9 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
         ? isPlayerTurn(ui)
           ? UI.playing
           : UI.thinking
-        : UI.yourTurn;
+        : isPlayerTurn(ui)
+          ? UI.yourTurn
+          : UI.thinking;
 
   return (
     <>

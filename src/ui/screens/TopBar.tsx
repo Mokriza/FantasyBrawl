@@ -1,6 +1,7 @@
 /** The strip across the top: where the run stands, the seed, playback speed, the way out. */
 
 import { heroLevel, holdToWin, otherSide } from '../../core/index.js';
+import { OnlineBanner, OnlineClock } from '../panels/Online.js';
 import { setSpeed, toMenu } from '../store.js';
 import type { Speed, UiState } from '../store.js';
 import { UI, matchTitle } from '../strings.ru.js';
@@ -14,13 +15,29 @@ interface Props {
   readonly busy?: boolean;
 }
 
+/** Out to the menu; walking out of an online game in progress hands it to the opponent. */
+function leave(ui: UiState): void {
+  const online = ui.online;
+  const playing = online !== null && ui.run !== null && online.ended === null && ui.run.phase !== 'finished';
+  if (playing && !window.confirm(UI.online.leaveConfirm)) return;
+  toMenu();
+}
+
 export function TopBar({ ui, status, busy }: Props): JSX.Element {
   const run = ui.run;
   const you = ui.playerSide;
+  const online = ui.online;
 
   return (
+    <>
     <header className="topbar">
       <h1>{UI.appTitle}</h1>
+
+      {online === null || online.names === null ? null : (
+        <span className="dim">
+          {online.names[you]} {UI.online.vs} <b>{online.names[otherSide(you)]}</b>
+        </span>
+      )}
 
       {run === null ? null : (
         <span className="series" title={UI.series.score}>
@@ -54,6 +71,8 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
         <span className={`turn-indicator${busy === true ? ' busy' : ''}`}>{status}</span>
       )}
 
+      {online === null ? null : <OnlineClock online={online} you={you} />}
+
       <span className="dim">
         {UI.seed}: {ui.seed}
       </span>
@@ -72,9 +91,11 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
         ))}
       </div>
 
-      <button type="button" className="new-battle" onClick={toMenu}>
+      <button type="button" className="new-battle" onClick={() => leave(ui)}>
         {UI.toMenu}
       </button>
     </header>
+    {online === null ? null : <OnlineBanner online={online} />}
+    </>
   );
 }

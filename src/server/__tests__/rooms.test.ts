@@ -241,6 +241,18 @@ describe('dropping out', () => {
     expect(h.last('b', 'opponentBack')).toBeDefined();
   });
 
+  it('leaving an old room after the other player has made a new one does not take them out of it', () => {
+    const h = harness();
+    h.pair();
+    h.say('a', { type: 'leave' });
+    h.say('a', { type: 'createRoom' });
+    const code = h.last('a', 'room')?.code ?? '';
+    h.say('b', { type: 'leave' });
+    h.say('a', { type: 'lobbyReady', ready: true });
+    expect(h.last('a', 'error')).toBeUndefined();
+    expect(h.last('a', 'room')).toMatchObject({ code, seats: [{ ready: true }, null] });
+  });
+
   it('a player who does not come back loses by forfeit', () => {
     const h = harness();
     h.pair();

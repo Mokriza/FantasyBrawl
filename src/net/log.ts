@@ -42,10 +42,15 @@ function beginIfDue(game: NetGame, content: ContentRegistry, events: BattleEvent
   return { ...game, battle: started.state, battleMatch: game.run.match };
 }
 
-/** Reports a finished battle to the run, once. */
+/**
+ * Reports a finished battle to the run, once. The battle must be this match's: the
+ * moment the last hero of the next match is placed, the run is in its battle phase
+ * while the finished battle of the previous match is still held here.
+ */
 function reportIfOver(game: NetGame, content: ContentRegistry): NetGame {
   const battle = game.battle;
   if (battle === null || battle.outcome === null || game.run.phase !== 'battle') return game;
+  if (game.battleMatch !== game.run.match) return game;
   const run = applyRunAction(
     game.run,
     { type: 'matchEnded', outcome: battle.outcome, rounds: battle.round, loot: battle.loot },

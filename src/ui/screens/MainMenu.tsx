@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { DIFFICULTIES, setDifficulty, startQuickBattle, startRun, useUi } from '../store.js';
+import { DIFFICULTIES, ONLINE_AVAILABLE, openOnline, setDifficulty, startQuickBattle, startRun, useUi } from '../store.js';
 import { UI } from '../strings.ru.js';
 
 function parseSeed(text: string): number | undefined {
@@ -35,6 +35,13 @@ export function MainMenu(): JSX.Element {
           <strong>{UI.menu.quickBattle}</strong>
           <span>{UI.menu.quickBattleHint}</span>
         </button>
+
+        {ONLINE_AVAILABLE ? (
+          <button type="button" className="menu-button" onClick={openOnline}>
+            <strong>{UI.online.menu}</strong>
+            <span>{UI.online.menuHint}</span>
+          </button>
+        ) : null}
 
         <div className="menu-difficulty" role="radiogroup" aria-label={UI.menu.difficulty}>
           <span className="dim">{UI.menu.difficulty}</span>
