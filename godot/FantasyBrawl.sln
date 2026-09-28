@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brawl.Core", "Brawl.Core\Brawl.Core.csproj", "{8BA53EE2-3C38-447D-8E18-F6FE6B2A8E73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Brawl.Core.Tests", "Brawl.Core.Tests\Brawl.Core.Tests.csproj", "{10642153-21DD-43E4-A2A9-6AD2918372F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game", "Game\Game.csproj", "{6D6D69F1-09E0-4421-86E0-171BA641F0CB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8BA53EE2-3C38-447D-8E18-F6FE6B2A8E73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BA53EE2-3C38-447D-8E18-F6FE6B2A8E73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BA53EE2-3C38-447D-8E18-F6FE6B2A8E73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BA53EE2-3C38-447D-8E18-F6FE6B2A8E73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10642153-21DD-43E4-A2A9-6AD2918372F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10642153-21DD-43E4-A2A9-6AD2918372F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10642153-21DD-43E4-A2A9-6AD2918372F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10642153-21DD-43E4-A2A9-6AD2918372F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D6D69F1-09E0-4421-86E0-171BA641F0CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D6D69F1-09E0-4421-86E0-171BA641F0CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D6D69F1-09E0-4421-86E0-171BA641F0CB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D6D69F1-09E0-4421-86E0-171BA641F0CB}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+EndGlobal

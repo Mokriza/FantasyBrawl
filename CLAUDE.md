@@ -21,6 +21,8 @@ npm run test:watch   # Vitest в watch-режиме
 npm run sim -- --matches 1000 --seed 42   # балансная симуляция в Node
 npm run validate-content                  # проверить все JSON контента по схемам
 npm run server                            # сервер игры по сети, порт 8787 (PORT, ALLOWED_ORIGINS)
+npm run parity                            # эталоны для порта на Godot (ветка godot-port)
+dotnet test godot/FantasyBrawl.sln        # тесты ядра на C#
 ```
 
 Перед тем как сказать «готово»: `npm run typecheck && npm run lint && npm test`. Всё зелёное — иначе задача не закончена.
@@ -36,6 +38,7 @@ src/
   net/       общее для игры по сети: лог действий и его прогон, схемы сообщений
   server/    сервер игры по сети: комнаты, проверка ходов, таймеры, чат
   ui/        React + Pixi. Единственное место, где есть браузер
+godot/       порт на Godot (C#): Brawl.Core — ядро, Brawl.Core.Tests — сверка с TS, Game — проект Godot
 docs/
   GAMEDESIGN.md  геймдизайн-документ (экспорт из Word). Намерение дизайнера
   ai/        инструкции для ИИ-разработчика (этот набор)
@@ -69,6 +72,7 @@ docs/
 | Стиль кода, именование, типы | [docs/ai/code-style.md](docs/ai/code-style.md) |
 | Что делаем сейчас, что отложено, этапы | [docs/ai/roadmap.md](docs/ai/roadmap.md) |
 | Онлайн PvP: лобби, сервер, протокол | [docs/ai/online-pvp.md](docs/ai/online-pvp.md) |
+| Порт на Godot: C#, сверка с TypeScript | [docs/ai/godot-port.md](docs/ai/godot-port.md) |
 
 `docs/GAMEDESIGN.md` — дизайнерское намерение. `docs/ai/game-rules.md` — техническая спецификация для кода. Если они расходятся — **спроси**, какой вариант верный, и после ответа исправь отстающий документ.
 

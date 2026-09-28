@@ -1,0 +1,8 @@
+# .NET build output
+bin/
+obj/
+# Godot's import cache and editor state
+.godot/
+# Copied from src/content at build time (see Game.csproj)
+Game/content/
+*.user

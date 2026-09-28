@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The rules of the game in C#, a port of src/core. No Godot here: the library builds and
+    is tested with the plain .NET SDK, and the Godot project references it.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Brawl.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,28 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <!-- The Godot client. The rules live in Brawl.Core; this is only what is on screen. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Brawl.Game</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Brawl.Core\Brawl.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    The content is the same JSON the web game reads, in src/content. It is copied into
+    the Godot project (res://content) so an export carries it; the copy is not committed.
+  -->
+  <Target Name="CopyContent" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <ContentJson Include="..\..\src\content\**\*.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ContentJson)" DestinationFiles="@(ContentJson->'content\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

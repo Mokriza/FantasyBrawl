@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "sim": "tsx src/sim/run.ts",
     "validate-content": "tsx scripts/validateContent.ts",
-    "server": "tsx src/server/main.ts"
+    "server": "tsx src/server/main.ts",
+    "parity": "tsx scripts/exportParity.ts"
   },
   "dependencies": {
     "pixi.js": "^8.6.6",
