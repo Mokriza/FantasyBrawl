@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BattleEvent } from '../../core/index.js';
 import { heroId } from '../../core/index.js';
-import { advanceDisplay, pruneFloats } from '../playback.js';
+import { EFFECT_MS, advanceDisplay, pruneEffects, pruneFloats, soundOf } from '../playback.js';
 import type { Projection } from '../playback.js';
 
 const HERO = heroId('a');
@@ -20,6 +20,7 @@ function start(): Projection {
       b: { hex: { q: 3, r: 0 }, hp: 80 },
     },
     floats: [],
+    effects: [],
   };
 }
 
@@ -126,5 +127,64 @@ describe('the shown state', () => {
     ]);
     expect(pruneFloats(withFloats.floats, 1500, 900)).toHaveLength(1);
     expect(pruneFloats(withFloats.floats, 2000, 900)).toHaveLength(0);
+  });
+});
+
+describe('flourishes and sounds', () => {
+  const fx = {
+    ...ctx,
+    pace: 1,
+    abilityLook: (id: string) =>
+      id === 'bow' ? { melee: false, tone: 'physical' as const } : id === 'blade' ? { melee: true, tone: 'physical' as const } : undefined,
+  };
+  const run = (events: readonly BattleEvent[], context = fx): Projection =>
+    events.reduce((acc, event) => advanceDisplay(acc, event, context), start());
+
+  it('a shot from afar flies as a bolt from the shooter to the target, and the hit flashes', () => {
+    const after = run([
+      { type: 'abilityUsed', heroId: HERO, abilityId: 'bow' as never, target: { q: 3, r: 0 }, ap: 2 },
+      { type: 'damaged', targetId: FOE, sourceId: HERO, amount: 12, crit: true, school: 'physical' },
+    ]);
+    expect(after.effects.map((e) => e.kind)).toEqual(['bolt', 'hit']);
+    expect(after.effects[0]).toMatchObject({ from: { q: 0, r: 0 }, hex: { q: 3, r: 0 }, ms: EFFECT_MS.bolt });
+    expect(after.effects[1]).toMatchObject({ strong: true, hex: { q: 3, r: 0 } });
+    expect(after.heroes.b?.hitAt).toBe(1000);
+  });
+
+  it('a blade in reach sweeps instead of flying', () => {
+    const after = run([{ type: 'abilityUsed', heroId: HERO, abilityId: 'blade' as never, target: { q: 1, r: 0 }, ap: 2 }]);
+    expect(after.effects[0]?.kind).toBe('slash');
+  });
+
+  it('a step slides from the old hex, and faster playback shortens everything', () => {
+    const after = run([{ type: 'moved', heroId: HERO, from: { q: 0, r: 0 }, to: { q: 1, r: 0 } }], { ...fx, pace: 0.5 });
+    expect(after.heroes.a).toMatchObject({ hex: { q: 1, r: 0 }, from: { q: 0, r: 0 }, walkAt: 1000 });
+    const hit = run([{ type: 'died', heroId: FOE }], { ...fx, pace: 0.5 });
+    expect(hit.effects[0]?.ms).toBe(EFFECT_MS.death / 2);
+  });
+
+  it('at the instant speed there are no flourishes, and the state is the same', () => {
+    const events: BattleEvent[] = [
+      { type: 'abilityUsed', heroId: HERO, abilityId: 'bow' as never, target: { q: 3, r: 0 }, ap: 2 },
+      { type: 'damaged', targetId: FOE, sourceId: HERO, amount: 12, crit: false, school: 'physical' },
+    ];
+    const instant = run(events, { ...fx, pace: 0 });
+    expect(instant.effects).toEqual([]);
+    expect(instant.heroes.b?.hp).toBe(run(events).heroes.b?.hp);
+  });
+
+  it('finished flourishes are dropped', () => {
+    const after = run([{ type: 'died', heroId: FOE }]);
+    expect(pruneEffects(after.effects, 1000 + EFFECT_MS.death - 1)).toHaveLength(1);
+    expect(pruneEffects(after.effects, 1000 + EFFECT_MS.death)).toHaveLength(0);
+  });
+
+  it('each kind of blow has its sound', () => {
+    const look = fx.abilityLook;
+    expect(soundOf({ type: 'abilityUsed', heroId: HERO, abilityId: 'bow' as never, target: { q: 3, r: 0 }, ap: 2 }, look)).toBe('shoot');
+    expect(soundOf({ type: 'abilityUsed', heroId: HERO, abilityId: 'blade' as never, target: { q: 1, r: 0 }, ap: 2 }, look)).toBe('swing');
+    expect(soundOf({ type: 'damaged', targetId: FOE, sourceId: HERO, amount: 5, crit: false, school: 'magic' }, look)).toBe('hitMagic');
+    expect(soundOf({ type: 'damaged', targetId: FOE, sourceId: HERO, amount: 5, crit: true, school: 'magic' }, look)).toBe('crit');
+    expect(soundOf({ type: 'turnEnded', heroId: HERO }, look)).toBeNull();
   });
 });

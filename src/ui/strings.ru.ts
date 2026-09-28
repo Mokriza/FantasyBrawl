@@ -30,6 +30,9 @@ export const UI = {
   round: 'Раунд',
   speed: 'Скорость',
   speedInstant: 'мгнов.',
+  sound: 'Звук',
+  soundOn: 'Звук включён — нажмите, чтобы выключить',
+  soundOff: 'Звук выключен — нажмите, чтобы включить',
   legend: 'Обозначения',
   stats: {
     maxHp: 'Здоровье',

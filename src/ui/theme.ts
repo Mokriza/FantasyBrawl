@@ -60,6 +60,24 @@ export const COLORS = {
   hpGood: 0x4bbd7f,
   hpLow: 0xd4674a,
 
+  /** Flourishes on the board, by what kind of thing happened. */
+  effect: {
+    physical: 0xffe2b8,
+    magic: 0xa98bff,
+    pure: 0xfff1a8,
+    heal: 0x7ff0ae,
+    utility: 0x6fd3ff,
+  },
+  /** The flash on a hit, by school. */
+  impact: {
+    physical: 0xff6a4a,
+    magic: 0xb07bff,
+    pure: 0xffe27a,
+    heal: 0x7ff0ae,
+    utility: 0x6fd3ff,
+  },
+  shield: 0xbfe3ff,
+  death: 0x8a8f9c,
   float: {
     damage: 0xffd7cf,
     crit: 0xffc24a,

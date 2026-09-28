@@ -59,11 +59,12 @@ import type { ConnectionStatus, NetClient } from './net/client.js';
 import { chooseActions, choosePerk, choosePick, choosePlacement, chooseReward, chooseSwap, chooseUnlock, profileByName } from '../ai/index.js';
 import type { AiProfile } from '../ai/index.js';
 import { EVENT_MS, FLOAT_MS, OPPONENT_PICK_MS } from './config.js';
-import { advanceDisplay, pruneFloats } from './playback.js';
+import { abilityLook, advanceDisplay, pruneEffects, pruneFloats, soundOf } from './playback.js';
+import type { AbilityLook, DisplayHero, Effect, FloatingText } from './playback.js';
+import { playSound } from './sound.js';
 import { UI } from './strings.ru.js';
-import type { DisplayHero, FloatingText } from './playback.js';
 
-export type { DisplayHero, FloatingText } from './playback.js';
+export type { DisplayHero, Effect, FloatingText } from './playback.js';
 
 export type Speed = 1 | 2 | 4 | 0;
 
@@ -92,6 +93,8 @@ export interface UiState {
   readonly queue: readonly BattleEvent[];
   readonly display: Readonly<Record<string, DisplayHero>>;
   readonly floats: readonly FloatingText[];
+  /** Bolts, sweeps and flashes still on the board. */
+  readonly effects: readonly Effect[];
   /** The seed shown to the player: the run's, or the quick battle's. */
   readonly seed: number;
   readonly playerSide: Side;
@@ -185,6 +188,7 @@ let state: UiState = {
   queue: [],
   display: {},
   floats: [],
+  effects: [],
   seed: 0,
   playerSide: content.config.battle.playerSide,
   selectedAbility: null,
@@ -251,6 +255,7 @@ const CLEAN_BATTLE: Partial<UiState> = {
   queue: [],
   display: {},
   floats: [],
+  effects: [],
   selectedAbility: null,
   hoverHex: null,
   busy: false,
@@ -258,23 +263,44 @@ const CLEAN_BATTLE: Partial<UiState> = {
 
 // --- playing battle events back ------------------------------------------------
 
+const looks = new Map<string, AbilityLook | undefined>();
+
+/** How an ability looks on the board, worked out once per ability. */
+function lookOf(id: string): AbilityLook | undefined {
+  if (!looks.has(id)) {
+    const ability = content.abilities[id];
+    looks.set(id, ability === undefined ? undefined : abilityLook(ability));
+  }
+  return looks.get(id);
+}
+
 /** Moves the shown state one event forward, then records it in the log. */
 function playEvent(event: BattleEvent): void {
   const battle = state.battle;
   const next = advanceDisplay(
-    { heroes: state.display, floats: state.floats },
+    { heroes: state.display, floats: state.floats, effects: state.effects },
     event,
     {
       maxHpOf: (id) => battle?.heroes[id]?.base.maxHp ?? Infinity,
       now: performance.now(),
       nextFloatId: () => floatId++,
       passiveName: (id) => content.passives[id]?.name ?? id,
+      pace: state.speed === 0 ? 0 : 1 / state.speed,
+      abilityLook: lookOf,
     },
   );
+
+  // At the instant speed a whole turn lands at once: silence rather than a wall of noise.
+  if (state.speed !== 0) {
+    const sound = soundOf(event, lookOf);
+    if (sound !== null) playSound(sound);
+    if (event.type === 'turnStarted' && battle?.heroes[event.heroId]?.side === state.playerSide) playSound('turn');
+  }
 
   set({
     display: next.heroes,
     floats: next.floats,
+    effects: next.effects,
     log: [...state.log, event],
     queue: state.queue.slice(1),
   });
@@ -301,9 +327,12 @@ function pump(): void {
   const battle = state.battle;
   if (battle === null) return;
 
-  // Drop floats that have faded out, so they do not pile up.
-  const liveFloats = pruneFloats(state.floats, performance.now(), FLOAT_MS);
+  // Drop floats and flourishes that have faded out, so they do not pile up.
+  const now = performance.now();
+  const liveFloats = pruneFloats(state.floats, now, FLOAT_MS);
   if (liveFloats.length !== state.floats.length) set({ floats: liveFloats });
+  const liveEffects = pruneEffects(state.effects, now);
+  if (liveEffects.length !== state.effects.length) set({ effects: liveEffects });
 
   const next = state.queue[0];
   if (next !== undefined) {
@@ -313,7 +342,8 @@ function pump(): void {
   }
 
   if (battle.outcome !== null) {
-    set({ busy: false, floats: [] });
+    if (state.busy && state.speed !== 0) playSound(battle.outcome.winner === state.playerSide ? 'win' : 'lose');
+    set({ busy: false, floats: [], effects: [] });
     // In a run the result goes back to core, which decides whether the series is over.
     if (state.mode === 'run' && state.run?.phase === 'battle') {
       applyRun({ type: 'matchEnded', outcome: battle.outcome, rounds: battle.round, loot: battle.loot });
@@ -329,7 +359,7 @@ function pump(): void {
   if (stepAi()) return;
 
   set({ busy: false });
-  if (state.floats.length > 0) schedule(FLOAT_MS);
+  if (state.floats.length > 0 || state.effects.length > 0) schedule(FLOAT_MS);
 }
 
 /** Applies one action and puts its events in the queue rather than showing them. */

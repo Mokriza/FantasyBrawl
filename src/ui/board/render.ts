@@ -19,7 +19,7 @@ import type {
 } from '../../core/index.js';
 import { allHexes, blocksLos, centreHex, getClass, hexKey, holdToWin, resolveShape, terrainAt } from '../../core/index.js';
 import { COLORS, HEX_SIZE, classColor, sideColor } from '../theme.js';
-import type { DisplayHero, FloatingText } from '../store.js';
+import type { DisplayHero, Effect, FloatingText } from '../store.js';
 import { FLOAT_MS } from '../config.js';
 import { boardMetrics, hexCorners, hexToPixel } from './pixelHex.js';
 
@@ -69,6 +69,29 @@ function centreOf(hex: Hex, arena: Arena): { x: number; y: number } {
   const p = hexToPixel(hex, HEX_SIZE);
   return { x: p.x + metrics.offsetX, y: p.y + metrics.offsetY };
 }
+
+/**
+ * Where a hero's figure stands right now: sliding between hexes during a step, with a
+ * little shake just after a blow.
+ */
+function figurePosition(shown: DisplayHero, arena: Arena, now: number): { x: number; y: number } {
+  const to = centreOf(shown.hex, arena);
+  let { x, y } = to;
+  if (shown.from !== undefined && shown.walkAt !== undefined && shown.walkMs !== undefined && shown.walkMs > 0) {
+    const t = Math.min(1, Math.max(0, (now - shown.walkAt) / shown.walkMs));
+    const from = centreOf(shown.from, arena);
+    x = from.x + (to.x - from.x) * t;
+    y = from.y + (to.y - from.y) * t;
+  }
+  if (shown.hitAt !== undefined) {
+    const t = (now - shown.hitAt) / HIT_SHAKE_MS;
+    if (t >= 0 && t < 1) x += Math.sin(t * Math.PI * 6) * 4 * (1 - t);
+  }
+  return { x, y };
+}
+
+/** How long a hero shakes after a blow. */
+const HIT_SHAKE_MS = 260;
 
 // --- terrain -----------------------------------------------------------------
 
@@ -287,11 +310,12 @@ function drawHero(
   isActive: boolean,
   sprite: ClassTextures | undefined,
   playerSide: Side,
+  now: number,
 ): void {
   const hero = battle.heroes[id];
   if (hero === undefined || shown.hp <= 0) return;
 
-  const { x, y } = centreOf(shown.hex, arena);
+  const { x, y } = figurePosition(shown, arena, now);
   const heroClass = getClass(content, hero.classId);
   // A summon is a smaller figure, so it never passes for a fourth hero.
   const radius = HEX_SIZE * (hero.summon === null ? 0.58 : 0.45);
@@ -362,6 +386,7 @@ export interface BoardView {
   readonly content: ContentRegistry;
   readonly hoverHex: Hex | null;
   readonly floats: readonly FloatingText[];
+  readonly effects: readonly Effect[];
   readonly highlights: Highlights;
   /** Whose team is drawn blue. */
   readonly playerSide: Side;
@@ -483,8 +508,11 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
       battle.activeHeroId === id && !inZone.size,
       classId === undefined ? undefined : view.sprites[classId],
       view.playerSide,
+      now,
     );
   }
+
+  for (const effect of view.effects) drawEffect(layer, effect, arena, now);
 
   for (const float of view.floats) {
     const age = (now - float.bornAt) / FLOAT_MS;
@@ -504,4 +532,108 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     text.alpha = 1 - age * age;
     layer.addChild(text);
   }
+}
+
+// --- flourishes ----------------------------------------------------------------
+
+/** Eases in and out, so a bolt leaves and lands softly. */
+function ease(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+}
+
+/** One flourish at its age: a bolt in flight, a sweep, a flash. See playback.ts. */
+function drawEffect(layer: Container, effect: Effect, arena: Arena, now: number): void {
+  const t = (now - effect.bornAt) / effect.ms;
+  if (t < 0 || t >= 1) return;
+  const from = centreOf(effect.from, arena);
+  const to = centreOf(effect.hex, arena);
+  const colour = COLORS.effect[effect.tone];
+  const fade = 1 - t;
+  const g = new Graphics();
+
+  switch (effect.kind) {
+    case 'bolt': {
+      // A glowing ball with a short tail, flying from the caster to the target.
+      const head = ease(t);
+      const tail = ease(Math.max(0, t - 0.3));
+      const hx = from.x + (to.x - from.x) * head;
+      const hy = from.y + (to.y - from.y) * head;
+      g.moveTo(from.x + (to.x - from.x) * tail, from.y + (to.y - from.y) * tail)
+        .lineTo(hx, hy)
+        .stroke({ width: 4, color: colour, alpha: 0.55 });
+      g.circle(hx, hy, 11).fill({ color: colour, alpha: 0.3 });
+      g.circle(hx, hy, 6).fill({ color: colour, alpha: 0.95 });
+      break;
+    }
+    case 'slash': {
+      // A blade sweeping across the target, square to the line of the blow.
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const nx = -dy / length;
+      const ny = dx / length;
+      const r = HEX_SIZE * 0.75;
+      const reach = Math.min(1, t * 2.2);
+      const sx = to.x + nx * r - (dx / length) * r * 0.35;
+      const sy = to.y + ny * r - (dy / length) * r * 0.35;
+      const ex = to.x - nx * r + (dx / length) * r * 0.35;
+      const ey = to.y - ny * r + (dy / length) * r * 0.35;
+      g.moveTo(sx, sy)
+        .lineTo(sx + (ex - sx) * reach, sy + (ey - sy) * reach)
+        .stroke({ width: 5 * fade + 1, color: colour, alpha: Math.min(1, fade * 1.6) });
+      break;
+    }
+    case 'burst': {
+      const radius = HEX_SIZE * (0.3 + t * 0.9);
+      g.circle(to.x, to.y, radius).fill({ color: colour, alpha: 0.18 * fade });
+      g.circle(to.x, to.y, radius).stroke({ width: 4 * fade + 1, color: colour, alpha: fade });
+      break;
+    }
+    case 'hit': {
+      const impact = COLORS.impact[effect.tone];
+      const size = effect.strong ? 0.8 : 0.6;
+      g.circle(to.x, to.y, HEX_SIZE * size).fill({ color: impact, alpha: 0.45 * fade });
+      // Sparks flying out; a critical hit throws more of them, further.
+      const sparks = effect.strong ? 8 : 5;
+      for (let i = 0; i < sparks; i++) {
+        const angle = (i / sparks) * Math.PI * 2 + 0.4;
+        const inner = HEX_SIZE * (0.25 + t * 0.5);
+        const outer = inner + HEX_SIZE * (effect.strong ? 0.35 : 0.22);
+        g.moveTo(to.x + Math.cos(angle) * inner, to.y + Math.sin(angle) * inner)
+          .lineTo(to.x + Math.cos(angle) * outer, to.y + Math.sin(angle) * outer)
+          .stroke({ width: 2.5, color: impact, alpha: fade });
+      }
+      if (effect.strong) {
+        g.circle(to.x, to.y, HEX_SIZE * (0.5 + t * 0.6)).stroke({ width: 3, color: COLORS.float.crit, alpha: fade });
+      }
+      break;
+    }
+    case 'heal': {
+      g.circle(to.x, to.y, HEX_SIZE * 0.65).fill({ color: colour, alpha: 0.22 * fade });
+      // Small crosses rising out of the hero.
+      for (let i = 0; i < 3; i++) {
+        const px = to.x + (i - 1) * HEX_SIZE * 0.35;
+        const py = to.y + HEX_SIZE * 0.2 - t * HEX_SIZE * (0.7 + i * 0.15);
+        const s = 4;
+        g.moveTo(px - s, py).lineTo(px + s, py).stroke({ width: 2.5, color: colour, alpha: fade });
+        g.moveTo(px, py - s).lineTo(px, py + s).stroke({ width: 2.5, color: colour, alpha: fade });
+      }
+      break;
+    }
+    case 'shield':
+      g.poly(polygonPoints(effect.hex, arena, 5 + t * 4)).stroke({ width: 4 * fade + 1, color: COLORS.shield, alpha: fade });
+      break;
+    case 'status': {
+      const radius = HEX_SIZE * (0.75 - t * 0.2);
+      g.circle(to.x, to.y, radius).stroke({ width: 3, color: effect.tone === 'utility' ? colour : COLORS.impact[effect.tone], alpha: fade * 0.9 });
+      break;
+    }
+    case 'death': {
+      const radius = HEX_SIZE * (0.4 + t * 0.7);
+      g.circle(to.x, to.y, radius).fill({ color: COLORS.death, alpha: 0.35 * fade });
+      g.circle(to.x, to.y, radius).stroke({ width: 3, color: COLORS.death, alpha: fade });
+      break;
+    }
+  }
+  layer.addChild(g);
 }

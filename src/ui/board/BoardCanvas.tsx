@@ -179,6 +179,7 @@ export function BoardCanvas(): JSX.Element {
         content: current.content,
         hoverHex: current.hoverHex,
         floats: current.floats,
+        effects: current.effects,
         highlights: computeHighlights(current, battle),
         sprites: spritesRef.current,
         playerSide: current.playerSide,
@@ -224,7 +225,9 @@ export function BoardCanvas(): JSX.Element {
         // Floating numbers fade over time, so the board needs a heartbeat of its own
         // while any of them are alive. Otherwise it redraws only on state changes.
         app.ticker.add(() => {
-          if (uiRef.current.floats.length > 0) redraw();
+          // Anything moving on its own keeps the board redrawing: numbers, flourishes, walks.
+          const current = uiRef.current;
+          if (current.floats.length > 0 || current.effects.length > 0 || current.busy) redraw();
         });
 
         redraw();

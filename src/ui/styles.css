@@ -84,6 +84,7 @@ h2 {
 
 .speed button,
 .new-battle,
+.sound-toggle,
 button.primary {
   padding: 4px 10px;
   border: 1px solid var(--border);
@@ -96,6 +97,7 @@ button.primary {
 
 .speed button:hover,
 .new-battle:hover,
+.sound-toggle:hover,
 button.primary:hover {
   border-color: var(--active);
 }
@@ -680,4 +682,9 @@ button.primary:hover {
   inset: 0;
   background: var(--tint);
   mix-blend-mode: multiply;
+}
+
+.sound-toggle.speed-on {
+  border-color: var(--active);
+  color: var(--active);
 }

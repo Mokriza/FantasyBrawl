@@ -1,7 +1,9 @@
 /** The strip across the top: where the run stands, the seed, playback speed, the way out. */
 
+import { useSyncExternalStore } from 'react';
 import { heroLevel, holdToWin, otherSide } from '../../core/index.js';
 import { OnlineBanner, OnlineClock } from '../panels/Online.js';
+import { onSoundChange, setSoundEnabled, soundEnabled } from '../sound.js';
 import { setSpeed, toMenu } from '../store.js';
 import type { Speed, UiState } from '../store.js';
 import { UI, matchTitle } from '../strings.ru.js';
@@ -27,6 +29,7 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
   const run = ui.run;
   const you = ui.playerSide;
   const online = ui.online;
+  const sound = useSyncExternalStore(onSoundChange, soundEnabled, soundEnabled);
 
   return (
     <>
@@ -90,6 +93,16 @@ export function TopBar({ ui, status, busy }: Props): JSX.Element {
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        className={`sound-toggle${sound ? ' speed-on' : ''}`}
+        title={sound ? UI.soundOn : UI.soundOff}
+        aria-pressed={sound}
+        onClick={() => setSoundEnabled(!sound)}
+      >
+        {sound ? '🔊' : '🔇'} {UI.sound}
+      </button>
 
       <button type="button" className="new-battle" onClick={() => leave(ui)}>
         {UI.toMenu}
