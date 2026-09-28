@@ -11,9 +11,24 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadContent } from '../src/content/load.js';
-import { createRng, hexLine, nearestDirection, nextFloat, nextInt, ring, shuffle } from '../src/core/index.js';
-import type { Hex } from '../src/core/index.js';
+import { gzipSync } from 'node:zlib';
+import { profileByName } from '../src/ai/index.js';
+import { loadContent, loadTeams } from '../src/content/load.js';
+import {
+  applyAction,
+  createBattle,
+  createRng,
+  hexLine,
+  nearestDirection,
+  nextFloat,
+  nextInt,
+  ring,
+  shuffle,
+  startBattle,
+} from '../src/core/index.js';
+import type { Action, BattleState, Hex } from '../src/core/index.js';
+import { playBattle } from '../src/sim/match.js';
+import { playRun } from '../src/sim/series.js';
 
 const OUT = join('godot', 'Brawl.Core.Tests', 'Fixtures');
 
@@ -60,3 +75,62 @@ write('hex.json', {
   directions: pairs.map(({ a, b }) => ({ a, b, dir: nearestDirection(a, b) })),
   rings: [0, 1, 2, 3].map((radius) => ({ radius, ring: ring({ q: 1, r: -2 }, radius) })),
 });
+
+// Whole battles, AI against AI: the starting state, then every action with the events it
+// made and the state after it. The C# core replays the actions and must produce the same.
+// Quick battles also check that the starting state is built the same from the rosters;
+// battles from whole runs bring generated heroes with passives, perks, artifacts and the
+// arena modifiers. Full states are kept for every step of the first battles and every
+// tenth step of the rest, to keep the file small; events are kept for every step.
+const content = loadContent();
+const normal = profileByName(content, 'normal');
+// A careless opponent for side B: its mistakes walk into rules a careful one avoids.
+const novice = profileByName(content, 'novice');
+
+interface Step {
+  readonly action: Action;
+  readonly events: unknown[];
+  readonly state?: BattleState;
+}
+
+function record(name: string, initial: BattleState, quick: boolean, everyState: boolean): unknown {
+  const actions: Action[] = [];
+  playBattle(initial, { content, profileA: normal, profileB: novice, onAction: (action) => actions.push(action) });
+  const started = startBattle(initial, content);
+  let state = started.state;
+  const steps: Step[] = [];
+  actions.forEach((action, i) => {
+    const applied = applyAction(state, action, content);
+    state = applied.state;
+    const keep = everyState || i % 10 === 9 || i === actions.length - 1 || !quick;
+    steps.push(keep ? { action, events: [...applied.events], state } : { action, events: [...applied.events] });
+  });
+  return { name, quick, seed: initial.seed, initial, start: { events: started.events, state: started.state }, steps };
+}
+
+const battles: unknown[] = [];
+for (const seed of [1, 2, 3, 4, 5, 6]) {
+  battles.push(record(`quick ${seed}`, createBattle({ seed, teams: loadTeams(), content }), true, seed <= 2));
+}
+
+// Runs until every arena modifier has been seen; the first eight runs give all their matches.
+const seen = new Set<string>();
+for (let seed = 1; seed <= 40 && (seed <= 8 || seen.size < Object.keys(content.arenaModifiers).length); seed++) {
+  let match = 0;
+  playRun({
+    seed,
+    content,
+    profileA: normal,
+    profileB: novice,
+    onBattle: (initial) => {
+      match++;
+      const fresh = initial.modifiers.filter((m) => !seen.has(m));
+      if (seed > 8 && fresh.length === 0) return;
+      fresh.forEach((m) => seen.add(m));
+      battles.push(record(`run ${seed} match ${match}${initial.modifiers.length > 0 ? ` (${initial.modifiers.join(', ')})` : ''}`, initial, false, false));
+    },
+  });
+}
+
+writeFileSync(join(OUT, 'battles.json.gz'), gzipSync(JSON.stringify(battles)));
+console.log(`battles.json.gz written: ${battles.length} battles, modifiers ${[...seen].join(', ')}`);

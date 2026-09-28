@@ -3,7 +3,7 @@
  * Used by `npm run sim -- --mode draft` and by the run invariant tests.
  */
 
-import type { ContentRegistry, RunState } from '../core/index.js';
+import type { BattleState, ContentRegistry, RunState } from '../core/index.js';
 import {
   applyRunAction,
   awaitingPerk,
@@ -31,6 +31,8 @@ export interface RunOptions {
   readonly content: ContentRegistry;
   readonly profileA: AiProfile;
   readonly profileB: AiProfile;
+  /** Sees the starting state of every battle, before it is played (the Godot parity export). */
+  readonly onBattle?: (initial: BattleState) => void;
 }
 
 export function playRun(options: RunOptions): RunResult {
@@ -65,7 +67,9 @@ export function playRun(options: RunOptions): RunResult {
         break;
       }
       case 'battle': {
-        const result = playBattle(createRunBattle(run, content), {
+        const initial = createRunBattle(run, content);
+        options.onBattle?.(initial);
+        const result = playBattle(initial, {
           content,
           profileA: options.profileA,
           profileB: options.profileB,

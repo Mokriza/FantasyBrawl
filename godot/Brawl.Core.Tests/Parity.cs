@@ -58,7 +58,7 @@ public static class Parity
             {
                 int n = expected.GetArrayLength();
                 if (n != actual.GetArrayLength())
-                    return $"{path}: length {n} vs {actual.GetArrayLength()}";
+                    return $"{path}: length {n} vs {actual.GetArrayLength()}\n  expected {Clip(expected.GetRawText())}\n  actual   {Clip(actual.GetRawText())}";
                 for (int i = 0; i < n; i++)
                 {
                     string? diff = Difference(expected[i], actual[i], $"{path}[{i}]");
@@ -83,6 +83,8 @@ public static class Parity
 
     private static bool IsNullish(JsonElement e) =>
         e.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null;
+
+    private static string Clip(string text) => text.Length <= 1500 ? text : text[..1500] + "…";
 
     private static string Show(JsonElement e) => e.ValueKind == JsonValueKind.Undefined ? "(absent)" : e.GetRawText();
 }

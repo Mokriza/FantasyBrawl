@@ -24,6 +24,8 @@ public static class Json
         options.Converters.Add(new DiscriminatedConverter<Effect>("type", EffectTypes.ByName));
         options.Converters.Add(new DiscriminatedConverter<Shape>("type", ShapeTypes.ByName));
         options.Converters.Add(new DiscriminatedConverter<ArenaRules>("kind", ArenaRuleTypes.ByName));
+        options.Converters.Add(new DiscriminatedConverter<BattleAction>("type", ActionTypes.ByName));
+        options.Converters.Add(new DiscriminatedConverter<BattleEvent>("type", EventTypes.ByName));
         options.Converters.Add(new OrderedMapConverterFactory());
         options.MakeReadOnly(populateMissingResolver: true);
         return options;
