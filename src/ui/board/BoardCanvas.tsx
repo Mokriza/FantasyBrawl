@@ -167,7 +167,11 @@ export function BoardCanvas(): JSX.Element {
   function redraw(): void {
     const layer = layerRef.current;
     if (layer === null) return;
-    layer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    // The board is drawn afresh, so last frame's objects go, and their graphics contexts
+    // with them: Pixi keeps a Graphics' own context alive unless told `context: true`,
+    // which at 60 redraws a second is a gigabyte a minute. Sprite textures are shared
+    // and stay; `texture` is not set.
+    layer.removeChildren().forEach((child) => child.destroy({ children: true, context: true }));
     const current = uiRef.current;
     const battle = current.battle;
     if (battle === null) return;
