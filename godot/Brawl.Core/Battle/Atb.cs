@@ -3,14 +3,17 @@ namespace Brawl.Core;
 /// <summary>The initiative bar, a port of battle/atb.ts. Nothing here is random; every tie breaks the same way.</summary>
 public static class Atb
 {
-    /// <summary>atb desc, then final Speed desc, then side B, then the lower hero id.</summary>
+    /// <summary>On a tied bar and speed: side B, then side A, then the neutral guardian (user decision).</summary>
+    private static int SideOrder(Side side) => side switch { Side.B => 0, Side.A => 1, _ => 2 };
+
+    /// <summary>atb desc, then final Speed desc, then side B → A → N, then the lower hero id.</summary>
     private static Comparison<BattleHero> TurnOrder(BattleState state, ContentRegistry content) => (a, b) =>
     {
         if (a.Atb != b.Atb) return Math.Sign(b.Atb - a.Atb);
         double sa = Modifiers.StatInBattle(state, a, StatName.Speed, content);
         double sb = Modifiers.StatInBattle(state, b, StatName.Speed, content);
         if (sa != sb) return Math.Sign(sb - sa);
-        if (a.Side != b.Side) return a.Side == Side.B ? -1 : 1;
+        if (a.Side != b.Side) return SideOrder(a.Side) - SideOrder(b.Side);
         return JsSort.Less(a.Id, b.Id) ? -1 : 1;
     };
 

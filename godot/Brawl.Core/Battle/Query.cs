@@ -9,12 +9,11 @@ public static class JsSort
 {
     /// <summary>
     /// `[...items].sort(compare)` as V8 runs it. With a consistent comparison any stable
-    /// sort gives the same order, but a few comparisons in the rules are not consistent
-    /// (a hero of side A and the neutral guardian tied on the bar each sort after the
-    /// other), and then the order is whatever V8's algorithm makes of it. Arrays shorter
-    /// than 64 are sorted by V8 exactly as below: the first run is found (and reversed if
-    /// it descends), the rest is placed by binary insertion. Longer arrays go through a
-    /// plain stable sort; the rules never sort one that long with an inconsistent comparison.
+    /// sort gives the same order; with an inconsistent one the order is whatever V8's
+    /// algorithm makes of it. The turn order once had such a comparison (fixed since), and
+    /// the exact copy stays as a safety net. Arrays shorter than 64 are sorted by V8 exactly
+    /// as below: the first run is found (and reversed if it descends), the rest is placed by
+    /// binary insertion. Longer arrays go through a plain stable sort.
     /// </summary>
     public static List<T> Stable<T>(IEnumerable<T> items, Comparison<T> compare)
     {
