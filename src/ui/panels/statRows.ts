@@ -45,7 +45,7 @@ export function statRows(
       key: 'armor',
       label: UI.stats.armor,
       value: String(Math.round(stats.armor)),
-      help: UI.statHelp.armor,
+      help: UI.statHelp.armor(f.defenseConstant),
       effect: reduction(stats.armor),
     },
     {
