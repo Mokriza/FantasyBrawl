@@ -13,7 +13,7 @@ namespace Brawl.Game;
 ///
 /// There is no game logic here: what is allowed is asked of Brawl.Core.
 /// </summary>
-public sealed class BattleSession
+public sealed class BattleSession : IBoardSource
 {
     public ContentRegistry Content { get; }
     public BattleState Battle { get; private set; }
@@ -43,17 +43,31 @@ public sealed class BattleSession
     private int aiRetries;
 
     public BattleSession(ContentRegistry content, BattleState initial, AiProfile opponent, Side playerSide)
+        : this(content, initial, opponent, playerSide, played: false)
+    {
+    }
+
+    private BattleSession(ContentRegistry content, BattleState state, AiProfile opponent, Side playerSide, bool played)
     {
         Content = content;
         this.opponent = opponent;
         PlayerSide = playerSide;
-        Seed = initial.Seed;
-        aiRng = Rng.Create(JsMath.ToInt32(initial.Seed) ^ unchecked((int)0x9e3779b9));
-        Display = Playback.ProjectionOf(initial);
-        var started = BattleRules.StartBattle(initial, content);
+        Seed = state.Seed;
+        aiRng = Rng.Create(JsMath.ToInt32(state.Seed) ^ unchecked((int)0x9e3779b9));
+        Display = Playback.ProjectionOf(state);
+        if (played)
+        {
+            Battle = state;
+            return;
+        }
+        var started = BattleRules.StartBattle(state, content);
         Battle = started.State;
         Enqueue(started.Events);
     }
+
+    /// <summary>A battle already played to the end, shown as it finished: for jumping ahead in a screenshot run.</summary>
+    public static BattleSession Played(ContentRegistry content, BattleState final, AiProfile opponent, Side playerSide) =>
+        new(content, final, opponent, playerSide, played: true);
 
     public bool IsPlayerTurn =>
         Battle.Outcome is null
@@ -115,6 +129,53 @@ public sealed class BattleSession
         if (StepAi()) return;
         Busy = false;
     }
+
+    // --- the board -----------------------------------------------------------------------
+
+    /// <summary>What the board tints: where the active hero can walk, or the reach, targets and zone of the chosen ability.</summary>
+    public BoardMarks Marks()
+    {
+        var none = BoardMarks.None;
+        if (!CanAct || Active is not { } hero) return none;
+        if (SelectedAbility is { } abilityId)
+        {
+            var ability = Content.GetAbility(abilityId);
+            var reach = Legal.AbilityReach(Battle, hero, ability, Content).Select(h => h.Key).ToHashSet();
+            var targets = Legal.TargetsFor(Battle, hero, ability, Content).Select(h => h.Key).ToHashSet();
+            var zone = new HashSet<string>();
+            bool illegal = false;
+            if (Hover is { } hover)
+            {
+                if (targets.Contains(hover.Key))
+                    foreach (var hit in Targeting.ResolveShape(Battle, hero, hover, ability, Content)) zone.Add(hit.Hex.Key);
+                else illegal = true;
+            }
+            bool friendly = ability.Targets is AbilityTargets.Ally or AbilityTargets.Self;
+            return none with { Reach = reach, Targets = targets, Zone = zone, ZoneFriendly = friendly, Illegal = illegal };
+        }
+        var reachable = Legal.ReachableFor(Battle, hero, Content);
+        var path = new HashSet<string>();
+        if (Hover is { } at && reachable.Get(at.Key) is { } route)
+            foreach (var h in route.Path) path.Add(h.Key);
+        return none with { Reachable = reachable.Keys.ToHashSet(), Path = path };
+    }
+
+    /// <summary>A click on a hex: the chosen ability on it, or a walk there.</summary>
+    public void Click(Hex hex)
+    {
+        if (!CanAct || Active is not { } hero) return;
+        if (SelectedAbility is { } abilityId)
+        {
+            var ability = Content.GetAbility(abilityId);
+            if (Legal.AbilityLegality(Battle, hero, ability, hex, Content).Ok)
+                Dispatch(new AbilityAction { HeroId = hero.Id, AbilityId = abilityId, Target = hex });
+            return;
+        }
+        var reach = Legal.ReachableFor(Battle, hero, Content).Get(hex.Key);
+        if (reach is not null) Dispatch(new MoveAction { HeroId = hero.Id, Path = reach.Path });
+    }
+
+    public void Cancel() => SelectedAbility = null;
 
     /// <summary>Plays the opponent one action at a time. True while it is busy.</summary>
     private bool StepAi()

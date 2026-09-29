@@ -6,7 +6,7 @@ namespace Brawl.Game;
 /// Every string the player sees that is not part of the content JSON, as in
 /// src/ui/strings.ru.ts. The battle log lines follow src/ui/panels/BattleLog.tsx.
 /// </summary>
-public static class Texts
+public static partial class Texts
 {
     public const string AppTitle = "Арена 3v3";
     public const string QuickBattle = "Быстрый бой";

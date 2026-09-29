@@ -4,15 +4,20 @@ using Godot;
 namespace Brawl.Game;
 
 /// <summary>
-/// The quick battle screen: the board in the middle, both teams at the sides, the active
-/// hero and their abilities below, the log on the right, as in the web version. Panels
-/// are rebuilt when what they show changes; the board redraws every frame.
+/// The battle screen: the board in the middle, both teams at the sides, the active hero
+/// and their abilities below, the log on the right, as in the web version. Panels are
+/// rebuilt when what they show changes; the board redraws every frame.
+///
+/// In a run the top strip also shows the series, and the end of the match hands over to
+/// the run: the series overlay comes up once core has the result.
 /// </summary>
 public partial class BattleScreen : Control
 {
     private readonly BattleSession session;
     private readonly Action toMenu;
-    private readonly Action playAgain;
+    private readonly Action? playAgain;
+    private readonly RunSession? run;
+    private readonly Label holdLabel = new();
 
     private readonly Label roundLabel = new();
     private readonly Label statusLabel = new();
@@ -24,16 +29,16 @@ public partial class BattleScreen : Control
     private readonly Label hintLabel = new();
     private readonly Label queueLabel = new();
     private readonly BoardView board = new();
-    private readonly List<Button> speedButtons = [];
     private Control? overlay;
     private string shown = "";
     private int logShown;
 
-    public BattleScreen(BattleSession session, Action toMenu, Action playAgain)
+    public BattleScreen(BattleSession session, Action toMenu, Action? playAgain, RunSession? run = null)
     {
         this.session = session;
         this.toMenu = toMenu;
         this.playAgain = playAgain;
+        this.run = run;
     }
 
     public override void _Ready()
@@ -109,28 +114,27 @@ public partial class BattleScreen : Control
     private Control TopBar()
     {
         var bar = new HBoxContainer();
-        bar.AddThemeConstantOverride("separation", 14);
+        bar.AddThemeConstantOverride("separation", run is null ? 14 : 10);
         var title = new Label { Text = Texts.AppTitle };
         title.AddThemeFontSizeOverride("font_size", 18);
         bar.AddChild(title);
+        if (run is not null) RunBar.Fill(bar, run);
+        holdLabel.AddThemeColorOverride("font_color", Palette.PowerPoint);
+        holdLabel.TooltipText = Texts.HoldHint;
+        holdLabel.MouseFilter = MouseFilterEnum.Pass;
+        bar.AddChild(holdLabel);
         bar.AddChild(roundLabel);
         statusLabel.AddThemeColorOverride("font_color", Palette.Active);
         bar.AddChild(statusLabel);
-        bar.AddChild(new Label { Text = $"{Texts.Seed}: {session.Seed}", Modulate = Palette.TextDim });
+        // In a run the seed that matters is the run's: it gives the same pool and the same arenas.
+        bar.AddChild(new Label { Text = $"{Texts.Seed}: {run?.Seed ?? session.Seed}", Modulate = Palette.TextDim });
         bar.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        bar.AddChild(new Label { Text = Texts.Speed, Modulate = Palette.TextDim });
-        foreach (int speed in new[] { 1, 2, 4, 0 })
+        RunBar.AddSpeed(bar, () => session.Speed, value =>
         {
-            var button = new Button { Text = speed == 0 ? Texts.Instant : $"×{speed}", ToggleMode = true, ButtonPressed = session.Speed == speed };
-            int chosen = speed;
-            button.Pressed += () =>
-            {
-                session.Speed = chosen;
-                foreach (var b in speedButtons) b.ButtonPressed = b == button;
-            };
-            speedButtons.Add(button);
-            bar.AddChild(button);
-        }
+            // In a run the speed also paces the opponent's picks, so it is kept there.
+            if (run is not null) run.Speed = value;
+            else session.Speed = value;
+        });
         var menu = new Button { Text = Texts.ToMenu };
         menu.Pressed += toMenu;
         bar.AddChild(menu);
@@ -147,6 +151,11 @@ public partial class BattleScreen : Control
             Refresh();
         }
         hintLabel.Text = Texts.Hint;
+        if (run is not null && overlay is null && run.Run.Phase is RunPhase.MatchOver or RunPhase.Finished)
+        {
+            overlay = SeriesOverlay.Build(run, toMenu, playAgain);
+            AddChild(overlay);
+        }
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -187,6 +196,9 @@ public partial class BattleScreen : Control
     {
         var battle = session.Battle;
         roundLabel.Text = $"{Texts.Round} {battle.Round}";
+        holdLabel.Text = ArenaModifiers.HoldToWin(battle, session.Content) is { } need
+            ? $"{Texts.Hold}: {(session.PlayerSide == Side.A ? battle.Hold.A : battle.Hold.B)} : {(session.PlayerSide == Side.A ? battle.Hold.B : battle.Hold.A)} / {need}"
+            : "";
         statusLabel.Text = battle.Outcome is not null
             ? ""
             : session.Busy ? (session.IsPlayerTurn ? Texts.Playing : Texts.Thinking) : session.IsPlayerTurn ? Texts.YourTurn : Texts.Thinking;
@@ -214,7 +226,7 @@ public partial class BattleScreen : Control
 
         RefreshAbilities();
 
-        if (battle.Outcome is not null && !session.Busy && overlay is null) ShowResult(battle.Outcome);
+        if (run is null && battle.Outcome is not null && !session.Busy && overlay is null) ShowResult(battle.Outcome);
     }
 
     private void Fill(VBoxContainer column, IEnumerable<BattleHero> heroes)
@@ -289,7 +301,7 @@ public partial class BattleScreen : Control
             var availability = Legal.AbilityAvailability(session.Battle, hero, ability, session.Content);
             bool noTarget = availability.Ok && Legal.TargetsFor(session.Battle, hero, ability, session.Content).Count == 0;
             button.Disabled = !mine || !availability.Ok || noTarget;
-            button.TooltipText = session.Content.GetAbility(ability.Id).Description
+            button.TooltipText = Describe.DescribeAbility(ability, hero, session.Content, session.Battle)
                 + (availability.Reason is { } reason ? $"\n\n{Texts.Reason(reason)}" + (cooldown > 0 ? $" ({cooldown})" : "") : "")
                 + (noTarget ? "\n\nНекого задеть отсюда" : "");
             string id = ability.Id;
@@ -321,7 +333,7 @@ public partial class BattleScreen : Control
         box.AddChild(new Label { Text = Texts.VictoryText(outcome.Reason, won), HorizontalAlignment = HorizontalAlignment.Center });
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         var again = new Button { Text = Texts.PlayAgain };
-        again.Pressed += playAgain;
+        if (playAgain is not null) again.Pressed += playAgain;
         var menu = new Button { Text = Texts.ToMenu };
         menu.Pressed += toMenu;
         buttons.AddChild(again);

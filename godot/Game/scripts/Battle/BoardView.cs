@@ -3,25 +3,54 @@ using Godot;
 
 namespace Brawl.Game;
 
+/// <summary>What the board paints over the hexes: hex keys to tint, and whether the hovered hex is refused.</summary>
+public sealed record BoardMarks(
+    HashSet<string> Reach,
+    HashSet<string> Targets,
+    HashSet<string> Zone,
+    bool ZoneFriendly,
+    HashSet<string> Reachable,
+    HashSet<string> Path,
+    bool Illegal)
+{
+    public static BoardMarks None => new([], [], [], false, [], [], false);
+}
+
+/// <summary>
+/// What a board shows and what its clicks do: a battle being played, or a line-up being
+/// placed before one. Every mark comes from Brawl.Core through the source.
+/// </summary>
+public interface IBoardSource
+{
+    ContentRegistry Content { get; }
+    /// <summary>The state whose arena and heroes are drawn.</summary>
+    BattleState Battle { get; }
+    /// <summary>Where the heroes are shown and at what health, which trails the real state while events play.</summary>
+    Projection Display { get; }
+    Side PlayerSide { get; }
+    Hex? Hover { get; set; }
+    BoardMarks Marks();
+    void Click(Hex hex);
+    /// <summary>Right click: let go of whatever is chosen.</summary>
+    void Cancel();
+}
+
 /// <summary>
 /// The board, drawn with _Draw: the Godot counterpart of src/ui/board. It draws the
-/// shown state, which trails the real one while events play, and turns clicks on hexes
-/// into actions. Reachability, targets and zones all come from Brawl.Core.
+/// shown state, which trails the real one while events play, and passes clicks on hexes
+/// to its source. Reachability, targets and zones all come from Brawl.Core.
 /// </summary>
 public partial class BoardView : Control
 {
     public const float HexSize = 35;
     private static readonly float Sqrt3 = Mathf.Sqrt(3);
 
-    private BattleSession? session;
+    private IBoardSource? source;
     private Vector2 offset;
 
-    /// <summary>What to show about the hex under the cursor, for the hint line.</summary>
-    public string HoverText { get; private set; } = "";
-
-    public void Bind(BattleSession value)
+    public void Bind(IBoardSource value)
     {
-        session = value;
+        source = value;
         var arena = value.Battle.Arena;
         float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
         foreach (var h in Terrain.AllHexes(arena))
@@ -58,7 +87,7 @@ public partial class BoardView : Control
 
     private Hex? HexAt(Vector2 local)
     {
-        if (session is null) return null;
+        if (source is null) return null;
         var p = local - offset;
         double q = 2.0 / 3 * p.X / HexSize;
         double r = (-1.0 / 3 * p.X + Math.Sqrt(3) / 3 * p.Y) / HexSize;
@@ -68,96 +97,39 @@ public partial class BoardView : Control
         if (dq > dr && dq > ds) rq = -rr - rs;
         else if (dr > ds) rr = -rq - rs;
         var hex = new Hex((int)rq, (int)rr);
-        return Terrain.InBounds(hex, session.Battle.Arena) ? hex : null;
+        return Terrain.InBounds(hex, source.Battle.Arena) ? hex : null;
     }
 
     // --- input ---------------------------------------------------------------------------
 
     public override void _GuiInput(InputEvent @event)
     {
-        if (session is null) return;
+        if (source is null) return;
         if (@event is InputEventMouseMotion motion)
         {
-            session.Hover = HexAt(motion.Position);
+            source.Hover = HexAt(motion.Position);
         }
         else if (@event is InputEventMouseButton { Pressed: true } click)
         {
             var hex = HexAt(click.Position);
-            if (click.ButtonIndex == MouseButton.Right)
-            {
-                session.SelectedAbility = null;
-            }
-            else if (click.ButtonIndex == MouseButton.Left && hex is not null)
-            {
-                Click(hex.Value);
-            }
+            if (click.ButtonIndex == MouseButton.Right) source.Cancel();
+            else if (click.ButtonIndex == MouseButton.Left && hex is not null) source.Click(hex.Value);
             AcceptEvent();
         }
-    }
-
-    private void Click(Hex hex)
-    {
-        if (session is null || !session.CanAct || session.Active is not { } hero) return;
-        if (session.SelectedAbility is { } abilityId)
-        {
-            var ability = session.Content.GetAbility(abilityId);
-            if (Legal.AbilityLegality(session.Battle, hero, ability, hex, session.Content).Ok)
-                session.Dispatch(new AbilityAction { HeroId = hero.Id, AbilityId = abilityId, Target = hex });
-            return;
-        }
-        var reach = Legal.ReachableFor(session.Battle, hero, session.Content).Get(hex.Key);
-        if (reach is not null) session.Dispatch(new MoveAction { HeroId = hero.Id, Path = reach.Path });
     }
 
     public override void _Process(double delta) => QueueRedraw();
 
     // --- drawing -------------------------------------------------------------------------
 
-    private sealed record Highlights(
-        HashSet<string> Reach,
-        HashSet<string> Targets,
-        HashSet<string> Zone,
-        bool ZoneFriendly,
-        OrderedMap<Reachable> Reachable,
-        HashSet<string> Path,
-        bool Illegal);
-
-    private Highlights ComputeHighlights(BattleSession s)
-    {
-        var none = new Highlights([], [], [], false, OrderedMap<Reachable>.Empty, [], false);
-        if (!s.CanAct || s.Active is not { } hero) return none;
-        var battle = s.Battle;
-        if (s.SelectedAbility is { } abilityId)
-        {
-            var ability = s.Content.GetAbility(abilityId);
-            var reach = Legal.AbilityReach(battle, hero, ability, s.Content).Select(h => h.Key).ToHashSet();
-            var targets = Legal.TargetsFor(battle, hero, ability, s.Content).Select(h => h.Key).ToHashSet();
-            var zone = new HashSet<string>();
-            bool illegal = false;
-            if (s.Hover is { } hover)
-            {
-                if (targets.Contains(hover.Key))
-                    foreach (var hit in Targeting.ResolveShape(battle, hero, hover, ability, s.Content)) zone.Add(hit.Hex.Key);
-                else illegal = true;
-            }
-            bool friendly = ability.Targets is AbilityTargets.Ally or AbilityTargets.Self;
-            return none with { Reach = reach, Targets = targets, Zone = zone, ZoneFriendly = friendly, Illegal = illegal };
-        }
-        var reachable = Legal.ReachableFor(battle, hero, s.Content);
-        var path = new HashSet<string>();
-        if (s.Hover is { } at && reachable.Get(at.Key) is { } route)
-            foreach (var h in route.Path) path.Add(h.Key);
-        return none with { Reachable = reachable, Path = path };
-    }
-
     public override void _Draw()
     {
-        if (session is null) return;
-        var s = session;
+        if (source is null) return;
+        var s = source;
         var battle = s.Battle;
         var arena = battle.Arena;
         double now = Time.GetTicksMsec();
-        var hl = ComputeHighlights(s);
+        var hl = s.Marks();
 
         foreach (var hex in Terrain.AllHexes(arena))
         {
@@ -165,7 +137,7 @@ public partial class BoardView : Control
             var fill = (hex.Q + hex.R) % 2 == 0 ? Palette.HexFill : Palette.HexFillAlt;
             if (hl.Reach.Contains(key)) fill = fill.Lerp(Palette.Reach, 0.35f);
             if (hl.Targets.Contains(key)) fill = fill.Lerp(Palette.Range, 0.5f);
-            if (hl.Reachable.ContainsKey(key)) fill = fill.Lerp(Palette.Reachable, 0.45f);
+            if (hl.Reachable.Contains(key)) fill = fill.Lerp(Palette.Reachable, 0.45f);
             if (hl.Zone.Contains(key)) fill = fill.Lerp(hl.ZoneFriendly ? Palette.ZoneAlly : Palette.Zone, 0.75f);
             if (hl.Path.Contains(key)) fill = fill.Lerp(Palette.Path, 0.7f);
             bool hovered = s.Hover == hex;
@@ -244,10 +216,10 @@ public partial class BoardView : Control
         var hero = battle.Heroes.Get(id);
         if (hero is null || shown.Hp <= 0) return;
         var c = FigurePosition(shown, now);
-        var heroClass = session!.Content.GetClass(hero.ClassId);
+        var heroClass = source!.Content.GetClass(hero.ClassId);
         float radius = HexSize * (hero.Summon is null ? 0.58f : 0.45f);
         var ink = Palette.ClassColor(hero.ClassId);
-        var side = Palette.SideColor(hero.Side, session.PlayerSide);
+        var side = Palette.SideColor(hero.Side, source.PlayerSide);
 
         DrawCircle(c, radius, new Color(ink, 0.35f));
         DrawArc(c, radius, 0, Mathf.Tau, 32, side, 5, true);
