@@ -7,18 +7,24 @@
  */
 
 import type { ContentRegistry } from '../content.js';
-import type { BattleHero, BattleState, HeroId } from '../types.js';
+import type { BattleHero, BattleSide, BattleState, HeroId } from '../types.js';
 import { livingHeroes, updateHero } from './query.js';
 import { statInBattle } from './modifiers.js';
 
-/** atb desc, then final Speed desc, then side B, then the lower hero id. */
+/**
+ * Who acts first on a tied bar and speed: side B (the second drafter's compensation),
+ * then side A, then the neutral guardian. [user decision] The guardian yields to both.
+ */
+const SIDE_ORDER: Readonly<Record<BattleSide, number>> = { B: 0, A: 1, N: 2 };
+
+/** atb desc, then final Speed desc, then side B → A → N, then the lower hero id. */
 function turnOrderComparator(state: BattleState, content: ContentRegistry) {
   return (a: BattleHero, b: BattleHero): number => {
     if (a.atb !== b.atb) return b.atb - a.atb;
     const sa = statInBattle(state, a, 'speed', content);
     const sb = statInBattle(state, b, 'speed', content);
     if (sa !== sb) return sb - sa;
-    if (a.side !== b.side) return a.side === 'B' ? -1 : 1;
+    if (a.side !== b.side) return SIDE_ORDER[a.side] - SIDE_ORDER[b.side];
     return a.id < b.id ? -1 : 1;
   };
 }

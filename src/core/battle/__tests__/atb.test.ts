@@ -43,6 +43,27 @@ describe('the initiative bar', () => {
     expect(readyHeroes(state, content).map((h) => h.id)).toEqual(['a_b', 'm_b', 'z_a']);
   });
 
+  it('on a full tie the neutral guardian goes after both sides', () => {
+    // [user decision] Side B, then side A, then the neutral side N. The guardian's id sorts
+    // before the heroes' on purpose: heroes are listed by id, and the old side rule answered
+    // 'later' both ways for A and N, so the id order used to decide.
+    const withGuardian = (sides: readonly ('A' | 'B')[]) => {
+      let build = scenario(content).hero('guardian', { cls: 'warrior', side: 'A', at: [3, 3], speed: 10, atb: 100 });
+      for (const side of sides) {
+        build = build.hero(`hero_${side}`, { cls: 'warrior', side, at: side === 'A' ? [0, 0] : [6, 0], speed: 10, atb: 100 });
+      }
+      const state = build.build();
+      const guardian = state.heroes['guardian'];
+      if (guardian === undefined) throw new Error('no guardian');
+      // The scenario builder knows only sides A and B; the guardian is turned neutral here.
+      return { ...state, heroes: { ...state.heroes, guardian: { ...guardian, side: 'N' as const } } };
+    };
+    const order = (sides: readonly ('A' | 'B')[]) => readyHeroes(withGuardian(sides), content).map((h) => h.id);
+    expect(order(['A'])).toEqual(['hero_A', 'guardian']);
+    expect(order(['B'])).toEqual(['hero_B', 'guardian']);
+    expect(order(['A', 'B'])).toEqual(['hero_B', 'hero_A', 'guardian']);
+  });
+
   it('a higher speed wins the tie before the side does', () => {
     const state = scenario(content)
       .hero('quick_a', { cls: 'hunter', side: 'A', at: [0, 0], speed: 18, atb: 100 })
