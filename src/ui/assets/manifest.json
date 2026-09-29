@@ -1,234 +1,466 @@
 {
-  "_comment": "Sprite sheets and the hero figure for each class, as [row, col] layers drawn back to front. Paths to images live here and in the content JSON, never in code. Licences are in ASSETS.md.",
+  "_comment": "Sprite sheets, the board terrain and the hero figure for each class. Paths to images live here and in the content JSON, never in code. Licences are in ASSETS.md.",
   "sheets": {
-    "tinyDungeon": {
-      "url": "/assets/kenney-tiny-dungeon/tilemap.png",
+    "naFloor": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetFloor.png",
       "tileSize": 16,
       "margin": 0,
-      "columns": 12,
-      "rows": 11
+      "columns": 22,
+      "rows": 26
     },
-    "rogueChars": {
-      "url": "/assets/kenney-roguelike-characters/characters.png",
+    "naNature": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetNature.png",
       "tileSize": 16,
-      "margin": 1,
-      "columns": 54,
+      "margin": 0,
+      "columns": 24,
+      "rows": 21
+    },
+    "naVillage": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetVillageAbandoned.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 20,
       "rows": 12
     },
-    "tinyTown": {
-      "url": "/assets/kenney-tiny-town/tilemap.png",
+    "naHole": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetHole.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 11,
+      "rows": 5
+    },
+    "naRelief": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetRelief.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 20,
+      "rows": 12
+    },
+    "naDungeon": {
+      "url": "/assets/ninja-adventure/tilesets/TilesetDungeon.png",
       "tileSize": 16,
       "margin": 0,
       "columns": 12,
-      "rows": 11
+      "rows": 4
+    },
+    "naSmoke": {
+      "url": "/assets/ninja-adventure/fx/Smoke.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 12,
+      "rows": 2
+    },
+    "heroGladiator": {
+      "url": "/assets/ninja-adventure/characters/GladiatorBlue.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroKnightGold": {
+      "url": "/assets/ninja-adventure/characters/KnightGold.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroHunter": {
+      "url": "/assets/ninja-adventure/characters/Hunter.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroMage": {
+      "url": "/assets/ninja-adventure/characters/NinjaMageOrange.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroMaster": {
+      "url": "/assets/ninja-adventure/characters/Master.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroSorcerer": {
+      "url": "/assets/ninja-adventure/characters/SorcererBlack.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroNinja": {
+      "url": "/assets/ninja-adventure/characters/NinjaDark.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroMonk": {
+      "url": "/assets/ninja-adventure/characters/Monk2.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroDemon": {
+      "url": "/assets/ninja-adventure/characters/DemonRed.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 7
+    },
+    "heroCyclops": {
+      "url": "/assets/ninja-adventure/characters/Cyclope.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 4,
+      "rows": 4
     }
   },
   "terrain": {
-    "_comment": "Board terrain as [row, col] tiles. \"cover\": the tile paints the whole hex (the floor, rock, high ground); otherwise it stands on the floor as a sprite (thicket). Several tiles are variants, chosen by the hex coordinates; a tile listed twice comes up twice as often. Kinds missing here are drawn as vector shapes.",
+    "_comment": "Board terrain. Each variant is a list of parts [x, y, width, height, dx, dy] in sheet pixels (dx, dy: where the part goes in the picture, 0 when absent). \"cover\": the picture paints the whole hex (the floor, a collapsed edge); otherwise it stands on the floor, scaled by \"scale\". The board picks a variant by the hex coordinates; a variant listed twice comes up twice as often. Kinds missing here are drawn as vector shapes.",
     "floor": {
-      "sheet": "tinyTown",
+      "sheet": "naFloor",
       "cover": true,
-      "tiles": [
+      "variants": [
         [
-          0,
-          0
+          [
+            176,
+            192,
+            16,
+            16
+          ]
         ],
         [
-          0,
-          0
+          [
+            176,
+            192,
+            16,
+            16
+          ]
         ],
         [
-          0,
-          0
+          [
+            176,
+            192,
+            16,
+            16
+          ]
         ],
         [
-          0,
-          0
+          [
+            176,
+            192,
+            16,
+            16
+          ]
         ],
         [
-          0,
-          1
+          [
+            208,
+            192,
+            16,
+            16
+          ]
         ],
         [
-          0,
-          1
-        ],
-        [
-          0,
-          2
+          [
+            240,
+            192,
+            16,
+            16
+          ]
         ]
       ]
     },
     "rock": {
-      "sheet": "tinyDungeon",
-      "cover": true,
-      "tiles": [
+      "sheet": "naNature",
+      "scale": 2,
+      "variants": [
         [
-          3,
-          4
-        ]
-      ]
-    },
-    "high": {
-      "sheet": "tinyTown",
-      "cover": true,
-      "tiles": [
+          [
+            240,
+            224,
+            32,
+            32
+          ]
+        ],
         [
-          2,
-          1
+          [
+            240,
+            224,
+            32,
+            32
+          ]
+        ],
+        [
+          [
+            240,
+            160,
+            32,
+            32
+          ]
         ]
       ]
     },
     "thicket": {
-      "sheet": "tinyTown",
-      "cover": false,
-      "tiles": [
+      "sheet": "naNature",
+      "scale": 2,
+      "variants": [
         [
-          0,
-          5
+          [
+            256,
+            0,
+            32,
+            32
+          ]
         ],
         [
-          1,
-          4
+          [
+            0,
+            0,
+            32,
+            32
+          ]
         ],
         [
-          0,
-          5
+          [
+            288,
+            0,
+            32,
+            32
+          ]
+        ]
+      ]
+    },
+    "column": {
+      "sheet": "naVillage",
+      "scale": 2,
+      "variants": [
+        [
+          [
+            32,
+            48,
+            16,
+            32
+          ]
+        ]
+      ]
+    },
+    "pit": {
+      "sheet": "naHole",
+      "scale": 4,
+      "variants": [
+        [
+          [
+            48,
+            48,
+            16,
+            16
+          ]
+        ]
+      ]
+    },
+    "high": {
+      "sheet": "naRelief",
+      "scale": 2,
+      "variants": [
+        [
+          [
+            16,
+            80,
+            16,
+            16,
+            0,
+            0
+          ],
+          [
+            48,
+            80,
+            16,
+            16,
+            16,
+            0
+          ],
+          [
+            16,
+            112,
+            16,
+            16,
+            0,
+            16
+          ],
+          [
+            48,
+            112,
+            16,
+            16,
+            16,
+            16
+          ]
+        ]
+      ]
+    },
+    "collapse": {
+      "sheet": "naHole",
+      "cover": true,
+      "variants": [
+        [
+          [
+            16,
+            16,
+            16,
+            16
+          ]
+        ]
+      ]
+    },
+    "ice": {
+      "sheet": "naDungeon",
+      "scale": 3,
+      "variants": [
+        [
+          [
+            0,
+            32,
+            16,
+            16
+          ]
+        ]
+      ]
+    },
+    "trap": {
+      "sheet": "naDungeon",
+      "scale": 3,
+      "variants": [
+        [
+          [
+            64,
+            16,
+            16,
+            16
+          ]
+        ]
+      ]
+    },
+    "smoke": {
+      "sheet": "naSmoke",
+      "scale": 2,
+      "variants": [
+        [
+          [
+            96,
+            0,
+            32,
+            32
+          ]
         ]
       ]
     }
   },
   "classSprites": {
+    "_comment": "The hero figure of each class: the first frame of a Ninja Adventure character sheet, facing the viewer.",
     "warrior": {
-      "_note": "Орк с двуручным топором, собран из тела, доспеха и оружия",
-      "sheet": "rogueChars",
+      "_note": "GladiatorBlue",
+      "sheet": "heroGladiator",
       "layers": [
         [
-          3,
+          0,
           0
-        ],
-        [
-          7,
-          14
-        ],
-        [
-          1,
-          51
         ]
       ]
     },
     "paladin": {
-      "sheet": "tinyDungeon",
+      "_note": "KnightGold",
+      "sheet": "heroKnightGold",
       "layers": [
         [
-          8,
-          1
+          0,
+          0
         ]
       ]
     },
     "hunter": {
-      "sheet": "tinyDungeon",
+      "_note": "Hunter",
+      "sheet": "heroHunter",
       "layers": [
         [
-          9,
-          4
+          0,
+          0
         ]
       ]
     },
     "mage": {
-      "sheet": "tinyDungeon",
+      "_note": "NinjaMageOrange",
+      "sheet": "heroMage",
       "layers": [
         [
-          7,
+          0,
           0
         ]
       ]
     },
     "priest": {
-      "sheet": "tinyDungeon",
+      "_note": "Master",
+      "sheet": "heroMaster",
       "layers": [
         [
-          8,
-          4
+          0,
+          0
         ]
       ]
     },
     "warlock": {
-      "_note": "Человек в тёмной робе с посохом. Тонировка делает силуэт мрачным: в паке нет капюшона, только причёски",
-      "sheet": "rogueChars",
+      "_note": "SorcererBlack",
+      "sheet": "heroSorcerer",
       "layers": [
         [
           0,
           0
-        ],
-        [
-          9,
-          14
-        ],
-        [
-          9,
-          19
-        ],
-        [
-          0,
-          47
         ]
-      ],
-      "tint": "#7d5fb0"
+      ]
     },
     "rogue": {
-      "_note": "Человек в тёмной кожаной куртке с кинжалом",
-      "sheet": "rogueChars",
+      "_note": "NinjaDark",
+      "sheet": "heroNinja",
       "layers": [
         [
           0,
           0
-        ],
-        [
-          5,
-          15
-        ],
-        [
-          2,
-          19
-        ],
-        [
-          7,
-          44
         ]
       ]
     },
     "monk": {
-      "_note": "Бритый наголо боец в оранжевой рубахе, без оружия",
-      "sheet": "rogueChars",
+      "_note": "Monk2",
+      "sheet": "heroMonk",
       "layers": [
         [
           0,
           0
-        ],
-        [
-          0,
-          6
         ]
       ]
     },
     "imp": {
-      "_note": "Красный рогатый бес из Tiny Dungeon — призыв Чернокнижника",
-      "sheet": "tinyDungeon",
+      "_note": "DemonRed",
+      "sheet": "heroDemon",
       "layers": [
         [
-          9,
-          2
+          0,
+          0
         ]
       ]
     },
     "guardian": {
-      "_note": "Циклоп из Tiny Dungeon — «Древний страж»",
-      "sheet": "tinyDungeon",
+      "_note": "Cyclope (monster)",
+      "sheet": "heroCyclops",
       "layers": [
         [
-          9,
-          1
+          0,
+          0
         ]
       ]
     }

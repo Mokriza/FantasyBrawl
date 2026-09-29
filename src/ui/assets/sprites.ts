@@ -63,19 +63,32 @@ export function classFigure(classId: string): ClassFigure | null {
   return layers.length === 0 ? null : { sheet, layers, tint: entry.tint ?? null };
 }
 
-/** How the board paints one kind of terrain, or the floor. */
+/** One rectangle cut from a sheet, and where it goes in the finished picture. */
+export interface TerrainPart {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly dx: number;
+  readonly dy: number;
+}
+
+/** How the board paints one kind of terrain, or the floor. See the manifest's "terrain". */
 export interface TerrainArt {
   readonly sheet: SheetInfo;
-  /** Variants; the board picks one by the hex coordinates. */
-  readonly tiles: readonly TileRef[];
-  /** The tile paints the whole hex; otherwise it stands on the floor as a sprite. */
+  /** Pictures to choose from, each put together from its parts; picked by hex coordinates. */
+  readonly variants: readonly (readonly TerrainPart[])[];
+  /** The picture paints the whole hex; otherwise it stands on the floor as a sprite. */
   readonly cover: boolean;
+  /** Whole-number scale of a standing picture on the board. */
+  readonly scale: number;
 }
 
 interface RawTerrain {
   readonly sheet: string;
-  readonly cover: boolean;
-  readonly tiles: readonly (readonly number[])[];
+  readonly cover?: boolean;
+  readonly scale?: number;
+  readonly variants: readonly (readonly (readonly number[])[])[];
 }
 
 const TERRAIN = Object.fromEntries(
@@ -93,28 +106,59 @@ export function terrainArt(kind: string): TerrainArt | null {
   if (entry === undefined) return null;
   const sheet = SHEETS[entry.sheet];
   if (sheet === undefined) return null;
-  const tiles: TileRef[] = [];
-  for (const tile of entry.tiles) {
-    const row = tile[0];
-    const col = tile[1];
-    if (row !== undefined && col !== undefined) tiles.push({ row, col });
+  const variants: TerrainPart[][] = [];
+  for (const raw of entry.variants) {
+    const parts: TerrainPart[] = [];
+    for (const [x, y, width, height, dx = 0, dy = 0] of raw) {
+      if (x === undefined || y === undefined || width === undefined || height === undefined) continue;
+      parts.push({ x, y, width, height, dx, dy });
+    }
+    if (parts.length > 0) variants.push(parts);
   }
-  return tiles.length === 0 ? null : { sheet, tiles, cover: entry.cover };
+  if (variants.length === 0) return null;
+  return { sheet, variants, cover: entry.cover === true, scale: entry.scale ?? 1 };
 }
 
 /**
- * CSS for a terrain swatch in the legend, looking as the board draws it: a covering
- * tile alone, a standing one on the floor. Null for kinds drawn as vector shapes.
+ * One variant put together on a canvas of its own size. With trim, a covering picture
+ * loses a pixel row at the top and the bottom: a flat-top hex is 1.15 times as wide as
+ * it is tall, and 16 × 14 stretched over it keeps the pixels nearly square.
  */
-export function terrainSwatchStyle(kind: string, size: number): Record<string, string> | null {
-  const art = terrainArt(kind);
-  const first = art?.tiles[0];
-  if (art === null || first === undefined) return null;
-  const floor = terrainArt('floor')?.tiles[0];
-  // Both layers must come from one sheet to share a background size; the floor is
-  // left out otherwise, and the tile stands on the panel.
-  const layers = !art.cover && floor !== undefined && terrainArt('floor')?.sheet === art.sheet ? [floor, first] : [first];
-  return figureBackgroundStyle({ sheet: art.sheet, layers, tint: null }, size);
+export function paintVariant(
+  image: CanvasImageSource,
+  parts: readonly TerrainPart[],
+  trim = false,
+): HTMLCanvasElement | null {
+  const width = Math.max(...parts.map((p) => p.dx + p.width));
+  const height = Math.max(...parts.map((p) => p.dy + p.height));
+  const cut = trim ? 1 : 0;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height - cut * 2;
+  const context = canvas.getContext('2d');
+  if (context === null) return null;
+  context.imageSmoothingEnabled = false;
+  for (const part of parts) {
+    context.drawImage(image, part.x, part.y, part.width, part.height, part.dx, part.dy - cut, part.width, part.height);
+  }
+  return canvas;
+}
+
+const images = new Map<string, Promise<HTMLImageElement | null>>();
+
+/** A sheet as an image, loaded once; null if it cannot be loaded. For the React panels. */
+export function sheetImage(sheet: SheetInfo): Promise<HTMLImageElement | null> {
+  let loading = images.get(sheet.url);
+  if (loading === undefined) {
+    loading = new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = sheet.url;
+    });
+    images.set(sheet.url, loading);
+  }
+  return loading;
 }
 
 /** Top-left pixel of a tile on its sheet. */

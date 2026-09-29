@@ -29,7 +29,7 @@ import {
 import { COLORS, HEX_SIZE } from '../theme.js';
 import { canAct, dispatch, placeAt, selectAbility, setHover, useUi } from '../store.js';
 import type { UiState } from '../store.js';
-import { classFigure, terrainArt, terrainKinds, tileOrigin } from '../assets/sprites.js';
+import { classFigure, paintVariant, terrainArt, terrainKinds, tileOrigin } from '../assets/sprites.js';
 import { boardMetrics, pixelToHex } from './pixelHex.js';
 import { EMPTY_HIGHLIGHTS, drawBoard } from './render.js';
 import { UI } from '../strings.ru.js';
@@ -139,27 +139,10 @@ async function loadClassSprites(
 }
 
 /**
- * One tile as a texture of its own. A shape filled with a texture takes the texture's
- * whole source, not its frame, so a tile that fills a hex cannot be a frame of the sheet.
- */
-function cutTile(sheet: Texture, x: number, y: number, width: number, height: number): Texture | null {
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d');
-  const image = sheet.source.resource as CanvasImageSource | undefined;
-  if (context === null || image === undefined) return null;
-  context.drawImage(image, x, y, width, height, 0, 0, width, height);
-  const texture = Texture.from(canvas);
-  texture.source.scaleMode = 'nearest';
-  return texture;
-}
-
-/**
- * Cuts the floor and terrain tiles out of their sheets. A tile that covers a hex is
- * cut one pixel short at the top and the bottom: a flat-top hex is 1.15 times as wide
- * as it is tall, and a 16 × 14 frame stretched over it keeps the pixels nearly square.
- * A kind whose sheet fails to load is simply left out, and drawn as a vector shape.
+ * The floor and terrain pictures, each variant put together on a canvas of its own and
+ * made a texture. A shape filled with a texture takes the texture's whole source, not a
+ * frame of it, so a picture that fills a hex cannot be a frame of the sheet. A kind whose
+ * sheet fails to load is simply left out, and drawn as a vector shape.
  */
 async function loadTerrainTextures(sheets: Map<string, Texture>): Promise<Record<string, TerrainTextures>> {
   const out: Record<string, TerrainTextures> = {};
@@ -167,16 +150,17 @@ async function loadTerrainTextures(sheets: Map<string, Texture>): Promise<Record
     const art = terrainArt(kind);
     if (art === null) continue;
     const sheet = await loadSheet(art.sheet.url, sheets);
-    if (sheet === null) continue;
-    const size = art.sheet.tileSize;
-    const trim = art.cover ? 1 : 0;
+    const image = sheet?.source.resource as CanvasImageSource | undefined;
+    if (image === undefined) continue;
     const textures: Texture[] = [];
-    for (const ref of art.tiles) {
-      const origin = tileOrigin(art.sheet, ref);
-      const tile = cutTile(sheet, origin.x, origin.y + trim, size, size - trim * 2);
-      if (tile !== null) textures.push(tile);
+    for (const parts of art.variants) {
+      const canvas = paintVariant(image, parts, art.cover);
+      if (canvas === null) continue;
+      const texture = Texture.from(canvas);
+      texture.source.scaleMode = 'nearest';
+      textures.push(texture);
     }
-    if (textures.length > 0) out[kind] = { cover: art.cover, textures };
+    if (textures.length > 0) out[kind] = { cover: art.cover, scale: art.scale, textures };
   }
   return out;
 }

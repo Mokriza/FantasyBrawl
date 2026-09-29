@@ -385,6 +385,16 @@ button.primary:hover {
   border-radius: 3px;
 }
 
+/* The board's own picture of the terrain; the dashed outline of kinds that block sight stays. */
+.legend-tile.legend-picture {
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+
 .legend-name {
   grid-area: name;
 }
