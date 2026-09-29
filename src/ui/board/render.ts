@@ -39,6 +39,23 @@ function variantOf<T>(items: readonly T[], hex: Hex): T | undefined {
   return items[hash % items.length];
 }
 
+/** The frames of one animation or sprite of assets/vfx.json, cut from its sheet. */
+export interface VfxFrames {
+  readonly frames: readonly Texture[];
+  readonly scale: number;
+  readonly tint: number | null;
+  /** Which way a sprite points, in degrees; null for a round one or an animation. */
+  readonly pointsAt: number | null;
+}
+
+/** Everything the flourishes draw with; empty until loaded, and then they fall back to shapes. */
+export interface VfxTextures {
+  readonly anims: Readonly<Record<string, VfxFrames>>;
+  readonly sprites: Readonly<Record<string, VfxFrames>>;
+}
+
+export const NO_VFX: VfxTextures = { anims: {}, sprites: {} };
+
 /** The layers of one class figure, plus the tint multiplied over them. */
 export interface ClassTextures {
   readonly textures: readonly Texture[];
@@ -455,6 +472,8 @@ export interface BoardView {
   readonly sprites: Readonly<Record<string, ClassTextures>>;
   /** Floor and terrain tiles by kind; empty until loaded, and then the board is flat colours. */
   readonly terrain: Readonly<Record<string, TerrainTextures>>;
+  /** Pictures of the flourishes: impacts, projectiles, weapons. */
+  readonly vfx: VfxTextures;
 }
 
 export function drawBoard(layer: Container, view: BoardView, now: number): void {
@@ -594,7 +613,7 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     );
   }
 
-  for (const effect of view.effects) drawEffect(layer, effect, arena, now);
+  for (const effect of view.effects) drawEffect(layer, effect, arena, now, view.vfx);
 
   for (const float of view.floats) {
     const age = (now - float.bornAt) / FLOAT_MS;
@@ -624,9 +643,199 @@ function ease(t: number): number {
 }
 
 /** One flourish at its age: a bolt in flight, a sweep, a flash. See playback.ts. */
-function drawEffect(layer: Container, effect: Effect, arena: Arena, now: number): void {
+const DEG = Math.PI / 180;
+
+/** One frame of a sprite or an animation as a board sprite, centred on its anchor. */
+function frameSprite(info: VfxFrames, index: number, x: number, y: number, scale = 1): Sprite | null {
+  const texture = info.frames[Math.max(0, Math.min(info.frames.length - 1, index))];
+  if (texture === undefined) return null;
+  const sprite = new Sprite(texture);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.position.set(x, y);
+  sprite.scale.set(info.scale * scale);
+  if (info.tint !== null) sprite.tint = info.tint;
+  return sprite;
+}
+
+/** The pictured flourishes of assets/vfx.json; true when this one was drawn here. */
+function drawPictured(layer: Container, effect: Effect, arena: Arena, now: number, vfx: VfxTextures): boolean {
+  const t = (now - effect.bornAt) / effect.ms;
+  const from = centreOf(effect.from, arena);
+  const to = centreOf(effect.hex, arena);
+  const fade = 1 - t;
+
+  switch (effect.kind) {
+    case 'anim': {
+      const info = effect.anim === undefined ? undefined : vfx.anims[effect.anim];
+      if (info === undefined) return false;
+      const sprite = frameSprite(info, Math.floor(t * info.frames.length), to.x, to.y, effect.strong ? 1.3 : 1);
+      if (sprite !== null) layer.addChild(sprite);
+      return true;
+    }
+
+    case 'projectile': {
+      const info = effect.sprite === undefined ? undefined : vfx.sprites[effect.sprite];
+      // Falling from the sky it drops from above and a little to the side, speeding up.
+      const start = effect.fall === true ? { x: to.x - HEX_SIZE * 1.4, y: to.y - HEX_SIZE * 5 } : from;
+      const k = effect.fall === true ? t * t : ease(t);
+      const x = start.x + (to.x - start.x) * k;
+      const y = start.y + (to.y - start.y) * k;
+      if (info === undefined) {
+        const g = new Graphics();
+        g.circle(x, y, 6).fill({ color: COLORS.effect[effect.tone] });
+        layer.addChild(g);
+        return true;
+      }
+      const sprite = frameSprite(info, Math.floor((now - effect.bornAt) / 70) % Math.max(1, info.frames.length), x, y);
+      if (sprite === null) return true;
+      if (info.pointsAt !== null) sprite.rotation = Math.atan2(to.y - start.y, to.x - start.x) - info.pointsAt * DEG;
+      layer.addChild(sprite);
+      return true;
+    }
+
+    case 'weapon':
+      drawWeapon(layer, effect, from, to, t, vfx);
+      return true;
+
+    case 'lightning': {
+      // A jagged bolt that flickers: a wide pale glow and a white core, re-drawn each frame.
+      const g = new Graphics();
+      const points = boltPoints(from, to, effect.id * 31 + Math.floor(now / 45));
+      const layers: ReadonlyArray<readonly [number, number, number]> = [
+        [9, COLORS.lightningGlow, 0.35],
+        [3, COLORS.lightningCore, 1],
+      ];
+      for (const [width, colour, alpha] of layers) {
+        g.moveTo(from.x, from.y);
+        for (const point of points.slice(1)) g.lineTo(point.x, point.y);
+        g.stroke({ width, color: colour, alpha: alpha * fade });
+      }
+      layer.addChild(g);
+      return true;
+    }
+
+    case 'smite': {
+      // A column of light from the sky, narrowing as it fades, and a ring where it lands.
+      const g = new Graphics();
+      const top = to.y - HEX_SIZE * 7;
+      const width = HEX_SIZE * 0.9 * (1 - t * 0.6);
+      g.rect(to.x - width / 2, top, width, to.y - top).fill({ color: COLORS.smite, alpha: 0.45 * fade });
+      g.rect(to.x - width / 5, top, width / 2.5, to.y - top).fill({ color: 0xffffff, alpha: 0.7 * fade });
+      g.ellipse(to.x, to.y, HEX_SIZE * (0.4 + t * 0.6), HEX_SIZE * (0.25 + t * 0.35)).stroke({ width: 3, color: COLORS.smite, alpha: fade });
+      layer.addChild(g);
+      return true;
+    }
+
+    case 'beam': {
+      // Life drawn off the target: a wavering line and motes running back to the caster.
+      const g = new Graphics();
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const nx = -dy / length;
+      const ny = dx / length;
+      const steps = 16;
+      for (let i = 0; i <= steps; i++) {
+        const f = i / steps;
+        const wave = Math.sin(f * Math.PI * 4 + now / 60) * 5 * Math.sin(f * Math.PI);
+        const x = from.x + dx * f + nx * wave;
+        const y = from.y + dy * f + ny * wave;
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      }
+      g.stroke({ width: 4, color: COLORS.drain, alpha: 0.8 * fade });
+      for (let i = 0; i < 4; i++) {
+        const f = (t * 1.5 + i / 4) % 1;
+        g.circle(from.x + dx * f, from.y + dy * f, 4).fill({ color: COLORS.drain, alpha: fade });
+      }
+      layer.addChild(g);
+      return true;
+    }
+
+    default:
+      return false;
+  }
+}
+
+/** The points of a lightning bolt between two places, jagged by a seed so it can flicker. */
+function boltPoints(from: { x: number; y: number }, to: { x: number; y: number }, seed: number): Array<{ x: number; y: number }> {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+  const segments = Math.max(4, Math.round(length / 18));
+  const out = [from];
+  for (let i = 1; i < segments; i++) {
+    // A cheap hash: the same seed gives the same bolt, the next one a new shape.
+    const jitter = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
+    const offset = (jitter - Math.floor(jitter) - 0.5) * HEX_SIZE * 0.55;
+    const f = i / segments;
+    out.push({ x: from.x + dx * f + nx * offset, y: from.y + dy * f + ny * offset });
+  }
+  out.push(to);
+  return out;
+}
+
+/**
+ * The class weapon in the attacker's hand: a sword sweeps across the target, daggers
+ * stab forward, a hammer or club comes down from high, a bow is raised and drawn, and
+ * bare fists jab. The sprite turns round its handle, at the bottom of the picture.
+ */
+function drawWeapon(
+  layer: Container,
+  effect: Effect,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  t: number,
+  vfx: VfxTextures,
+): void {
+  const dir = Math.atan2(to.y - from.y, to.x - from.x);
+  const ux = Math.cos(dir);
+  const uy = Math.sin(dir);
+  const fade = t > 0.75 ? (1 - t) / 0.25 : 1;
+  const info = effect.sprite === undefined ? undefined : vfx.sprites[effect.sprite];
+  const texture = info?.frames[0];
+
+  if (effect.motion === 'punch' || info === undefined || texture === undefined) {
+    // A fist (or a weapon whose picture is missing): a knuckle jabbing forward.
+    const reach = HEX_SIZE * (0.25 + 0.55 * Math.sin(Math.PI * Math.min(1, t * 1.4)));
+    const g = new Graphics();
+    g.circle(from.x + ux * reach, from.y + uy * reach, 7).fill({ color: 0xffe2c0, alpha: fade });
+    g.circle(from.x + ux * reach, from.y + uy * reach, 7).stroke({ width: 2, color: 0x3a2a20, alpha: fade });
+    layer.addChild(g);
+    return;
+  }
+
+  let angle = dir;
+  let reach = HEX_SIZE * 0.3;
+  if (effect.motion === 'slash') angle = dir + (-80 + 160 * ease(t)) * DEG;
+  else if (effect.motion === 'stab') reach = HEX_SIZE * (0.2 + 0.6 * Math.sin(Math.PI * Math.min(1, t * 1.3)));
+  else if (effect.motion === 'smash') angle = dir + (-120 + 130 * t * t) * DEG; // raised high, brought down hard
+  else if (effect.motion === 'shoot') reach = HEX_SIZE * 0.45;
+
+  const sprite = new Sprite(texture);
+  // A weapon turns round its handle at the bottom of the picture; a bow is held at its middle.
+  sprite.anchor.set(0.5, effect.motion === 'shoot' ? 0.5 : 0.9);
+  sprite.position.set(from.x + ux * reach, from.y + uy * reach);
+  sprite.scale.set(info.scale);
+  sprite.rotation = angle - (info.pointsAt ?? -90) * DEG;
+  sprite.alpha = fade;
+  layer.addChild(sprite);
+
+  if (effect.motion === 'slash') {
+    // The swept arc behind the blade.
+    const g = new Graphics();
+    const radius = texture.height * info.scale * 0.9;
+    g.arc(from.x + ux * reach, from.y + uy * reach, radius, dir - 80 * DEG, angle).stroke({ width: 3, color: 0xffffff, alpha: 0.35 * fade });
+    layer.addChild(g);
+  }
+}
+
+function drawEffect(layer: Container, effect: Effect, arena: Arena, now: number, vfx: VfxTextures): void {
   const t = (now - effect.bornAt) / effect.ms;
   if (t < 0 || t >= 1) return;
+  if (drawPictured(layer, effect, arena, now, vfx)) return;
   const from = centreOf(effect.from, arena);
   const to = centreOf(effect.hex, arena);
   const colour = COLORS.effect[effect.tone];

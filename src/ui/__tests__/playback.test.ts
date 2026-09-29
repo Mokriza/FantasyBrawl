@@ -7,8 +7,9 @@
 import { describe, expect, it } from 'vitest';
 import type { BattleEvent } from '../../core/index.js';
 import { heroId } from '../../core/index.js';
-import { EFFECT_MS, advanceDisplay, pruneEffects, pruneFloats, soundOf } from '../playback.js';
+import { EFFECT_MS, advanceDisplay, inFlightMs, pruneEffects, pruneFloats, soundOf } from '../playback.js';
 import type { Projection } from '../playback.js';
+import type { AbilityStyle } from '../vfx.js';
 
 const HERO = heroId('a');
 const FOE = heroId('b');
@@ -186,5 +187,91 @@ describe('flourishes and sounds', () => {
     expect(soundOf({ type: 'damaged', targetId: FOE, sourceId: HERO, amount: 5, crit: false, school: 'magic' }, look)).toBe('hitMagic');
     expect(soundOf({ type: 'damaged', targetId: FOE, sourceId: HERO, amount: 5, crit: true, school: 'magic' }, look)).toBe('crit');
     expect(soundOf({ type: 'turnEnded', heroId: HERO }, look)).toBeNull();
+  });
+});
+
+describe('styled abilities (assets/vfx.json)', () => {
+  const THIRD = heroId('c');
+  const lightning: AbilityStyle = { delivery: 'chain', impact: 'thunder', castSound: 'thunder', impactSound: 'thunder' };
+  const fireball: AbilityStyle = { delivery: 'projectile', projectile: 'fireball', impact: 'explosion', castSound: 'fireball', impactSound: 'explosion' };
+  const sword: AbilityStyle = { delivery: 'swing', weapon: 'sword', motion: 'slash', impact: 'cut', castSound: 'slash', impactSound: 'hitBlade' };
+  const styles: Record<string, AbilityStyle> = { chain: lightning, fireball, blade: sword, meteor: fireball };
+  const styled = {
+    ...ctx,
+    pace: 1,
+    styleOf: (id: string) => styles[id],
+    basicStyleOf: () => sword,
+    isDelayed: (id: string) => id === 'meteor',
+  };
+  const three = (): Projection => ({ ...start(), heroes: { ...start().heroes, c: { hex: { q: 3, r: 1 }, hp: 60 } } });
+  const run = (events: readonly BattleEvent[]): Projection =>
+    events.reduce((acc, event) => advanceDisplay(acc, event, styled), three());
+  const blow = (target: typeof FOE): BattleEvent => ({ type: 'damaged', targetId: target, sourceId: HERO, amount: 9, crit: false, school: 'magic' });
+
+  it('a chain jumps from the caster to the first target, then from target to target', () => {
+    const after = run([
+      { type: 'abilityUsed', heroId: HERO, abilityId: 'chain' as never, target: { q: 3, r: 0 }, ap: 3 },
+      blow(FOE),
+      blow(THIRD),
+    ]);
+    const bolts = after.effects.filter((e) => e.kind === 'lightning');
+    expect(bolts.map((e) => [e.from, e.hex])).toEqual([
+      [{ q: 0, r: 0 }, { q: 3, r: 0 }],
+      [{ q: 3, r: 0 }, { q: 3, r: 1 }],
+    ]);
+    // Every blow plays the chain's own impact.
+    expect(after.effects.filter((e) => e.kind === 'anim').map((e) => e.anim)).toEqual(['thunder', 'thunder']);
+  });
+
+  it('a fireball flies to the target and explodes where each blow lands', () => {
+    const after = run([
+      { type: 'abilityUsed', heroId: HERO, abilityId: 'fireball' as never, target: { q: 3, r: 0 }, ap: 3 },
+      blow(FOE),
+      blow(THIRD),
+    ]);
+    expect(after.effects[0]).toMatchObject({ kind: 'projectile', sprite: 'fireball', from: { q: 0, r: 0 }, hex: { q: 3, r: 0 } });
+    expect(after.effects.slice(1).map((e) => [e.anim, e.hex])).toEqual([
+      ['explosion', { q: 3, r: 0 }],
+      ['explosion', { q: 3, r: 1 }],
+    ]);
+  });
+
+  it('the blow waits for a shot in flight, and nothing else', () => {
+    const cast = advanceDisplay(three(), { type: 'abilityUsed', heroId: HERO, abilityId: 'fireball' as never, target: { q: 3, r: 0 }, ap: 3 }, styled);
+    expect(inFlightMs(cast.effects, 1000)).toBe(EFFECT_MS.projectile);
+    expect(inFlightMs(cast.effects, 1000 + EFFECT_MS.projectile)).toBe(0);
+    // An explosion is not in flight: the next blow need not wait for it to fade.
+    const landed = advanceDisplay(cast, blow(FOE), styled);
+    expect(inFlightMs(landed.effects.slice(1), 1000)).toBe(0);
+  });
+
+  it('a blade is swung by the attacker towards the target', () => {
+    const after = run([{ type: 'abilityUsed', heroId: HERO, abilityId: 'blade' as never, target: { q: 1, r: 0 }, ap: 2 }]);
+    expect(after.effects[0]).toMatchObject({ kind: 'weapon', sprite: 'sword', motion: 'slash', from: { q: 0, r: 0 } });
+  });
+
+  it('a delayed ability is only prepared when used, and nothing is being cast after it', () => {
+    const after = run([{ type: 'abilityUsed', heroId: HERO, abilityId: 'meteor' as never, target: { q: 3, r: 0 }, ap: 3 }]);
+    expect(after.effects.map((e) => e.anim)).toEqual(['arcaneCircle']);
+    expect(after.casting).toBeUndefined();
+  });
+
+  it('a new turn ends the cast, so the next blow is an ordinary hit', () => {
+    const after = run([
+      { type: 'abilityUsed', heroId: HERO, abilityId: 'fireball' as never, target: { q: 3, r: 0 }, ap: 3 },
+      { type: 'turnEnded', heroId: HERO },
+      blow(FOE),
+    ]);
+    expect(after.casting).toBeUndefined();
+    expect(after.effects.at(-1)?.kind).toBe('hit');
+  });
+
+  it('the cast has its sound, and every blow the style\'s own', () => {
+    const noLook = (): undefined => undefined;
+    const context = { styleOf: styled.styleOf, basicStyleOf: styled.basicStyleOf };
+    expect(soundOf({ type: 'abilityUsed', heroId: HERO, abilityId: 'fireball' as never, target: { q: 3, r: 0 }, ap: 3 }, noLook, context)).toBe('fireball');
+    const casting = run([{ type: 'abilityUsed', heroId: HERO, abilityId: 'chain' as never, target: { q: 3, r: 0 }, ap: 3 }]).casting;
+    expect(casting).toBeDefined();
+    expect(soundOf(blow(FOE), noLook, { ...context, ...(casting === undefined ? {} : { casting }) })).toBe('thunder');
   });
 });

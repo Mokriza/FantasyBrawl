@@ -38,7 +38,10 @@ import { TipCard } from '../panels/Tip.js';
 import { EMPTY_HIGHLIGHTS, drawBoard } from './render.js';
 import { UI } from '../strings.ru.js';
 import { PLACE_DRAG_TYPE } from '../config.js';
-import type { ClassTextures, Highlights, TerrainTextures } from './render.js';
+import type { ClassTextures, Highlights, TerrainTextures, VfxFrames, VfxTextures } from './render.js';
+import { NO_VFX } from './render.js';
+import { ANIMATIONS, SPRITES } from '../vfx.js';
+import { assetUrl } from '../assets/url.js';
 
 /** How long the board waits for its renderer before saying it cannot draw. */
 const RENDERER_TIMEOUT_MS = 8000;
@@ -169,6 +172,42 @@ async function loadTerrainTextures(sheets: Map<string, Texture>): Promise<Record
   return out;
 }
 
+/** A colour written as "#rrggbb" in vfx.json, as Pixi takes it. */
+function tintOf(colour: string | undefined): number | null {
+  return colour === undefined ? null : Number.parseInt(colour.replace('#', ''), 16);
+}
+
+interface StripInfo {
+  readonly url: string;
+  readonly frameWidth: number;
+  readonly frameHeight: number;
+  readonly frames: number;
+  readonly scale: number;
+  readonly tint?: string;
+  readonly pointsAt?: number | null;
+}
+
+/**
+ * The frames of every animation and sprite in assets/vfx.json. A strip whose picture
+ * fails to load is left out, and its flourish falls back to a drawn shape.
+ */
+async function loadVfxTextures(sheets: Map<string, Texture>): Promise<VfxTextures> {
+  const cut = async (entries: Readonly<Record<string, StripInfo>>): Promise<Record<string, VfxFrames>> => {
+    const out: Record<string, VfxFrames> = {};
+    for (const [name, info] of Object.entries(entries)) {
+      const sheet = await loadSheet(assetUrl(info.url), sheets);
+      if (sheet === null) continue;
+      const frames: Texture[] = [];
+      for (let i = 0; i < info.frames; i++) {
+        frames.push(new Texture({ source: sheet.source, frame: new Rectangle(i * info.frameWidth, 0, info.frameWidth, info.frameHeight) }));
+      }
+      out[name] = { frames, scale: info.scale, tint: tintOf(info.tint), pointsAt: info.pointsAt ?? null };
+    }
+    return out;
+  };
+  return { anims: await cut(ANIMATIONS), sprites: await cut(SPRITES) };
+}
+
 export function BoardCanvas(): JSX.Element {
   const ui = useUi();
   const hostRef = useRef<HTMLDivElement>(null);
@@ -176,6 +215,7 @@ export function BoardCanvas(): JSX.Element {
   const layerRef = useRef<Container | null>(null);
   const spritesRef = useRef<Record<string, ClassTextures>>({});
   const terrainRef = useRef<Record<string, TerrainTextures>>({});
+  const vfxRef = useRef<VfxTextures>(NO_VFX);
   const uiRef = useRef(ui);
   uiRef.current = ui;
   // Why the board cannot be drawn, if it cannot: no WebGL, or the GPU dropped the context.
@@ -250,6 +290,7 @@ export function BoardCanvas(): JSX.Element {
         highlights: computeHighlights(current, battle),
         sprites: spritesRef.current,
         terrain: terrainRef.current,
+        vfx: vfxRef.current,
         playerSide: current.playerSide,
       },
       performance.now(),
@@ -323,6 +364,7 @@ export function BoardCanvas(): JSX.Element {
             if (cancelled) return;
             spritesRef.current = sprites;
             terrainRef.current = await loadTerrainTextures(sheets);
+            vfxRef.current = await loadVfxTextures(sheets);
             if (!cancelled) redraw();
           });
       })

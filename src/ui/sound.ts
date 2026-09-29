@@ -1,8 +1,9 @@
 /**
- * Sounds, made on the spot with the Web Audio API: no files to load or license. Each
- * one is a few tones and bursts of noise shaped by an envelope, short and quiet, so
- * they tell what happened without getting tiresome. Which event makes which sound is
- * decided in playback.ts (soundOf); this only makes the noise.
+ * Sounds. Blows and spells are recordings from Ninja Adventure (CC0), listed in
+ * assets/vfx.json and loaded once, when the first sound plays; everything else (steps,
+ * turns, win and loss, thunder) is made on the spot with the Web Audio API from a few
+ * tones and bursts of noise. Which event makes which sound is decided in playback.ts
+ * (soundOf); this only makes the noise. A recording that is not loaded yet is skipped.
  *
  * The switch is remembered in localStorage. The browser allows sound only after the
  * page has been clicked, so the context is created on the first sound and resumed
@@ -10,6 +11,8 @@
  */
 
 import type { SoundName } from './playback.js';
+import { SOUNDS as RECORDINGS } from './vfx.js';
+import { assetUrl } from './assets/url.js';
 
 const SOUND_KEY = 'arena.sound';
 const MASTER_GAIN = 0.5;
@@ -56,6 +59,7 @@ function audio(): { ctx: AudioContext; out: GainNode } | null {
     master = context.createGain();
     master.gain.value = MASTER_GAIN;
     master.connect(context.destination);
+    loadRecordings(context);
     // The context starts suspended until the page is clicked; the next click wakes it.
     window.addEventListener('pointerdown', () => void context?.resume(), { once: true });
   }
@@ -126,7 +130,43 @@ function hiss(ctx: AudioContext, out: AudioNode, n: Noise): void {
   source.stop(at + n.length + 0.02);
 }
 
-const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
+/** Decoded recordings by name; filled in the background once the context exists. */
+const recorded = new Map<string, AudioBuffer>();
+
+function loadRecordings(ctx: AudioContext): void {
+  // Several sounds share a file: each file is fetched and decoded once.
+  const namesByUrl = new Map<string, string[]>();
+  for (const [name, info] of Object.entries(RECORDINGS)) {
+    namesByUrl.set(info.url, [...(namesByUrl.get(info.url) ?? []), name]);
+  }
+  for (const [url, names] of namesByUrl) {
+    void fetch(assetUrl(url))
+      .then((response) => (response.ok ? response.arrayBuffer() : Promise.reject(new Error(response.statusText))))
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        for (const name of names) recorded.set(name, buffer);
+      })
+      .catch(() => {
+        // A missing recording is just silence; the game never waits for a sound.
+      });
+  }
+}
+
+function playRecording(ctx: AudioContext, out: AudioNode, name: string): boolean {
+  const buffer = recorded.get(name);
+  const info = RECORDINGS[name];
+  if (buffer === undefined || info === undefined) return false;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = info.volume;
+  source.connect(gain);
+  gain.connect(out);
+  source.start();
+  return true;
+}
+
+const SYNTHESISED: Record<string, (ctx: AudioContext, out: AudioNode) => void> = {
   step: (c, o) => hiss(c, o, { length: 0.05, gain: 0.05, filter: 'bandpass', freq: 380 }),
   swing: (c, o) => hiss(c, o, { length: 0.18, gain: 0.16, filter: 'bandpass', freq: 600, to: 2600 }),
   shoot: (c, o) => {
@@ -169,11 +209,22 @@ const SOUNDS: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = {
   },
   win: (c, o) => [523, 659, 784, 1047].forEach((freq, i) => tone(c, o, { freq, length: 0.25, gain: 0.07, delay: i * 0.11 })),
   lose: (c, o) => [392, 330, 262].forEach((freq, i) => tone(c, o, { freq, length: 0.32, gain: 0.07, wave: 'triangle', delay: i * 0.16 })),
+  // A crack, then the rumble rolling away: lightning.
+  thunder: (c, o) => {
+    hiss(c, o, { length: 0.09, gain: 0.35, filter: 'highpass', freq: 1800 });
+    hiss(c, o, { length: 0.07, gain: 0.25, filter: 'bandpass', freq: 3200, delay: 0.05 });
+    hiss(c, o, { length: 0.75, gain: 0.3, filter: 'lowpass', freq: 420, to: 90, delay: 0.04 });
+    tone(c, o, { freq: 70, to: 38, length: 0.6, gain: 0.25, delay: 0.05 });
+  },
 };
+
+/** Every sound name made by synthesis, for the data tests. */
+export const SYNTHESISED_SOUNDS: readonly string[] = Object.keys(SYNTHESISED);
 
 export function playSound(name: SoundName): void {
   if (!enabled) return;
   const a = audio();
   if (a === null || a.ctx.state === 'closed') return;
-  SOUNDS[name](a.ctx, a.out);
+  if (playRecording(a.ctx, a.out, name)) return;
+  SYNTHESISED[name]?.(a.ctx, a.out);
 }
