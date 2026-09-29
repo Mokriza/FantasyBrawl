@@ -19,6 +19,7 @@ import {
   holdToWin,
   isHigh,
   livingHeroes,
+  roundLimitLeader,
   terrainAt,
 } from '../core/index.js';
 import { threatAgainst } from './threat.js';
@@ -116,6 +117,18 @@ function onHighGround(state: BattleState, side: Side): number {
   return livingHeroes(state).filter((h) => h.side === side && h.summon === null && isHigh(state.arena, h.hex)).length;
 }
 
+/**
+ * How much the hit waiting in the enemy's reach still matters, from 1 down to 0.
+ * Keeping out of reach is how a standoff starts: whoever steps in first is hit first.
+ * Waiting pays only a side that the round limit would declare the winner, so for the
+ * other side the fear fades as the limit comes closer, and by its last round is gone.
+ */
+function cautionLeft(before: BattleState, after: BattleState, side: Side, content: ContentRegistry): number {
+  if (roundLimitLeader(after) === side) return 1;
+  const limit = content.config.battle.maxRounds;
+  return Math.max(0, (limit - before.round) / limit);
+}
+
 export function evaluate(
   before: BattleState,
   after: BattleState,
@@ -200,7 +213,7 @@ export function evaluate(
   }
 
   if (profile.useThreat) {
-    score += w.threat * threatAgainst(after, side, content);
+    score += w.threat * cautionLeft(before, after, side, content) * threatAgainst(after, side, content);
   }
 
   return score;
