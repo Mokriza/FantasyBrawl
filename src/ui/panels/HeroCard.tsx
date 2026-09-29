@@ -18,9 +18,11 @@ interface Props {
   readonly content: ContentRegistry;
   readonly shown: DisplayHero | undefined;
   readonly compact?: boolean;
+  /** Opens the full view of this hero; the card becomes a button when given. */
+  readonly onInspect?: () => void;
 }
 
-export function HeroCard({ hero, battle, content, shown, compact }: Props): JSX.Element {
+export function HeroCard({ hero, battle, content, shown, compact, onInspect }: Props): JSX.Element {
   const heroClass = getClass(content, hero.classId);
   const stats = statsInBattle(battle, hero, content);
   const passive = hero.passive === null ? undefined : content.passives[hero.passive];
@@ -33,7 +35,18 @@ export function HeroCard({ hero, battle, content, shown, compact }: Props): JSX.
 
   return (
     <article
-      className={`hero-card side-${hero.side}${isActive ? ' hero-active' : ''}${alive ? '' : ' hero-dead'}`}
+      className={`hero-card side-${hero.side}${isActive ? ' hero-active' : ''}${alive ? '' : ' hero-dead'}${onInspect === undefined ? '' : ' hero-clickable'}`}
+      {...(onInspect === undefined
+        ? {}
+        : {
+            role: 'button',
+            tabIndex: 0,
+            title: UI.inspect.hint,
+            onClick: onInspect,
+            onKeyDown: (event: React.KeyboardEvent) => {
+              if (event.key === 'Enter') onInspect();
+            },
+          })}
     >
       <header>
         <ClassIcon classId={hero.classId} />

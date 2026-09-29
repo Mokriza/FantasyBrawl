@@ -5,10 +5,13 @@
  */
 
 import { useLayoutEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import type { BattleEvent, BattleState, ContentRegistry } from '../../core/index.js';
 import { getAbility, getStatus } from '../../core/index.js';
 import { LOG_LIMIT } from '../config.js';
 import { UI, terrainName } from '../strings.ru.js';
+import { AbilityInfo } from './AbilityInfo.js';
+import { Tip } from './Tip.js';
 
 function heroName(state: BattleState, id: string | null): string {
   if (id === null) return '—';
@@ -87,6 +90,81 @@ export function eventText(
   }
 }
 
+/** A named thing in a log line, and the card that says what it is. */
+interface LineTip {
+  readonly name: string;
+  readonly tip: ReactNode;
+}
+
+function plainTip(title: string, text: string | undefined): ReactNode {
+  return (
+    <div className="tip-plain">
+      <strong>{title}</strong>
+      {text === undefined ? null : <p>{text}</p>}
+    </div>
+  );
+}
+
+/**
+ * What in a line can be hovered: the ability used (with the caster's own numbers),
+ * the status, the passive, perk or artifact that fired, the terrain that appeared.
+ */
+function lineTip(event: BattleEvent, state: BattleState, content: ContentRegistry): LineTip | null {
+  switch (event.type) {
+    case 'abilityUsed':
+    case 'abilityDelayed': {
+      const ability = getAbility(content, event.abilityId);
+      const hero = state.heroes[event.heroId];
+      if (hero === undefined) return null;
+      return { name: ability.name, tip: <AbilityInfo ability={ability} hero={hero} battle={state} content={content} /> };
+    }
+    case 'turnSkipped': {
+      const status = getStatus(content, event.cause);
+      return { name: status.name, tip: plainTip(status.name, status.description) };
+    }
+    case 'statusApplied':
+    case 'statusResisted':
+    case 'statusExpired':
+    case 'statusCleansed': {
+      const status = getStatus(content, event.status);
+      return { name: status.name, tip: plainTip(status.name, status.description) };
+    }
+    case 'passiveTriggered': {
+      const trait = content.items[event.passiveId] ?? content.passives[event.passiveId] ?? content.perks[event.passiveId];
+      return trait === undefined ? null : { name: trait.name, tip: plainTip(trait.name, trait.description) };
+    }
+    case 'itemGained': {
+      const item = content.items[event.itemId];
+      return item === undefined ? null : { name: item.name, tip: plainTip(item.name, item.description) };
+    }
+    case 'terrainChanged': {
+      if (event.terrain === null) return null;
+      const entry = UI.terrainLegend.find((t) => t.key === event.terrain);
+      const name = terrainName(event.terrain);
+      return { name, tip: plainTip(name, entry === undefined ? undefined : `${entry.movement} · ${entry.sight}`) };
+    }
+    default:
+      return null;
+  }
+}
+
+/** The line with its named thing hoverable; found without regard to case ("оглушение" in a sentence). */
+function withTip(text: string, tip: LineTip | null): ReactNode {
+  if (tip === null) return text;
+  const at = text.toLowerCase().indexOf(tip.name.toLowerCase());
+  if (at < 0) return text;
+  const end = at + tip.name.length;
+  return (
+    <>
+      {text.slice(0, at)}
+      <Tip tip={tip.tip} className="log-tip">
+        {text.slice(at, end)}
+      </Tip>
+      {text.slice(end)}
+    </>
+  );
+}
+
 function lineClass(kind: BattleEvent['type']): string | undefined {
   switch (kind) {
     case 'turnStarted':
@@ -129,14 +207,14 @@ export function BattleLog({ log, battle, content }: Props): JSX.Element {
     following.current = node.scrollHeight - node.scrollTop - node.clientHeight <= FOLLOW_SLACK;
   };
 
-  const lines: Array<{ key: number; text: string; kind: BattleEvent['type'] }> = [];
+  const lines: Array<{ key: number; text: string; kind: BattleEvent['type']; tip: LineTip | null }> = [];
   log.forEach((event, index) => {
     const text = eventText(event, battle, content);
     if (text === null) return;
     // A wall of ice or a whole ring of the arena changes many hexes in one go: one line.
     const previous = lines[lines.length - 1];
     if (event.type === 'terrainChanged' && previous?.kind === 'terrainChanged' && previous.text === text) return;
-    lines.push({ key: index, text, kind: event.type });
+    lines.push({ key: index, text, kind: event.type, tip: lineTip(event, battle, content) });
   });
 
   return (
@@ -145,7 +223,7 @@ export function BattleLog({ log, battle, content }: Props): JSX.Element {
       <ol ref={list} onScroll={onScroll}>
         {lines.slice(-LOG_LIMIT).map((line) => (
           <li key={line.key} className={lineClass(line.kind)}>
-            {line.text}
+            {withTip(line.text, line.tip)}
           </li>
         ))}
       </ol>

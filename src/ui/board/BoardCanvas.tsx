@@ -15,22 +15,26 @@ import {
   abilityReach,
   abilityTargets,
   allHexes,
+  centreHex,
   emptyArena,
   getAbility,
   hexKey,
   heroById,
+  holdToWin,
   legalPlacementHexes,
   otherSide,
   placementTurn,
   reachableFor,
   resolveShape,
   startZone,
+  terrainAt,
 } from '../../core/index.js';
 import { COLORS, HEX_SIZE } from '../theme.js';
 import { canAct, dispatch, placeAt, selectAbility, setHover, useUi } from '../store.js';
 import type { UiState } from '../store.js';
 import { classFigure, paintVariant, terrainArt, terrainKinds, tileOrigin } from '../assets/sprites.js';
-import { boardMetrics, pixelToHex } from './pixelHex.js';
+import { boardMetrics, hexToPixel, pixelToHex } from './pixelHex.js';
+import { TipCard } from '../panels/Tip.js';
 import { EMPTY_HIGHLIGHTS, drawBoard } from './render.js';
 import { UI } from '../strings.ru.js';
 import { PLACE_DRAG_TYPE } from '../config.js';
@@ -349,6 +353,11 @@ export function BoardCanvas(): JSX.Element {
 
   useEffect(redraw);
 
+  // What the hex under the cursor is, when it is anything but plain ground: shown by
+  // the hex's right edge, so it moves with the hex and not with every pixel of the mouse.
+  const tip = ui.hoverHex === null || ui.battle === null ? null : hexTip(ui, ui.battle, ui.hoverHex);
+  const anchor = tip === null || ui.hoverHex === null ? null : hexScreenPoint(ui.hoverHex);
+
   return (
     <div ref={hostRef} className="board">
       {failure === null ? null : (
@@ -356,6 +365,63 @@ export function BoardCanvas(): JSX.Element {
           {failure === 'init' ? UI.boardFailed : UI.boardLost}
         </p>
       )}
+      {tip === null || anchor === null ? null : <TipCard at={anchor}>{tip}</TipCard>}
+    </div>
+  );
+
+  /** Where a hex's right edge is on the page, for the terrain card. */
+  function hexScreenPoint(hex: Hex): { x: number; y: number } | null {
+    const app = appRef.current;
+    if (app === null) return null;
+    const rect = app.canvas.getBoundingClientRect();
+    const metrics = boardMetrics(arenaOf(uiRef.current), HEX_SIZE);
+    const centre = hexToPixel(hex, HEX_SIZE);
+    const scaleX = rect.width / app.canvas.width;
+    const scaleY = rect.height / app.canvas.height;
+    return {
+      x: rect.left + (centre.x + metrics.offsetX + HEX_SIZE * 0.6) * scaleX,
+      y: rect.top + (centre.y + metrics.offsetY - HEX_SIZE * 0.6) * scaleY,
+    };
+  }
+}
+
+/**
+ * The terrain card for a hex: what the terrain does to walking and to sight, whose it
+ * is and how long it lasts when it is temporary, and the centre of "Точка силы".
+ * Null for plain ground.
+ */
+function hexTip(ui: UiState, battle: BattleState, hex: Hex): JSX.Element | null {
+  const terrain = terrainAt(battle.arena, hex);
+  const key = hexKey(hex);
+  const isCentre = holdToWin(battle, ui.content) !== null && hexKey(centreHex(battle.arena)) === key;
+  if (terrain === null && !isCentre) return null;
+  const entry = terrain === null ? undefined : UI.terrainLegend.find((t) => t.key === terrain);
+  const laid = battle.temporaryTerrain.find((t) => hexKey(t.hex) === key);
+  const owner = laid === undefined ? undefined : battle.heroes[laid.ownerId];
+  return (
+    <div className="tip-plain">
+      {entry === undefined ? null : (
+        <>
+          <strong>{entry.name}</strong>
+          <p>
+            {UI.terrainTip.movement}: {entry.movement}
+            <br />
+            {UI.terrainTip.sight}: {entry.sight}
+          </p>
+          {laid === undefined ? null : (
+            <p className="dim">
+              {owner === undefined ? '' : `${owner.name} · `}
+              {UI.terrainTip.lasts(laid.turns)}
+            </p>
+          )}
+        </>
+      )}
+      {isCentre ? (
+        <>
+          <strong>{UI.hold}</strong>
+          <p>{UI.holdHint}</p>
+        </>
+      ) : null}
     </div>
   );
 }

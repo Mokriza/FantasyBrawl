@@ -4,13 +4,14 @@
  * serves a match of a run and the quick battle.
  */
 
-import { useEffect } from 'react';
-import type { BattleState } from '../../core/index.js';
+import { useEffect, useState } from 'react';
+import type { BattleState, HeroId } from '../../core/index.js';
 import { abilitiesOf, heroById, otherSide } from '../../core/index.js';
 import { BoardCanvas } from '../board/BoardCanvas.js';
 import { AbilityBar } from '../panels/AbilityBar.js';
 import { BattleLog } from '../panels/BattleLog.js';
 import { HeroCard } from '../panels/HeroCard.js';
+import { HeroInspector } from '../panels/HeroInspector.js';
 import { Legend } from '../panels/Legend.js';
 import { TurnQueue } from '../panels/TurnQueue.js';
 import { canAct, dispatch, isPlayerTurn, selectAbility } from '../store.js';
@@ -28,6 +29,9 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
   const activeId = battle.activeHeroId;
   const active = activeId === null ? null : heroById(battle, activeId);
   const playable = canAct(ui);
+  // The hero whose full card is open, if any: either side, alive or not.
+  const [inspected, setInspected] = useState<HeroId | null>(null);
+  const inspectedHero = inspected === null ? undefined : battle.heroes[inspected];
 
   // Hotkeys from docs/ai/ui-and-rendering.md: 1-3 abilities, Q basic, space end, esc cancel.
   useEffect(() => {
@@ -97,6 +101,7 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
               content={content}
               shown={ui.display[hero.id]}
               compact
+              onInspect={() => setInspected(hero.id)}
             />
           ))}
           <Legend />
@@ -113,6 +118,7 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
               content={content}
               shown={ui.display[hero.id]}
               compact
+              onInspect={() => setInspected(hero.id)}
             />
           ))}
         </aside>
@@ -133,6 +139,16 @@ export function BattleScreen({ ui, battle }: Props): JSX.Element {
           </>
         )}
       </footer>
+
+      {inspectedHero === undefined ? null : (
+        <HeroInspector
+          hero={inspectedHero}
+          battle={battle}
+          content={content}
+          shown={ui.display[inspectedHero.id]}
+          onClose={() => setInspected(null)}
+        />
+      )}
     </>
   );
 }
