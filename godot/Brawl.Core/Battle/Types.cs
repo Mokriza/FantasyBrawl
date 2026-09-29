@@ -19,6 +19,11 @@ public sealed record Stats(double MaxHp, double Attack, double Magic, double Arm
         StatName.CritChance => CritChance,
         _ => throw new ArgumentOutOfRangeException(nameof(stat)),
     };
+
+    /// <summary>The seven values in StatName order, for code that changes them one by one.</summary>
+    public double[] ToArray() => [MaxHp, Attack, Magic, Armor, Resist, Speed, CritChance];
+
+    public static Stats FromArray(IReadOnlyList<double> v) => new(v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
 }
 
 /// <summary>Terrain an ability put down for a while, and what the hex was before.</summary>

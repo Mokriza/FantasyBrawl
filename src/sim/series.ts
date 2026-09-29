@@ -3,7 +3,7 @@
  * Used by `npm run sim -- --mode draft` and by the run invariant tests.
  */
 
-import type { BattleState, ContentRegistry, RunState } from '../core/index.js';
+import type { BattleState, ContentRegistry, RunAction, RunState } from '../core/index.js';
 import {
   applyRunAction,
   awaitingPerk,
@@ -33,6 +33,8 @@ export interface RunOptions {
   readonly profileB: AiProfile;
   /** Sees the starting state of every battle, before it is played (the Godot parity export). */
   readonly onBattle?: (initial: BattleState) => void;
+  /** Sees every run action and the run after it (the Godot parity export). */
+  readonly onRunAction?: (action: RunAction, after: RunState) => void;
 }
 
 export function playRun(options: RunOptions): RunResult {
@@ -42,6 +44,10 @@ export function playRun(options: RunOptions): RunResult {
   let aiRng = createRng(seed ^ 0x51ed270b);
   const matches: MatchResult[] = [];
   let swaps = 0;
+  const act = (action: RunAction): void => {
+    run = applyRunAction(run, action, content);
+    options.onRunAction?.(action, run);
+  };
 
   // A run is at most maxMatches matches long; the guard only catches a rules bug.
   for (let step = 0; step < 1000 && run.phase !== 'finished'; step++) {
@@ -51,7 +57,7 @@ export function playRun(options: RunOptions): RunResult {
         if (side === null) throw new Error('draft phase with no pick left');
         const decision = choosePick(run.draft, content, aiRng);
         aiRng = decision.rng;
-        run = applyRunAction(run, { type: 'pick', side, heroId: decision.heroId }, content);
+        act({ type: 'pick', side, heroId: decision.heroId });
         break;
       }
       case 'placement': {
@@ -59,11 +65,7 @@ export function playRun(options: RunOptions): RunResult {
         aiRng = decision.rng;
         const side = run.placement?.order[run.placement.placed.length];
         if (side === undefined) throw new Error('placement phase with nobody to place');
-        run = applyRunAction(
-          run,
-          { type: 'place', side, heroId: decision.heroId, hex: decision.hex },
-          content,
-        );
+        act({ type: 'place', side, heroId: decision.heroId, hex: decision.hex });
         break;
       }
       case 'battle': {
@@ -77,48 +79,42 @@ export function playRun(options: RunOptions): RunResult {
         matches.push(result);
         const outcome = result.state.outcome;
         if (outcome === null) throw new Error(`match ${run.match} of run ${seed} did not finish`);
-        run = applyRunAction(
-          run,
-          { type: 'matchEnded', outcome, rounds: result.state.round, loot: result.state.loot },
-          content,
-        );
+        act({ type: 'matchEnded', outcome, rounds: result.state.round, loot: result.state.loot });
         break;
       }
       case 'matchOver':
-        run = applyRunAction(run, { type: 'nextMatch' }, content);
+        act({ type: 'nextMatch' });
         break;
       case 'upgrade': {
         for (const side of ['A', 'B'] as const) {
           // The swap first: the newcomer may be the one the reward fits best.
           const swap = chooseSwap(run, side, content);
           if (swap !== null) {
-            run = applyRunAction(run, { type: 'swapHero', side, ...swap }, content);
+            act({ type: 'swapHero', side, ...swap });
             swaps += 1;
           }
           if (run.upgrade !== null && awaitingReward(run.upgrade, run.draft, side, content)) {
             const decision = chooseReward(run, side, content, aiRng);
             aiRng = decision.rng;
-            run = applyRunAction(run, { type: 'chooseReward', side, itemId: decision.itemId, heroId: decision.heroId }, content);
+            act({ type: 'chooseReward', side, itemId: decision.itemId, heroId: decision.heroId });
           }
           for (const heroId of run.upgrade === null ? [] : awaitingUnlock(run.upgrade, run.draft, side)) {
             const decision = chooseUnlock(run, heroId, content, aiRng);
             aiRng = decision.rng;
-            run = applyRunAction(run, { type: 'chooseUnlock', side, heroId, optionId: decision.optionId }, content);
+            act({ type: 'chooseUnlock', side, heroId, optionId: decision.optionId });
           }
           for (const heroId of run.upgrade === null ? [] : awaitingPerk(run.upgrade, run.draft, side)) {
             const decision = choosePerk(run, heroId, content, aiRng);
             aiRng = decision.rng;
-            run = applyRunAction(
-              run,
+            act(
               decision.abilityId === undefined
                 ? { type: 'choosePerk', side, heroId, perkId: decision.perkId }
                 : { type: 'choosePerk', side, heroId, perkId: decision.perkId, abilityId: decision.abilityId },
-              content,
             );
           }
         }
-        run = applyRunAction(run, { type: 'readyUpgrade', side: 'A' }, content);
-        run = applyRunAction(run, { type: 'readyUpgrade', side: 'B' }, content);
+        act({ type: 'readyUpgrade', side: 'A' });
+        act({ type: 'readyUpgrade', side: 'B' });
         break;
       }
     }

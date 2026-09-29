@@ -18,6 +18,19 @@ public static class JsMath
         return x - floor >= 0.5 ? floor + 1 : floor;
     }
 
+    /// <summary>
+    /// String(x) for the numbers texts show: the shortest form that reads back the same, as
+    /// JavaScript writes it (5, 0.25, -3). Exponent forms (1e21, 1e-7) are not reproduced;
+    /// no text in the game has such a number.
+    /// </summary>
+    public static string ToJsString(double x)
+    {
+        if (double.IsNaN(x)) return "NaN";
+        if (double.IsInfinity(x)) return x > 0 ? "Infinity" : "-Infinity";
+        if (x == 0) return "0";
+        return x.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     /// <summary>The ToInt32 conversion behind `x | 0`: truncate, then wrap modulo 2^32.</summary>
     public static int ToInt32(double x)
     {
