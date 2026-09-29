@@ -15,6 +15,7 @@ import {
   teamOf,
 } from '../../core/index.js';
 import { BoardCanvas } from '../board/BoardCanvas.js';
+import { PLACE_DRAG_TYPE } from '../config.js';
 import { ClassIcon } from '../panels/ClassIcon.js';
 import { Legend } from '../panels/Legend.js';
 import { choosePlacingHero } from '../store.js';
@@ -55,6 +56,13 @@ function HeroRow({
         .join(' ')}
       disabled={!canChoose}
       onClick={() => choosePlacingHero(hero.id)}
+      // Or drag the hero onto a free hex of the zone; the board takes the drop.
+      draggable={canChoose}
+      onDragStart={(event) => {
+        choosePlacingHero(hero.id);
+        event.dataTransfer.setData(PLACE_DRAG_TYPE, hero.id);
+        event.dataTransfer.effectAllowed = 'move';
+      }}
     >
       <ClassIcon classId={hero.classId} size={32} />
       <span className="hero-title">

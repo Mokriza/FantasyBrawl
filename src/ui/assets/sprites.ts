@@ -63,6 +63,60 @@ export function classFigure(classId: string): ClassFigure | null {
   return layers.length === 0 ? null : { sheet, layers, tint: entry.tint ?? null };
 }
 
+/** How the board paints one kind of terrain, or the floor. */
+export interface TerrainArt {
+  readonly sheet: SheetInfo;
+  /** Variants; the board picks one by the hex coordinates. */
+  readonly tiles: readonly TileRef[];
+  /** The tile paints the whole hex; otherwise it stands on the floor as a sprite. */
+  readonly cover: boolean;
+}
+
+interface RawTerrain {
+  readonly sheet: string;
+  readonly cover: boolean;
+  readonly tiles: readonly (readonly number[])[];
+}
+
+const TERRAIN = Object.fromEntries(
+  Object.entries(manifest.terrain).filter(([key]) => !key.startsWith('_')),
+) as unknown as Record<string, RawTerrain>;
+
+/** Every terrain kind the manifest has pictures for ("floor" is the ground itself). */
+export function terrainKinds(): string[] {
+  return Object.keys(TERRAIN);
+}
+
+/** The pictures for a terrain kind, or null when it is drawn as a vector shape. */
+export function terrainArt(kind: string): TerrainArt | null {
+  const entry = TERRAIN[kind];
+  if (entry === undefined) return null;
+  const sheet = SHEETS[entry.sheet];
+  if (sheet === undefined) return null;
+  const tiles: TileRef[] = [];
+  for (const tile of entry.tiles) {
+    const row = tile[0];
+    const col = tile[1];
+    if (row !== undefined && col !== undefined) tiles.push({ row, col });
+  }
+  return tiles.length === 0 ? null : { sheet, tiles, cover: entry.cover };
+}
+
+/**
+ * CSS for a terrain swatch in the legend, looking as the board draws it: a covering
+ * tile alone, a standing one on the floor. Null for kinds drawn as vector shapes.
+ */
+export function terrainSwatchStyle(kind: string, size: number): Record<string, string> | null {
+  const art = terrainArt(kind);
+  const first = art?.tiles[0];
+  if (art === null || first === undefined) return null;
+  const floor = terrainArt('floor')?.tiles[0];
+  // Both layers must come from one sheet to share a background size; the floor is
+  // left out otherwise, and the tile stands on the panel.
+  const layers = !art.cover && floor !== undefined && terrainArt('floor')?.sheet === art.sheet ? [floor, first] : [first];
+  return figureBackgroundStyle({ sheet: art.sheet, layers, tint: null }, size);
+}
+
 /** Top-left pixel of a tile on its sheet. */
 export function tileOrigin(sheet: SheetInfo, ref: TileRef): { x: number; y: number } {
   const stride = sheet.tileSize + sheet.margin;

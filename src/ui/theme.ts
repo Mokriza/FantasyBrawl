@@ -13,6 +13,8 @@ export const COLORS = {
   textSoft: 0xc9cddb,
 
   hexFill: 0x252a36,
+  /** Multiplied over the floor and terrain tiles, so bright pixel art sits calmly under the heroes. */
+  floorTint: 0xb4b8b0,
   hexFillAlt: 0x2a2f3d,
   hexLine: 0x3a4152,
   hexHover: 0xd8dcea,
@@ -24,6 +26,9 @@ export const COLORS = {
   rangeEdge: 0x9fd8ff,
   reachable: 0x2f6f4f,
   path: 0x4bbd7f,
+  /** Over the grass tiles green does not show: where to walk is lit warm instead. */
+  reachableOnTiles: 0xfff0b0,
+  pathOnTiles: 0xffffff,
   abilityZone: 0xd05a4a,
   abilityZoneAlly: 0x4a9fd0,
   provoke: 0xe0902a,
