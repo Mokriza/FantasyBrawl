@@ -14,6 +14,88 @@
       "margin": 1,
       "columns": 54,
       "rows": 12
+    },
+    "tinyTown": {
+      "url": "/assets/kenney-tiny-town/tilemap.png",
+      "tileSize": 16,
+      "margin": 0,
+      "columns": 12,
+      "rows": 11
+    }
+  },
+  "terrain": {
+    "_comment": "Board terrain as [row, col] tiles. \"cover\": the tile paints the whole hex (the floor, rock, high ground); otherwise it stands on the floor as a sprite (thicket). Several tiles are variants, chosen by the hex coordinates; a tile listed twice comes up twice as often. Kinds missing here are drawn as vector shapes.",
+    "floor": {
+      "sheet": "tinyTown",
+      "cover": true,
+      "tiles": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ]
+    },
+    "rock": {
+      "sheet": "tinyDungeon",
+      "cover": true,
+      "tiles": [
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    "high": {
+      "sheet": "tinyTown",
+      "cover": true,
+      "tiles": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    "thicket": {
+      "sheet": "tinyTown",
+      "cover": false,
+      "tiles": [
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          0,
+          5
+        ]
+      ]
     }
   },
   "classSprites": {

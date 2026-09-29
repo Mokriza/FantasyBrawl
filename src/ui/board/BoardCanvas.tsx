@@ -29,11 +29,12 @@ import {
 import { COLORS, HEX_SIZE } from '../theme.js';
 import { canAct, dispatch, placeAt, selectAbility, setHover, useUi } from '../store.js';
 import type { UiState } from '../store.js';
-import { classFigure, tileOrigin } from '../assets/sprites.js';
+import { classFigure, terrainArt, terrainKinds, tileOrigin } from '../assets/sprites.js';
 import { boardMetrics, pixelToHex } from './pixelHex.js';
 import { EMPTY_HIGHLIGHTS, drawBoard } from './render.js';
 import { UI } from '../strings.ru.js';
-import type { ClassTextures, Highlights } from './render.js';
+import { PLACE_DRAG_TYPE } from '../config.js';
+import type { ClassTextures, Highlights, TerrainTextures } from './render.js';
 
 /** How long the board waits for its renderer before saying it cannot draw. */
 const RENDERER_TIMEOUT_MS = 8000;
@@ -96,27 +97,33 @@ function computeHighlights(ui: UiState, battle: BattleState): Highlights {
  * load the board falls back to vector silhouettes, so a missing asset never breaks
  * the game.
  */
+async function loadSheet(url: string, sheets: Map<string, Texture>): Promise<Texture | null> {
+  const known = sheets.get(url);
+  if (known !== undefined) return known;
+  let sheet: Texture;
+  try {
+    sheet = (await Assets.load(url)) as Texture;
+  } catch {
+    return null;
+  }
+  // Pixel art must not be smoothed when scaled up.
+  sheet.source.scaleMode = 'nearest';
+  sheets.set(url, sheet);
+  return sheet;
+}
+
 async function loadClassSprites(
   classIds: readonly string[],
+  sheets: Map<string, Texture>,
 ): Promise<Record<string, ClassTextures>> {
   const out: Record<string, ClassTextures> = {};
-  const sheets = new Map<string, Texture>();
 
   for (const classId of classIds) {
     const figure = classFigure(classId);
     if (figure === null) continue;
 
-    let sheet = sheets.get(figure.sheet.url);
-    if (sheet === undefined) {
-      try {
-        sheet = (await Assets.load(figure.sheet.url)) as Texture;
-      } catch {
-        continue;
-      }
-      // Pixel art must not be smoothed when scaled up.
-      sheet.source.scaleMode = 'nearest';
-      sheets.set(figure.sheet.url, sheet);
-    }
+    const sheet = await loadSheet(figure.sheet.url, sheets);
+    if (sheet === null) continue;
 
     const size = figure.sheet.tileSize;
     const source = sheet.source;
@@ -131,18 +138,62 @@ async function loadClassSprites(
   return out;
 }
 
+/**
+ * One tile as a texture of its own. A shape filled with a texture takes the texture's
+ * whole source, not its frame, so a tile that fills a hex cannot be a frame of the sheet.
+ */
+function cutTile(sheet: Texture, x: number, y: number, width: number, height: number): Texture | null {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  const image = sheet.source.resource as CanvasImageSource | undefined;
+  if (context === null || image === undefined) return null;
+  context.drawImage(image, x, y, width, height, 0, 0, width, height);
+  const texture = Texture.from(canvas);
+  texture.source.scaleMode = 'nearest';
+  return texture;
+}
+
+/**
+ * Cuts the floor and terrain tiles out of their sheets. A tile that covers a hex is
+ * cut one pixel short at the top and the bottom: a flat-top hex is 1.15 times as wide
+ * as it is tall, and a 16 × 14 frame stretched over it keeps the pixels nearly square.
+ * A kind whose sheet fails to load is simply left out, and drawn as a vector shape.
+ */
+async function loadTerrainTextures(sheets: Map<string, Texture>): Promise<Record<string, TerrainTextures>> {
+  const out: Record<string, TerrainTextures> = {};
+  for (const kind of terrainKinds()) {
+    const art = terrainArt(kind);
+    if (art === null) continue;
+    const sheet = await loadSheet(art.sheet.url, sheets);
+    if (sheet === null) continue;
+    const size = art.sheet.tileSize;
+    const trim = art.cover ? 1 : 0;
+    const textures: Texture[] = [];
+    for (const ref of art.tiles) {
+      const origin = tileOrigin(art.sheet, ref);
+      const tile = cutTile(sheet, origin.x, origin.y + trim, size, size - trim * 2);
+      if (tile !== null) textures.push(tile);
+    }
+    if (textures.length > 0) out[kind] = { cover: art.cover, textures };
+  }
+  return out;
+}
+
 export function BoardCanvas(): JSX.Element {
   const ui = useUi();
   const hostRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
   const layerRef = useRef<Container | null>(null);
   const spritesRef = useRef<Record<string, ClassTextures>>({});
+  const terrainRef = useRef<Record<string, TerrainTextures>>({});
   const uiRef = useRef(ui);
   uiRef.current = ui;
   // Why the board cannot be drawn, if it cannot: no WebGL, or the GPU dropped the context.
   const [failure, setFailure] = useState<'init' | 'lost' | null>(null);
 
-  function hexUnderPointer(event: PointerEvent): Hex | null {
+  function hexUnderPointer(event: MouseEvent): Hex | null {
     const app = appRef.current;
     if (app === null) return null;
     const rect = app.canvas.getBoundingClientRect();
@@ -170,6 +221,24 @@ export function BoardCanvas(): JSX.Element {
     if (hex !== null) handleClick(uiRef.current, hex);
   }
 
+  // A hero dragged from the placement list: the hex under it lights up, and the drop is
+  // allowed only on a free hex of the player's zone, the same check a click goes through.
+  function onDragOver(event: DragEvent): void {
+    if (event.dataTransfer?.types.includes(PLACE_DRAG_TYPE) !== true) return;
+    const hex = hexUnderPointer(event);
+    setHover(hex);
+    if (hex !== null && canPlaceAt(uiRef.current, hex)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  function onDrop(event: DragEvent): void {
+    event.preventDefault();
+    const hex = hexUnderPointer(event);
+    if (hex !== null) handlePlacementClick(uiRef.current, hex);
+  }
+
   function redraw(): void {
     const layer = layerRef.current;
     if (layer === null) return;
@@ -192,6 +261,7 @@ export function BoardCanvas(): JSX.Element {
         effects: current.effects,
         highlights: computeHighlights(current, battle),
         sprites: spritesRef.current,
+        terrain: terrainRef.current,
         playerSide: current.playerSide,
       },
       performance.now(),
@@ -245,6 +315,9 @@ export function BoardCanvas(): JSX.Element {
         app.canvas.addEventListener('pointermove', onPointerMove);
         app.canvas.addEventListener('pointerleave', onPointerLeave);
         app.canvas.addEventListener('pointerdown', onPointerDown);
+        app.canvas.addEventListener('dragover', onDragOver);
+        app.canvas.addEventListener('dragleave', onPointerLeave);
+        app.canvas.addEventListener('drop', onDrop);
 
         // Floating numbers fade over time, so the board needs a heartbeat of its own
         // while any of them are alive. Otherwise it redraws only on state changes.
@@ -256,11 +329,14 @@ export function BoardCanvas(): JSX.Element {
 
         redraw();
 
-        void loadClassSprites(Object.keys(uiRef.current.content.classes)).then((sprites) => {
-          if (cancelled) return;
-          spritesRef.current = sprites;
-          redraw();
-        });
+        const sheets = new Map<string, Texture>();
+        void loadClassSprites(Object.keys(uiRef.current.content.classes), sheets)
+          .then(async (sprites) => {
+            if (cancelled) return;
+            spritesRef.current = sprites;
+            terrainRef.current = await loadTerrainTextures(sheets);
+            if (!cancelled) redraw();
+          });
       })
       .catch((error: unknown) => {
         // Chrome takes WebGL away from a site whose tab crashed the GPU process, until the
@@ -277,6 +353,9 @@ export function BoardCanvas(): JSX.Element {
         current.canvas.removeEventListener('pointermove', onPointerMove);
         current.canvas.removeEventListener('pointerleave', onPointerLeave);
         current.canvas.removeEventListener('pointerdown', onPointerDown);
+        current.canvas.removeEventListener('dragover', onDragOver);
+        current.canvas.removeEventListener('dragleave', onPointerLeave);
+        current.canvas.removeEventListener('drop', onDrop);
         current.destroy(true, { children: true });
         appRef.current = null;
         layerRef.current = null;
@@ -325,13 +404,17 @@ function handleClick(ui: UiState, hex: Hex): void {
   }
 }
 
+/** Whether the chosen hero may go on this hex: core lists it as a free hex of the zone. */
+function canPlaceAt(ui: UiState, hex: Hex): boolean {
+  const placement = ui.run?.placement ?? null;
+  if (placement === null || ui.placingHeroId === null) return false;
+  const key = hexKey(hex);
+  return legalPlacementHexes(placement, ui.playerSide, ui.content.config).some((h) => hexKey(h) === key);
+}
+
 /** Places the chosen hero if core lists the hex as free; anything else is ignored. */
 function handlePlacementClick(ui: UiState, hex: Hex): void {
-  const placement = ui.run?.placement ?? null;
-  if (placement === null || ui.placingHeroId === null) return;
-  const key = hexKey(hex);
-  const free = legalPlacementHexes(placement, ui.playerSide, ui.content.config);
-  if (free.some((h) => hexKey(h) === key)) placeAt(hex);
+  if (canPlaceAt(ui, hex)) placeAt(hex);
 }
 
 /** The board is the size of the configured arena even before a battle exists. */

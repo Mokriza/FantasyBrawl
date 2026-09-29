@@ -55,3 +55,6 @@ export const OPPONENT_PICK_MS = 900;
 
 /** Below this many seconds the pick timer turns red. */
 export const PICK_WARNING_SECONDS = 10;
+
+/** The drag data type of a hero dragged from the placement list onto the board. */
+export const PLACE_DRAG_TYPE = 'application/x-arena-hero';

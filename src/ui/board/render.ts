@@ -23,6 +23,20 @@ import type { DisplayHero, Effect, FloatingText } from '../store.js';
 import { FLOAT_MS } from '../config.js';
 import { boardMetrics, hexCorners, hexToPixel } from './pixelHex.js';
 
+/** The tiles of one kind of terrain (or the floor), cut from their sheet. See assets/manifest.json. */
+export interface TerrainTextures {
+  readonly textures: readonly Texture[];
+  /** The tile paints the whole hex; otherwise it stands on the floor as a sprite. */
+  readonly cover: boolean;
+}
+
+/** One of several variants, the same for a hex every time: no randomness on the board. */
+function variantOf<T>(items: readonly T[], hex: Hex): T | undefined {
+  if (items.length === 0) return undefined;
+  const hash = (Math.imul(hex.q + 101, 73856093) ^ Math.imul(hex.r + 211, 19349663)) >>> 0;
+  return items[hash % items.length];
+}
+
 /** The layers of one class figure, plus the tint multiplied over them. */
 export interface ClassTextures {
   readonly textures: readonly Texture[];
@@ -165,6 +179,42 @@ function drawHigh(layer: Container, hex: Hex, arena: Arena): void {
   g.poly(inner).stroke({ width: 2.5, color: COLORS.highEdge });
   g.moveTo(x - 9, y + 5).lineTo(x, y - 5).lineTo(x + 9, y + 5).stroke({ width: 3, color: COLORS.highEdge });
   layer.addChild(g);
+}
+
+/** The chevron of high ground, over its own tile. */
+function drawHighMark(layer: Container, hex: Hex, arena: Arena): void {
+  const { x, y } = centreOf(hex, arena);
+  const g = new Graphics();
+  g.poly(polygonPoints(hex, arena, 6)).stroke({ width: 2.5, color: COLORS.highEdge });
+  g.moveTo(x - 9, y + 5).lineTo(x, y - 5).lineTo(x + 9, y + 5).stroke({ width: 3, color: COLORS.highEdge });
+  layer.addChild(g);
+}
+
+/** A terrain tile standing on the floor, such as a bush, at a whole-number scale. */
+function drawTerrainSprite(layer: Container, hex: Hex, arena: Arena, art: TerrainTextures): void {
+  const texture = variantOf(art.textures, hex);
+  if (texture === undefined) return;
+  const { x, y } = centreOf(hex, arena);
+  const sprite = new Sprite(texture);
+  sprite.anchor.set(0.5, 0.5);
+  sprite.scale.set(TERRAIN_SPRITE_SCALE);
+  sprite.position.set(x, y);
+  layer.addChild(sprite);
+}
+
+/** 16 px tiles at ×3 fill a 40 px hex without spilling over its neighbours. */
+const TERRAIN_SPRITE_SCALE = 3;
+
+/** The tile that paints a hex: the terrain's own when it covers the hex, else the floor. */
+function coverTexture(
+  terrainTextures: Readonly<Record<string, TerrainTextures>>,
+  terrain: string | null,
+  hex: Hex,
+): Texture | undefined {
+  const own = terrain === null ? undefined : terrainTextures[terrain];
+  if (own !== undefined && own.cover) return variantOf(own.textures, hex);
+  const floor = terrainTextures['floor'];
+  return floor === undefined ? undefined : variantOf(floor.textures, hex);
 }
 
 function drawThicket(layer: Container, hex: Hex, arena: Arena): void {
@@ -392,6 +442,8 @@ export interface BoardView {
   readonly playerSide: Side;
   /** Layers per class id, back to front; empty until the sheet finishes loading. */
   readonly sprites: Readonly<Record<string, ClassTextures>>;
+  /** Floor and terrain tiles by kind; empty until loaded, and then the board is flat colours. */
+  readonly terrain: Readonly<Record<string, TerrainTextures>>;
 }
 
 export function drawBoard(layer: Container, view: BoardView, now: number): void {
@@ -402,6 +454,7 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
   const inZone = new Set(highlights.zone.map(hexKey));
   const inReach = new Set(highlights.reach.map(hexKey));
   const isTarget = new Set(highlights.targets.map(hexKey));
+  const tiled = view.terrain['floor'] !== undefined;
 
   for (const hex of allHexes(arena)) {
     const key = hexKey(hex);
@@ -424,16 +477,17 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
       edge = COLORS.rangeEdge;
     }
     if (highlights.reachable.has(key)) {
-      fill = COLORS.reachable;
-      alpha = 0.45;
+      fill = tiled ? COLORS.reachableOnTiles : COLORS.reachable;
+      alpha = tiled ? 0.38 : 0.45;
+      if (tiled) edge = COLORS.reachableOnTiles;
     }
     if (inZone.has(key)) {
       fill = highlights.zoneIsFriendly ? COLORS.abilityZoneAlly : COLORS.abilityZone;
       alpha = 0.8;
     }
     if (inPath.has(key)) {
-      fill = COLORS.path;
-      alpha = 0.75;
+      fill = tiled ? COLORS.pathOnTiles : COLORS.path;
+      alpha = tiled ? 0.55 : 0.75;
     }
 
     const hovered = view.hoverHex !== null && hexKey(view.hoverHex) === key;
@@ -443,7 +497,15 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     }
 
     const g = new Graphics();
-    g.poly(points).fill({ color: fill, alpha });
+    // The ground: the terrain's own tile if it covers the hex (rock, high ground), else
+    // the floor. Highlights go over it as a see-through layer.
+    const ground = coverTexture(view.terrain, terrain, hex);
+    if (ground === undefined) {
+      g.poly(points).fill({ color: fill, alpha });
+    } else {
+      g.poly(points).fill({ texture: ground, color: COLORS.floorTint });
+      if (alpha < 1) g.poly(points).fill({ color: fill, alpha });
+    }
     g.poly(points).stroke({
       width: hovered ? 3 : edge !== null ? 2 : 1,
       color: hovered
@@ -455,7 +517,12 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
     });
     layer.addChild(g);
 
-    if (terrain === 'rock') drawRock(layer, hex, arena);
+    const art = terrain === null ? undefined : view.terrain[terrain];
+    if (art !== undefined && art.cover) {
+      // The tile already is the terrain; high ground keeps its chevron so it reads as a rise.
+      if (terrain === 'high') drawHighMark(layer, hex, arena);
+    } else if (art !== undefined) drawTerrainSprite(layer, hex, arena, art);
+    else if (terrain === 'rock') drawRock(layer, hex, arena);
     else if (terrain === 'column') drawColumn(layer, hex, arena);
     else if (terrain === 'high') drawHigh(layer, hex, arena);
     else if (terrain === 'collapse') drawCollapse(layer, hex, arena);
