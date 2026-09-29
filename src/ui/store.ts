@@ -402,12 +402,13 @@ function pump(): void {
 }
 
 /** Applies one action and puts its events in the queue rather than showing them. */
-function applyAndEnqueue(action: Action): void {
+function applyAndEnqueue(action: Action): readonly BattleEvent[] {
   const battle = state.battle;
-  if (battle === null) return;
+  if (battle === null) return [];
   const result = applyAction(battle, action, content);
   set({ battle: result.state, queue: [...state.queue, ...result.events], busy: true });
   schedule(0);
+  return result.events;
 }
 
 let aiRetries = 0;
@@ -446,7 +447,13 @@ function stepAi(): boolean {
     return true;
   }
 
-  applyAndEnqueue(next);
+  // Core closes a turn by itself once nothing but endTurn is left, so the plan's own
+  // endTurn may never be reached. The rest of the plan belongs to the turn that just
+  // closed: kept, it would end this hero's next turn before it did anything.
+  if (applyAndEnqueue(next).some((e) => e.type === 'turnEnded')) {
+    aiPlan = [];
+    aiPlanFor = null;
+  }
   return true;
 }
 
