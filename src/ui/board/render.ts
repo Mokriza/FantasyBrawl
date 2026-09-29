@@ -26,8 +26,10 @@ import { boardMetrics, hexCorners, hexToPixel } from './pixelHex.js';
 /** The tiles of one kind of terrain (or the floor), cut from their sheet. See assets/manifest.json. */
 export interface TerrainTextures {
   readonly textures: readonly Texture[];
-  /** The tile paints the whole hex; otherwise it stands on the floor as a sprite. */
+  /** The picture paints the whole hex; otherwise it stands on the floor as a sprite. */
   readonly cover: boolean;
+  /** Whole-number scale of a standing picture. */
+  readonly scale: number;
 }
 
 /** One of several variants, the same for a hex every time: no randomness on the board. */
@@ -181,29 +183,30 @@ function drawHigh(layer: Container, hex: Hex, arena: Arena): void {
   layer.addChild(g);
 }
 
-/** The chevron of high ground, over its own tile. */
-function drawHighMark(layer: Container, hex: Hex, arena: Arena): void {
+/** The cracks of a fallen edge, over its dark picture. */
+function drawCollapseCracks(layer: Container, hex: Hex, arena: Arena): void {
   const { x, y } = centreOf(hex, arena);
   const g = new Graphics();
-  g.poly(polygonPoints(hex, arena, 6)).stroke({ width: 2.5, color: COLORS.highEdge });
-  g.moveTo(x - 9, y + 5).lineTo(x, y - 5).lineTo(x + 9, y + 5).stroke({ width: 3, color: COLORS.highEdge });
+  g.moveTo(x - 16, y - 10).lineTo(x - 4, y - 2).lineTo(x - 8, y + 12).stroke({ width: 2, color: COLORS.collapseEdge });
+  g.moveTo(x + 14, y - 12).lineTo(x + 4, y + 2).lineTo(x + 12, y + 14).stroke({ width: 2, color: COLORS.collapseEdge });
   layer.addChild(g);
 }
 
-/** A terrain tile standing on the floor, such as a bush, at a whole-number scale. */
-function drawTerrainSprite(layer: Container, hex: Hex, arena: Arena, art: TerrainTextures): void {
+/** A picture standing on the floor, such as a boulder or a bush, at its whole-number scale. */
+function drawTerrainSprite(layer: Container, hex: Hex, arena: Arena, art: TerrainTextures, alpha = 1): void {
   const texture = variantOf(art.textures, hex);
   if (texture === undefined) return;
   const { x, y } = centreOf(hex, arena);
   const sprite = new Sprite(texture);
   sprite.anchor.set(0.5, 0.5);
-  sprite.scale.set(TERRAIN_SPRITE_SCALE);
+  sprite.scale.set(art.scale);
   sprite.position.set(x, y);
+  sprite.alpha = alpha;
   layer.addChild(sprite);
 }
 
-/** 16 px tiles at ×3 fill a 40 px hex without spilling over its neighbours. */
-const TERRAIN_SPRITE_SCALE = 3;
+/** Smoke is see-through, so what stands in it still shows. */
+const SMOKE_ALPHA = 0.85;
 
 /** The tile that paints a hex: the terrain's own when it covers the hex, else the floor. */
 function coverTexture(
@@ -275,6 +278,14 @@ function drawSmoke(layer: Container, hex: Hex, arena: Arena): void {
  * "Капкан": open jaws inside a ring of its owner's side colour, so a glance says
  * whose it is. Drawn for both sides; the rules keep no hidden information.
  */
+/** The ring of a trap's owner, under the trap's picture. */
+function drawTrapRing(layer: Container, hex: Hex, arena: Arena, owner: number): void {
+  const { x, y } = centreOf(hex, arena);
+  const g = new Graphics();
+  g.circle(x, y, HEX_SIZE * 0.72).stroke({ width: 4, color: owner });
+  layer.addChild(g);
+}
+
 function drawTrap(layer: Container, hex: Hex, arena: Arena, owner: number): void {
   const { x, y } = centreOf(hex, arena);
   const g = new Graphics();
@@ -519,9 +530,13 @@ export function drawBoard(layer: Container, view: BoardView, now: number): void 
 
     const art = terrain === null ? undefined : view.terrain[terrain];
     if (art !== undefined && art.cover) {
-      // The tile already is the terrain; high ground keeps its chevron so it reads as a rise.
-      if (terrain === 'high') drawHighMark(layer, hex, arena);
-    } else if (art !== undefined) drawTerrainSprite(layer, hex, arena, art);
+      // The picture already is the terrain; a fallen edge keeps its red cracks.
+      if (terrain === 'collapse') drawCollapseCracks(layer, hex, arena);
+    } else if (art !== undefined) {
+      // A trap keeps the ring of its owner's colour under the spikes: whose it is matters.
+      if (terrain === 'trap') drawTrapRing(layer, hex, arena, trapOwnerColour(battle, hex, view.playerSide));
+      drawTerrainSprite(layer, hex, arena, art, terrain === 'smoke' ? SMOKE_ALPHA : 1);
+    }
     else if (terrain === 'rock') drawRock(layer, hex, arena);
     else if (terrain === 'column') drawColumn(layer, hex, arena);
     else if (terrain === 'high') drawHigh(layer, hex, arena);
