@@ -108,4 +108,11 @@ export default tseslint.config(
       'no-restricted-globals': ['error', ...noDomGlobals],
     },
   },
+  {
+    // Plain Node scripts for the Godot project's assets and export (godot/tools).
+    files: ['godot/tools/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', Buffer: 'readonly', fetch: 'readonly', console: 'readonly', setTimeout: 'readonly' },
+    },
+  },
 );
