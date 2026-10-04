@@ -21,6 +21,14 @@ function healthShare(state: BattleState, side: Side): number {
   return fighters(state, side).reduce((sum, h) => sum + h.hp / h.base.maxHp, 0);
 }
 
+/**
+ * The side that would win if the round limit ran out now: the larger sum of hp/maxHp,
+ * B on an exact tie. The AI reads it to tell whether waiting is on its side.
+ */
+export function roundLimitLeader(state: BattleState): Side {
+  return healthShare(state, 'A') > healthShare(state, 'B') ? 'A' : 'B';
+}
+
 export function checkOutcome(state: BattleState, content: ContentRegistry): BattleOutcome | null {
   if (state.outcome !== null) return state.outcome;
 
@@ -44,9 +52,7 @@ export function checkOutcome(state: BattleState, content: ContentRegistry): Batt
   }
 
   if (state.round > content.config.battle.maxRounds) {
-    const shareA = healthShare(state, 'A');
-    const shareB = healthShare(state, 'B');
-    return { winner: shareA > shareB ? 'A' : 'B', reason: 'roundLimit' };
+    return { winner: roundLimitLeader(state), reason: 'roundLimit' };
   }
 
   return null;

@@ -11,6 +11,10 @@
 | Фигурки героев 16×16 и циклоп «Древнего стража» | [Pixel-Boy & AAA — Ninja Adventure](https://pixel-boy.itch.io/ninja-adventure-asset-pack), архив `Ninja Adventure - Asset Pack.zip`, папки `Actor/Character` и `Actor/Monster/Cyclope` | CC0 1.0 | Нет (авторы просят ссылку — она здесь) |
 | Тайлы поля: трава, валуны, кусты, колонна, яма, плато, провал, лёд, шипы | Ninja Adventure, `Backgrounds/Tilesets`: `TilesetFloor`, `TilesetNature`, `TilesetVillageAbandoned`, `TilesetHole`, `TilesetRelief`, `TilesetDungeon` | CC0 1.0 | Нет |
 | Дым | Ninja Adventure, `FX/Smoke/Smoke/SpriteSheet.png` (кадр 4) | CC0 1.0 | Нет |
+| Анимации способностей: взрыв, молния, лёд, яд, круги магии, искры, дух, аура, усиление, щиты, порезы, когти, вихрь | Ninja Adventure, `FX/Elemental`, `FX/Magic`, `FX/Attack` (листы `SpriteSheet*.png`, переименованы по эффекту) | CC0 1.0 | Нет |
+| Оружие классов: меч, молот, саи, дубина, лук | Ninja Adventure, `Items/Weapons/<оружие>/Sprite.png` | CC0 1.0 | Нет |
+| Снаряды: огненный шар, шары энергии, ледяной шип, кунай, стрела | Ninja Adventure, `FX/Projectile` и `Items/Weapons/Bow/Arrow.png` | CC0 1.0 | Нет |
+| Звуки ударов и заклинаний (25 WAV) | Ninja Adventure, `Audio/Sounds` (Slash, Sword, Whoosh, Hit, Impact, Explosion, Fireball, Fire, Water, Magic, Heal, Spirit, Fx…) | CC0 1.0 | Нет |
 | Иконки способностей (83 SVG) | [game-icons.net](https://game-icons.net), репозиторий [game-icons/icons](https://github.com/game-icons/icons) | CC BY 3.0 | **Да**, по авторам — см. ниже |
 
 ### Фигурки героев
@@ -28,6 +32,12 @@
 Тоже в манифесте, раздел `terrain`: у каждого вида — лист, варианты и масштаб. Вариант
 задаётся прямоугольниками в пикселях листа, поэтому собирается и из нескольких кусков:
 плато Возвышенности — четыре угла плато `TilesetRelief`, колонна — два тайла в высоту.
+
+### Эффекты и звуки
+
+В `src/ui/assets/vfx.json`: полосы кадров, оружие, снаряды и звуки, а по ним — стиль каждой
+способности и базовой атаки каждого класса (чем бьёт, что летит, что вспыхивает при
+попадании, что звучит). Чтобы изменить вид или звук способности, правится этот файл.
 
 ### Атрибуция для иконок способностей
 
@@ -59,10 +69,14 @@ Town, тоже CC0); их убрали, когда поле и героев пе
 ```
 public/assets/ninja-adventure/characters/<имя>.png    лист персонажа 4×7 кадров по 16×16 (циклоп 4×4)
 public/assets/ninja-adventure/tilesets/<лист>.png     тайлсеты местности
-public/assets/ninja-adventure/fx/Smoke.png            кадры дыма 32×32
+public/assets/ninja-adventure/fx/<эффект>.png         полосы кадров эффектов (дым, взрыв, молния…)
+public/assets/ninja-adventure/weapons/<оружие>.png    оружие классов
+public/assets/ninja-adventure/projectiles/<снаряд>.png снаряды
+public/assets/ninja-adventure/sounds/<звук>.wav        звуки ударов и заклинаний
 public/assets/ninja-adventure/LICENSE.txt             лицензия пака как есть
 public/assets/game-icons/<автор>/<иконка>.svg         иконки способностей
 src/ui/assets/manifest.json                          листы, фигурки классов, местность
+src/ui/assets/vfx.json                               анимации, оружие, снаряды, звуки и стиль каждой способности
 ```
 
 Путей к картинкам в коде нет: слои героев и тайлы поля (раздел `terrain`) берутся из `src/ui/assets/manifest.json`,

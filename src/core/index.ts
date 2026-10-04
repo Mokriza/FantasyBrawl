@@ -33,7 +33,7 @@ export {
   reachableFor,
 } from './battle/legal.js';
 export { advanceToNextTurn, predictTurnOrder, readyHeroes } from './battle/atb.js';
-export { checkOutcome } from './battle/victory.js';
+export { checkOutcome, roundLimitLeader } from './battle/victory.js';
 export { computeBarrier, computeDamage, computeHeal, FIXED_ROLLS, RANDOM_ROLLS } from './battle/formulas.js';
 export type { DamageResult, HealResult, RollMode } from './battle/formulas.js';
 export { describeAbility } from './battle/describe.js';

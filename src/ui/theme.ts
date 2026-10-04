@@ -29,6 +29,13 @@ export const COLORS = {
   /** Over the grass tiles green does not show: where to walk is lit warm instead. */
   reachableOnTiles: 0xfff0b0,
   pathOnTiles: 0xffffff,
+  /** Lightning: a pale blue glow round a white core. */
+  lightningGlow: 0x7fbfff,
+  lightningCore: 0xffffff,
+  /** A column of holy light from the sky. */
+  smite: 0xfff1a8,
+  /** Life drawn off a target back to the caster. */
+  drain: 0xc58cff,
   abilityZone: 0xd05a4a,
   abilityZoneAlly: 0x4a9fd0,
   provoke: 0xe0902a,

@@ -709,3 +709,125 @@ button.primary:hover {
   background: #3a1f1c;
   color: #ffd7cf;
 }
+
+/* --- hover cards ------------------------------------------------------------ */
+
+.tip-anchor {
+  cursor: help;
+}
+
+.log-tip {
+  color: #ffe08a;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.tip-card {
+  position: fixed;
+  z-index: 50;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #11131a;
+  box-shadow: 0 6px 24px #000a;
+  pointer-events: none;
+  font-size: 13px;
+}
+
+.tip-plain p {
+  margin: 4px 0 0;
+}
+
+.ability-info-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ability-info-meta,
+.ability-info-left {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.ability-info-left {
+  color: var(--active);
+}
+
+.ability-info-text {
+  margin: 4px 0 0;
+}
+
+/* --- hero inspector ----------------------------------------------------------- */
+
+.hero-clickable {
+  cursor: pointer;
+}
+
+.hero-clickable:hover,
+.hero-clickable:focus-visible {
+  outline: 2px solid var(--active);
+  outline-offset: 1px;
+}
+
+.inspector-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #0b0d12cc;
+}
+
+.inspector {
+  position: relative;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.inspector h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.inspector-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 8px;
+}
+
+.inspector-abilities {
+  display: grid;
+  gap: 8px;
+}
+
+.inspector-abilities .ability-info {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.inspector-traits {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.inspector-traits dt {
+  font-weight: 600;
+}
+
+.inspector-traits dd {
+  margin: 2px 0 0;
+}

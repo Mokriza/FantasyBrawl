@@ -201,7 +201,7 @@ docs/
 
 ## Ассеты
 
-- Фигурки героев и тайлы поля — [Ninja Adventure](https://pixel-boy.itch.io/ninja-adventure-asset-pack), Pixel-Boy и AAA (CC0).
+- Фигурки героев, тайлы поля, оружие, эффекты способностей и звуки — [Ninja Adventure](https://pixel-boy.itch.io/ninja-adventure-asset-pack), Pixel-Boy и AAA (CC0).
 - Иконки способностей — [game-icons.net](https://game-icons.net) (CC BY 3.0), авторы Lorc,
   Delapouite и Sbed.
 

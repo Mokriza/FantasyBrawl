@@ -59,8 +59,10 @@ import type { ConnectionStatus, NetClient } from './net/client.js';
 import { chooseActions, choosePerk, choosePick, choosePlacement, chooseReward, chooseSwap, chooseUnlock, profileByName } from '../ai/index.js';
 import type { AiProfile } from '../ai/index.js';
 import { EVENT_MS, FLOAT_MS, OPPONENT_PICK_MS } from './config.js';
-import { abilityLook, advanceDisplay, pruneEffects, pruneFloats, soundOf } from './playback.js';
-import type { AbilityLook, DisplayHero, Effect, FloatingText } from './playback.js';
+import { abilityLook, advanceDisplay, inFlightMs, pruneEffects, pruneFloats, soundOf } from './playback.js';
+import type { AbilityLook, Casting, DisplayHero, Effect, FloatingText } from './playback.js';
+import { styleOf } from './vfx.js';
+import type { AbilityStyle } from './vfx.js';
 import { playSound } from './sound.js';
 import { UI } from './strings.ru.js';
 
@@ -95,6 +97,8 @@ export interface UiState {
   readonly floats: readonly FloatingText[];
   /** Bolts, sweeps and flashes still on the board. */
   readonly effects: readonly Effect[];
+  /** The ability being played out, whose blows each play its own picture and sound. */
+  readonly casting: Casting | null;
   /** The seed shown to the player: the run's, or the quick battle's. */
   readonly seed: number;
   readonly playerSide: Side;
@@ -189,6 +193,7 @@ let state: UiState = {
   display: {},
   floats: [],
   effects: [],
+  casting: null,
   seed: 0,
   playerSide: content.config.battle.playerSide,
   selectedAbility: null,
@@ -256,6 +261,7 @@ const CLEAN_BATTLE: Partial<UiState> = {
   display: {},
   floats: [],
   effects: [],
+  casting: null,
   selectedAbility: null,
   hoverHex: null,
   busy: false,
@@ -264,6 +270,25 @@ const CLEAN_BATTLE: Partial<UiState> = {
 // --- playing battle events back ------------------------------------------------
 
 const looks = new Map<string, AbilityLook | undefined>();
+
+/**
+ * How an ability used by this hero looks and sounds (assets/vfx.json). A basic
+ * attack takes the hero's class weapon, so it depends on who uses it.
+ */
+function styleFor(abilityId: string, heroId: string): AbilityStyle | undefined {
+  const ability = content.abilities[abilityId];
+  if (ability === undefined) return undefined;
+  const hero = state.battle?.heroes[heroId];
+  const basic = hero === undefined ? undefined : content.classes[hero.classId]?.baseAttack;
+  return styleOf(ability, hero?.classId, basic === abilityId);
+}
+
+/** The style of a hero's basic attack, for a blow struck at someone leaving. */
+function basicStyleFor(heroId: string): AbilityStyle | undefined {
+  const hero = state.battle?.heroes[heroId];
+  const basic = hero === undefined ? undefined : content.classes[hero.classId]?.baseAttack;
+  return basic === undefined ? undefined : styleFor(basic, heroId);
+}
 
 /** How an ability looks on the board, worked out once per ability. */
 function lookOf(id: string): AbilityLook | undefined {
@@ -278,7 +303,12 @@ function lookOf(id: string): AbilityLook | undefined {
 function playEvent(event: BattleEvent): void {
   const battle = state.battle;
   const next = advanceDisplay(
-    { heroes: state.display, floats: state.floats, effects: state.effects },
+    {
+      heroes: state.display,
+      floats: state.floats,
+      effects: state.effects,
+      ...(state.casting === null ? {} : { casting: state.casting }),
+    },
     event,
     {
       maxHpOf: (id) => battle?.heroes[id]?.base.maxHp ?? Infinity,
@@ -287,12 +317,19 @@ function playEvent(event: BattleEvent): void {
       passiveName: (id) => content.passives[id]?.name ?? id,
       pace: state.speed === 0 ? 0 : 1 / state.speed,
       abilityLook: lookOf,
+      styleOf: styleFor,
+      basicStyleOf: basicStyleFor,
+      isDelayed: (id) => content.abilities[id]?.delay !== undefined,
     },
   );
 
   // At the instant speed a whole turn lands at once: silence rather than a wall of noise.
   if (state.speed !== 0) {
-    const sound = soundOf(event, lookOf);
+    const sound = soundOf(event, lookOf, {
+      ...(state.casting === null ? {} : { casting: state.casting }),
+      styleOf: styleFor,
+      basicStyleOf: basicStyleFor,
+    });
     if (sound !== null) playSound(sound);
     if (event.type === 'turnStarted' && battle?.heroes[event.heroId]?.side === state.playerSide) playSound('turn');
   }
@@ -301,6 +338,7 @@ function playEvent(event: BattleEvent): void {
     display: next.heroes,
     floats: next.floats,
     effects: next.effects,
+    casting: next.casting ?? null,
     log: [...state.log, event],
     queue: state.queue.slice(1),
   });
@@ -337,7 +375,8 @@ function pump(): void {
   const next = state.queue[0];
   if (next !== undefined) {
     playEvent(next);
-    schedule(durationOf(next));
+    // A shot still in the air holds the next event back until it lands.
+    schedule(Math.max(durationOf(next), inFlightMs(state.effects, performance.now())));
     return;
   }
 
@@ -363,12 +402,13 @@ function pump(): void {
 }
 
 /** Applies one action and puts its events in the queue rather than showing them. */
-function applyAndEnqueue(action: Action): void {
+function applyAndEnqueue(action: Action): readonly BattleEvent[] {
   const battle = state.battle;
-  if (battle === null) return;
+  if (battle === null) return [];
   const result = applyAction(battle, action, content);
   set({ battle: result.state, queue: [...state.queue, ...result.events], busy: true });
   schedule(0);
+  return result.events;
 }
 
 let aiRetries = 0;
@@ -407,7 +447,13 @@ function stepAi(): boolean {
     return true;
   }
 
-  applyAndEnqueue(next);
+  // Core closes a turn by itself once nothing but endTurn is left, so the plan's own
+  // endTurn may never be reached. The rest of the plan belongs to the turn that just
+  // closed: kept, it would end this hero's next turn before it did anything.
+  if (applyAndEnqueue(next).some((e) => e.type === 'turnEnded')) {
+    aiPlan = [];
+    aiPlanFor = null;
+  }
   return true;
 }
 
