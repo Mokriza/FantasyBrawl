@@ -227,6 +227,13 @@ public static class Victory
     private static double HealthShare(BattleState state, Side side) =>
         Fighters(state, side).Aggregate(0.0, (sum, h) => sum + h.Hp / h.Base.MaxHp);
 
+    /// <summary>
+    /// The side that would win if the round limit ran out now: the larger sum of hp/maxHp,
+    /// B on an exact tie. The AI reads it to tell whether waiting is on its side.
+    /// </summary>
+    public static Side RoundLimitLeader(BattleState state) =>
+        HealthShare(state, Side.A) > HealthShare(state, Side.B) ? Side.A : Side.B;
+
     public static BattleOutcome? CheckOutcome(BattleState state, ContentRegistry content)
     {
         if (state.Outcome is not null) return state.Outcome;
@@ -246,11 +253,7 @@ public static class Victory
         }
 
         if (state.Round > content.Config.Battle.MaxRounds)
-        {
-            double shareA = HealthShare(state, Side.A);
-            double shareB = HealthShare(state, Side.B);
-            return new BattleOutcome(shareA > shareB ? Side.A : Side.B, VictoryReason.RoundLimit);
-        }
+            return new BattleOutcome(RoundLimitLeader(state), VictoryReason.RoundLimit);
         return null;
     }
 }

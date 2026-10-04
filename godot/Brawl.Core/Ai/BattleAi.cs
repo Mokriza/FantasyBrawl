@@ -358,8 +358,21 @@ public static class BattleAi
             }
         }
 
-        if (profile.UseThreat) score += w.Threat * ThreatAgainst(after, side, content);
+        if (profile.UseThreat) score += w.Threat * CautionLeft(before, after, side, content) * ThreatAgainst(after, side, content);
         return score;
+    }
+
+    /// <summary>
+    /// How much the hit waiting in the enemy's reach still matters, from 1 down to 0.
+    /// Keeping out of reach is how a standoff starts: whoever steps in first is hit first.
+    /// Waiting pays only a side that the round limit would declare the winner, so for the
+    /// other side the fear fades as the limit comes closer, and by its last round is gone.
+    /// </summary>
+    private static double CautionLeft(BattleState before, BattleState after, Side side, ContentRegistry content)
+    {
+        if (Victory.RoundLimitLeader(after) == side) return 1;
+        double limit = content.Config.Battle.MaxRounds;
+        return Math.Max(0, (limit - before.Round) / limit);
     }
 
     /// <summary>How much damage the other side could put on my heroes next turn; cheap on purpose.</summary>

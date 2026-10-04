@@ -93,11 +93,12 @@ public sealed class BattleSession : IBoardSource
         return true;
     }
 
-    private void Apply(BattleAction action)
+    private IReadOnlyList<BattleEvent> Apply(BattleAction action)
     {
         var result = BattleRules.ApplyAction(Battle, action, Content);
         Battle = result.State;
         Enqueue(result.Events);
+        return result.Events;
     }
 
     private double Pace => Speed == 0 ? 0 : 1.0 / Speed;
@@ -213,7 +214,14 @@ public sealed class BattleSession : IBoardSource
             if (++aiRetries > 4) Apply(new EndTurnAction { HeroId = active });
             return true;
         }
-        Apply(next);
+        // Core closes a turn by itself once nothing but endTurn is left, so the plan's own
+        // endTurn may never be reached. The rest of the plan belongs to the turn that just
+        // closed: kept, it would end this hero's next turn before it did anything.
+        if (Apply(next).Any(e => e is TurnEndedEvent))
+        {
+            aiPlan.Clear();
+            aiPlanFor = null;
+        }
         return true;
     }
 }
