@@ -30,6 +30,9 @@ public sealed class BattleSession : IBoardSource
     /// <summary>The AI plays the player's side too: for a demo, or a screenshot run.</summary>
     public bool AutoPlayer { get; init; }
 
+    /// <summary>A sound to play, by the name vfx.json or Sounds knows it; the screen turns it into noise.</summary>
+    public Action<string>? OnSound { get; set; }
+
     /// <summary>True while events are playing or the opponent is thinking or acting.</summary>
     public bool Busy { get; private set; }
 
@@ -112,9 +115,14 @@ public sealed class BattleSession : IBoardSource
         while (queue.Count > 0 && now >= nextEventAt)
         {
             var e = queue.Dequeue();
+            // At the instant speed a whole turn lands at once: silence rather than a wall of noise.
+            if (Speed != 0 && Playback.SoundOf(e, Display.Casting, Battle, Content) is { } sound) OnSound?.Invoke(sound);
+            if (Speed != 0 && e is TurnStartedEvent t && Battle.Heroes.Get(t.HeroId)?.Side == PlayerSide && !AutoPlayer) OnSound?.Invoke("turn");
             Display = Playback.Advance(Display, e, Battle, Content, now, Pace);
             Log.Add(e);
             double ms = Speed == 0 ? 0 : Playback.EventMs(e) / Speed;
+            // A shot still in the air holds the next event back until it lands.
+            ms = Math.Max(ms, Playback.InFlightMs(Display.Effects, now));
             // A wall of ice or a collapsing ring changes many hexes at once: they show together.
             if (e is TerrainChangedEvent && queue.TryPeek(out var next) && next is TerrainChangedEvent) ms = 0;
             nextEventAt = now + ms;
@@ -124,6 +132,7 @@ public sealed class BattleSession : IBoardSource
 
         if (Battle.Outcome is not null)
         {
+            if (Busy && Speed != 0) OnSound?.Invoke(Battle.Outcome.Winner == PlayerSide ? "win" : "lose");
             Busy = false;
             return;
         }

@@ -57,6 +57,10 @@ public partial class BattleScreen : Control
         root.OffsetBottom = -6;
         AddChild(root);
 
+        var sounds = new Sounds();
+        AddChild(sounds);
+        session.OnSound = sounds.Play;
+
         root.AddChild(TopBar());
 
         queueLabel.AddThemeColorOverride("font_color", Palette.TextSoft);
@@ -133,6 +137,9 @@ public partial class BattleScreen : Control
             if (run is not null) run.Speed = value;
             else session.Speed = value;
         });
+        var sound = new Button { Text = Texts.SoundButton, ToggleMode = true, ButtonPressed = Sounds.Enabled, TooltipText = Texts.SoundHint };
+        sound.Toggled += on => Sounds.Enabled = on;
+        bar.AddChild(sound);
         var menu = new Button { Text = Texts.ToMenu };
         menu.Pressed += toMenu;
         bar.AddChild(menu);

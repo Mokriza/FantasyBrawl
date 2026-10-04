@@ -16,6 +16,8 @@ public static partial class Texts
     public const string SeedRandom = "случайный";
     public const string Quit = "Выход";
     public const string ToMenu = "В меню";
+    public const string SoundButton = "Звук";
+    public const string SoundHint = "Включить или выключить звуки боя";
     public const string Round = "Раунд";
     public const string YourTurn = "Ваш ход";
     public const string Thinking = "Противник ходит…";
@@ -31,7 +33,7 @@ public static partial class Texts
     public const string Speed = "Скорость";
     public const string Instant = "мгнов.";
     public const string Queue = "Очередь ходов";
-    public const string Hint = "Клик по гексу — идти. 1–3 и Q — способность, Пробел — конец хода, Esc — отмена";
+    public const string Hint = "Клик по гексу — идти. 1–3 и Q — способность, Пробел — конец хода, Esc или правый клик — отмена. Правая кнопка с протяжкой — повернуть камеру, колесо — приблизить";
 
     public static readonly (string Id, string Name)[] Difficulties =
     [

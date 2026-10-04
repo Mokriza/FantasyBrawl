@@ -26,4 +26,17 @@
     <Copy SourceFiles="@(ContentJson)" DestinationFiles="@(ContentJson->'content\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 
+  <!--
+    How abilities look and sound is the web game's src/ui/assets/vfx.json, and the sounds
+    it names are the web game's recordings: both are copied in the same way.
+  -->
+  <Target Name="CopyVfx" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <VfxJson Include="..\..\src\ui\assets\vfx.json" />
+      <Recordings Include="..\..\public\assets\ninja-adventure\sounds\*.wav" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VfxJson)" DestinationFolder="content" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(Recordings)" DestinationFolder="content\sounds" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

@@ -9,7 +9,8 @@ namespace Brawl.Game;
 /// play comes later (docs/ai/godot-port.md).
 ///
 /// Arguments after `--` let a screen be looked at without a person at the keyboard:
-/// `--screenshot=path.png [--frames=N]` saves the window after N frames and quits; `--run`
+/// `--screenshot=path.png [--frames=N]` saves the window after N frames and quits; with
+/// `--shots=K --every=F` it saves K pictures F frames apart (path-1.png…) first; `--run`
 /// opens a run instead of a quick battle, `--menu` the menu; `--screen=draft|placement|
 /// battle|series|upgrade|finished` with `--match=M`, `--picks=N`, `--placed=N` jumps the run
 /// ahead to that screen, the AI playing both sides; `--expand` opens the swap candidates;
@@ -25,8 +26,12 @@ public partial class Main : Control
     private bool autoplay;
     private int screenshotFrames = 240;
     private int framesLeft = -1;
+    private int shots = 1;
+    private int every = 10;
+    private int shot;
     private int? speedArg;
     private bool runArg;
+    private bool galleryArg;
     private bool menuArg;
     private bool expandArg;
     private string? screenArg;
@@ -41,8 +46,11 @@ public partial class Main : Control
             string Value(string name) => arg[name.Length..];
             if (arg.StartsWith("--screenshot=")) screenshotPath = Value("--screenshot=");
             if (arg.StartsWith("--frames=")) screenshotFrames = int.Parse(Value("--frames="));
+            if (arg.StartsWith("--shots=")) shots = int.Parse(Value("--shots="));
+            if (arg.StartsWith("--every=")) every = int.Parse(Value("--every="));
             if (arg == "--autoplay") autoplay = true;
             if (arg == "--run") runArg = true;
+            if (arg == "--fxgallery") galleryArg = true;
             if (arg == "--menu") menuArg = true;
             if (arg == "--expand") expandArg = true;
             if (arg.StartsWith("--seed=")) seedText = Value("--seed=");
@@ -57,7 +65,8 @@ public partial class Main : Control
                 clicks.Add((parts[0], new Vector2(parts[1], parts[2])));
             }
         }
-        if (menuArg) ShowMenu();
+        if (galleryArg) ShowGallery();
+        else if (menuArg) ShowMenu();
         else if (runArg || screenArg is not null) StartRun();
         else if (screenshotPath is not null || autoplay) StartQuickBattle();
         else ShowMenu();
@@ -83,8 +92,15 @@ public partial class Main : Control
         if (framesLeft < 0) return;
         if (--framesLeft > 0) return;
         var image = GetViewport().GetTexture().GetImage();
-        image.SavePng(screenshotPath!);
-        GD.Print($"screenshot saved to {screenshotPath}");
+        shot++;
+        string path = shots > 1 ? screenshotPath!.Replace(".png", $"-{shot}.png") : screenshotPath!;
+        image.SavePng(path);
+        GD.Print($"screenshot saved to {path}");
+        if (shot < shots)
+        {
+            framesLeft = every;
+            return;
+        }
         GetTree().Quit();
     }
 
@@ -167,6 +183,18 @@ public partial class Main : Control
         var session = new BattleSession(content, initial, BattleAi.ProfileByName(content, difficulty), content.Config.Battle.PlayerSide) { AutoPlayer = autoplay };
         session.Speed = speedArg ?? (screenshotPath is not null ? 4 : 1);
         Show(new BattleScreen(session, ShowMenu, StartQuickBattle));
+    }
+
+    /// <summary>`--fxgallery`: every 3D effect at once on an empty arena, for tuning them.</summary>
+    private void ShowGallery()
+    {
+        var content = GameContent.Registry;
+        var board = new Board3D();
+        board.Bind(new FxGallery(content, BattleSetup.CreateBattle(Seed(), GameContent.Teams, content)));
+        var screen = new Control();
+        screen.AddChild(board);
+        board.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        Show(screen);
     }
 
     /// <summary>A new run: a fresh pool, and a roll for who picks first.</summary>

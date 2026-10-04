@@ -334,6 +334,7 @@ public partial class Board3D : Control
         PlaceCamera(now);
         PaintMarks();
         MoveFigures(battle, now);
+        StartCasting();
         effects.Show(source.Display.Effects, now);
         overlay.QueueRedraw();
     }
@@ -425,6 +426,37 @@ public partial class Board3D : Control
             }
             if (shown.Hp <= 0 && !figure.Dead) figure.Die();
             figure.Pose(running, battle.ActiveHeroId == id, now);
+        }
+    }
+
+    private Casting? casting;
+
+    /// <summary>
+    /// When an ability starts playing out, its user turns to the target and swings its
+    /// weapon or casts, by the style's delivery.
+    /// </summary>
+    private void StartCasting()
+    {
+        var now = source?.Display.Casting;
+        if (ReferenceEquals(now, casting)) return;
+        bool fresh = now is not null && (casting is null || now.From != casting.From || now.Style != casting.Style || now.Target != casting.Target);
+        casting = now;
+        if (!fresh || now is null || FigureAt(now.From) is not { } maker) return;
+        if (now.Target != now.From)
+        {
+            var d = HexSpace.Centre(now.Target) - HexSpace.Centre(now.From);
+            maker.Facing = Mathf.Atan2(d.X, d.Z);
+        }
+        switch (now.Style.Delivery)
+        {
+            case "swing" or "shoot":
+                maker.Attack();
+                break;
+            case "move":
+                break;
+            default:
+                maker.Cast();
+                break;
         }
     }
 

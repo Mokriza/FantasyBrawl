@@ -92,5 +92,24 @@
       "idle": "2H_Melee_Idle", "attack": "2H_Melee_Attack_Chop", "cast": "2H_Melee_Attack_Spin"
     }
   },
-  "moves": { "run": "Running_A", "hit": "Hit_A", "death": "Death_A", "cheer": "Cheer" }
+  "projectiles": { "_comment": "Models for vfx.json sprites that are things, not light.", "arrow": "adventurers/arrow.gltf", "knife": "adventurers/dagger.gltf" },
+  "moves": { "run": "Running_A", "hit": "Hit_A", "death": "Death_A", "cheer": "Cheer" },
+  "sounds": {
+    "_comment": "The web game synthesises these; here a recording of vfx.json stands in for each.",
+    "step": { "use": "whoosh", "pitch": 1.8, "volume": 0.15 },
+    "swing": { "use": "whoosh" },
+    "shoot": { "use": "launch" },
+    "spell": { "use": "arcane" },
+    "hit": { "use": "hitBlunt" },
+    "hitMagic": { "use": "arcaneHit" },
+    "crit": { "use": "smash", "pitch": 0.9, "volume": 1.2 },
+    "heal": { "use": "healing" },
+    "block": { "use": "shielding", "volume": 0.8 },
+    "status": { "use": "buffing", "volume": 0.6 },
+    "death": { "use": "impact", "pitch": 0.7 },
+    "turn": { "use": "holy", "pitch": 1.4, "volume": 0.5 },
+    "win": { "use": "holy", "pitch": 0.9 },
+    "lose": { "use": "shadow", "pitch": 0.8 },
+    "thunder": { "use": "explosionBig", "pitch": 0.7, "volume": 0.9 }
+  }
 }

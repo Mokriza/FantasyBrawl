@@ -27,6 +27,9 @@ public sealed record SceneryArt(int Rings, IReadOnlyList<string> Models, float E
 
 public sealed record MoveNames(string Run, string Hit, string Death, string Cheer);
 
+/// <summary>A recording standing in for a sound the web game synthesises.</summary>
+public sealed record SoundStandIn(string Use, float Pitch = 1, float Volume = 1);
+
 /// <summary>
 /// The 3D board's art: assets/board3d.json read once, and the models it names loaded on
 /// demand. Code holds no paths of its own, as on the web (docs/ai/ui-and-rendering.md).
@@ -40,7 +43,9 @@ public static class Art3D
         SceneryArt Scenery,
         Dictionary<string, JsonElement> Terrain,
         Dictionary<string, JsonElement> Heroes,
-        MoveNames Moves);
+        MoveNames Moves,
+        Dictionary<string, JsonElement> Sounds,
+        Dictionary<string, string> Projectiles);
 
     private static Manifest? manifest;
     private static readonly Dictionary<string, PackedScene?> Scenes = [];
@@ -70,6 +75,12 @@ public static class Art3D
 
     public static TerrainArt? Terrain(string kind) =>
         Data.Terrain.TryGetValue(kind, out var e) ? e.Deserialize<TerrainArt>(Json) : null;
+
+    /// <summary>The model of something thrown, by its vfx.json sprite name: an arrow, a knife.</summary>
+    public static string? Projectile(string sprite) => Data.Projectiles.TryGetValue(sprite, out var path) ? path : null;
+
+    public static SoundStandIn? Sound(string name) =>
+        Data.Sounds.TryGetValue(name, out var e) && e.ValueKind == JsonValueKind.Object ? e.Deserialize<SoundStandIn>(Json) : null;
 
     public static HeroArt? Hero(string classId) =>
         Data.Heroes.TryGetValue(classId, out var e) ? e.Deserialize<HeroArt>(Json) : null;
