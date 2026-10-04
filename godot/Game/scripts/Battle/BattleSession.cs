@@ -44,6 +44,9 @@ public sealed class BattleSession : IBoardSource
     private string? aiPlanFor;
     private Task<AiDecision>? thinking;
     private int aiRetries;
+    private ulong thinkingSince;
+    /// <summary>`-- --ailog`: how long the opponent thinks each turn is printed, to find a stall.</summary>
+    private static readonly bool AiLogged = Godot.OS.GetCmdlineUserArgs().Contains("--ailog");
 
     public BattleSession(ContentRegistry content, BattleState initial, AiProfile opponent, Side playerSide)
         : this(content, initial, opponent, playerSide, played: false)
@@ -110,11 +113,15 @@ public sealed class BattleSession : IBoardSource
     public void Tick(double now)
     {
         Display = Playback.Prune(Display, now);
+        // The real state is already where the shown one is heading, so the opponent can
+        // start thinking about its turn while the last one is still being played out.
+        if (queue.Count > 0) BeginThinking();
 
         // Play whatever is due. At the instant speed the whole queue goes at once.
         while (queue.Count > 0 && now >= nextEventAt)
         {
             var e = queue.Dequeue();
+            if (AiLogged && e is TurnStartedEvent or AbilityUsedEvent or MovedEvent or TurnEndedEvent) Godot.GD.Print($"{Godot.Time.GetTicksMsec()} event {e.Type}");
             // At the instant speed a whole turn lands at once: silence rather than a wall of noise.
             if (Speed != 0 && Playback.SoundOf(e, Display.Casting, Battle, Content) is { } sound) OnSound?.Invoke(sound);
             if (Speed != 0 && e is TurnStartedEvent t && Battle.Heroes.Get(t.HeroId)?.Side == PlayerSide && !AutoPlayer) OnSound?.Invoke("turn");
@@ -187,6 +194,24 @@ public sealed class BattleSession : IBoardSource
 
     public void Cancel() => SelectedAbility = null;
 
+    /// <summary>
+    /// Starts the opponent thinking on a worker thread, if it is the opponent's turn and it
+    /// has no plan and is not thinking already.
+    /// </summary>
+    private void BeginThinking()
+    {
+        string? active = Battle.ActiveHeroId;
+        if (thinking is not null || active is null || Battle.Outcome is not null) return;
+        if (Battle.Heroes.Get(active)?.Side == PlayerSide && !AutoPlayer) return;
+        if (aiPlanFor == active && aiPlan.Count > 0) return;
+        thinkingSince = Godot.Time.GetTicksMsec();
+        if (AiLogged) Godot.GD.Print($"{thinkingSince} ai {active}: starts thinking");
+        var state = Battle;
+        var rng = aiRng;
+        thinking = Task.Run(() => BattleAi.ChooseActions(state, Content, rng, opponent));
+        Busy = true;
+    }
+
     /// <summary>Plays the opponent one action at a time. True while it is busy.</summary>
     private bool StepAi()
     {
@@ -197,15 +222,13 @@ public sealed class BattleSession : IBoardSource
         {
             if (thinking is null)
             {
-                var state = Battle;
-                var rng = aiRng;
-                thinking = Task.Run(() => BattleAi.ChooseActions(state, Content, rng, opponent));
-                Busy = true;
+                BeginThinking();
                 return true;
             }
             if (!thinking.IsCompleted) return true;
             var decision = thinking.Result;
             thinking = null;
+            if (AiLogged) Godot.GD.Print($"{Godot.Time.GetTicksMsec()} ai {active}: thought {Godot.Time.GetTicksMsec() - thinkingSince} ms, {decision.Actions.Count} actions");
             aiRng = decision.Rng;
             aiPlan.Clear();
             foreach (var a in decision.Actions) aiPlan.Enqueue(a);

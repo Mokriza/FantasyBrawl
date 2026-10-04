@@ -156,8 +156,7 @@ public static class Legal
     /// <summary>Every hex this ability may actually be aimed at right now.</summary>
     public static List<Hex> TargetsFor(BattleState state, BattleHero hero, Ability ability, ContentRegistry content)
     {
-        if (!AbilityAvailability(state, hero, ability, content).Ok) return [];
-        return Terrain.AllHexes(state.Arena).Where(h => AbilityLegality(state, hero, ability, h, content).Ok).ToList();
+        return TargetsInReach(state, hero, ability, content).ToList();
     }
 
     public static List<Ability> AbilitiesOf(BattleHero hero, ContentRegistry content)
@@ -192,13 +191,35 @@ public static class Legal
             output.Add(new MoveAction { HeroId = hero.Id, Path = entry.Path });
 
         foreach (var ability in AbilitiesOf(hero, content))
-        {
-            if (!AbilityAvailability(state, hero, ability, content).Ok) continue;
-            foreach (var target in Terrain.AllHexes(state.Arena))
-                if (AbilityLegality(state, hero, ability, target, content).Ok)
-                    output.Add(new AbilityAction { HeroId = hero.Id, AbilityId = ability.Id, Target = target });
-        }
+            foreach (var target in TargetsInReach(state, hero, ability, content))
+                output.Add(new AbilityAction { HeroId = hero.Id, AbilityId = ability.Id, Target = target });
         return output;
+    }
+
+    /// <summary>
+    /// The hexes this ability may be aimed at, in AllHexes order. Hexes past its range are
+    /// skipped before the full check: they would fail it anyway, and the range itself
+    /// (with every modifier on the field) is worked out once rather than per hex.
+    /// </summary>
+    private static IEnumerable<Hex> TargetsInReach(BattleState state, BattleHero hero, Ability ability, ContentRegistry content)
+    {
+        if (!AbilityAvailability(state, hero, ability, content).Ok) yield break;
+        double reach = AbilityRange(state, hero, ability, content);
+        foreach (var target in Terrain.AllHexes(state.Arena))
+            if (HexMath.Distance(hero.Hex, target) <= reach && AbilityLegality(state, hero, ability, target, content).Ok)
+                yield return target;
+    }
+
+    /// <summary>
+    /// Whether the active hero can do anything besides ending the turn: the same answer as
+    /// looking for such an entry in Actions, without building the whole list.
+    /// </summary>
+    public static bool HasActionBesidesEndTurn(BattleState state, ContentRegistry content)
+    {
+        var hero = Query.ActiveHero(state);
+        if (hero is null || state.Outcome is not null) return false;
+        if (ReachableFor(state, hero, content).Count > 0) return true;
+        return AbilitiesOf(hero, content).Any(ability => TargetsInReach(state, hero, ability, content).Any());
     }
 
     /// <summary>Two actions are the same move: same kind, same hero, same target or path.</summary>

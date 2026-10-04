@@ -16,8 +16,14 @@ namespace Brawl.Game;
 public partial class Board3D : Control
 {
     private IBoardSource? source;
-    private readonly SubViewportContainer frame = new() { Stretch = true, MouseFilter = MouseFilterEnum.Ignore };
-    private readonly SubViewport viewport = new() { OwnWorld3D = true, Msaa3D = Viewport.Msaa.Msaa4X };
+    /// <summary>
+    /// The 3D picture, shown through a TextureRect. The SubViewport is sized in screen
+    /// pixels, not in the interface's units: the window stretches the interface (1280×800
+    /// base), and a viewport sized in those units would be blown up and blurred on a big
+    /// screen. See Sharpen.
+    /// </summary>
+    private readonly SubViewport viewport = new() { OwnWorld3D = true, Msaa3D = Viewport.Msaa.Msaa4X, RenderTargetUpdateMode = SubViewport.UpdateMode.Always };
+    private readonly TextureRect picture = new() { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore };
     private readonly Node3D world = new();
     private readonly Camera3D camera = new() { Fov = 40 };
     private readonly Node3D ground = new();
@@ -72,9 +78,10 @@ public partial class Board3D : Control
 
     public override void _Ready()
     {
-        frame.SetAnchorsPreset(LayoutPreset.FullRect);
-        AddChild(frame);
-        frame.AddChild(viewport);
+        AddChild(viewport);
+        picture.Texture = viewport.GetTexture();
+        picture.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(picture);
         viewport.AddChild(world);
         overlay.SetAnchorsPreset(LayoutPreset.FullRect);
         overlay.MouseFilter = MouseFilterEnum.Ignore;
@@ -336,6 +343,7 @@ public partial class Board3D : Control
         if (!ReferenceEquals(battle.Arena, builtArena)) BuildArena(battle);
         double now = Time.GetTicksMsec();
 
+        Sharpen();
         LeanTowardsAction(battle, delta);
         PlaceCamera(now);
         PaintMarks();
@@ -343,6 +351,15 @@ public partial class Board3D : Control
         StartCasting();
         effects.Show(source.Display.Effects, now);
         overlay.QueueRedraw();
+    }
+
+    /// <summary>Keeps the 3D picture at one pixel per screen pixel, whatever the window size.</summary>
+    private void Sharpen()
+    {
+        var root = GetTree().Root;
+        float scale = root.Size.Y / Mathf.Max(1, root.GetVisibleRect().Size.Y);
+        var want = new Vector2I(Mathf.Max(1, Mathf.RoundToInt(Size.X * scale)), Mathf.Max(1, Mathf.RoundToInt(Size.Y * scale)));
+        if (viewport.Size != want) viewport.Size = want;
     }
 
     /// <summary>
@@ -388,8 +405,8 @@ public partial class Board3D : Control
         foreach (var (key, (mesh, material)) in marks)
         {
             Color? colour = null;
-            if (hl.Reach.Contains(key)) colour = new Color(Palette.Range, 0.22f);
-            if (hl.Targets.Contains(key)) colour = new Color(Palette.Range, 0.5f);
+            if (hl.Reach.Contains(key)) colour = new Color(0.45f, 0.78f, 1f, 0.42f);
+            if (hl.Targets.Contains(key)) colour = new Color(0.25f, 0.6f, 1f, 0.7f);
             if (hl.Reachable.Contains(key)) colour = new Color(1f, 1f, 1f, 0.16f);
             if (hl.Zone.Contains(key)) colour = new Color(hl.ZoneFriendly ? Palette.ZoneAlly : Palette.Zone, 0.55f);
             if (hl.Path.Contains(key)) colour = new Color(1f, 0.92f, 0.55f, 0.6f);

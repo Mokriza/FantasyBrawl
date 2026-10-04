@@ -25,6 +25,17 @@ public partial class BattleScreen : Control
     private readonly VBoxContainer theirs = new();
     private readonly RichTextLabel log = new();
     private readonly HBoxContainer abilityBar = new();
+    /// <summary>The card of the ability under the mouse: shown at once, above its button, as on the web.</summary>
+    private readonly PanelContainer abilityCard = new() { Visible = false, MouseFilter = MouseFilterEnum.Ignore };
+    private readonly RichTextLabel abilityCardText = new()
+    {
+        BbcodeEnabled = true,
+        FitContent = true,
+        ScrollActive = false,
+        AutowrapMode = TextServer.AutowrapMode.WordSmart,
+        CustomMinimumSize = new Vector2(360, 0),
+        MouseFilter = MouseFilterEnum.Ignore,
+    };
     private readonly Label activeLabel = new();
     private readonly Label hintLabel = new();
     private readonly Label queueLabel = new();
@@ -103,7 +114,32 @@ public partial class BattleScreen : Control
         hintLabel.AddThemeColorOverride("font_color", Palette.TextDim);
         hintLabel.AddThemeFontSizeOverride("font_size", 12);
         root.AddChild(hintLabel);
+
+        abilityCard.AddThemeStyleboxOverride("panel", Palette.PanelStyle());
+        abilityCardText.AddThemeFontSizeOverride("normal_font_size", 14);
+        abilityCardText.AddThemeFontSizeOverride("bold_font_size", 16);
+        abilityCard.AddChild(abilityCardText);
+        // Last child: drawn over everything else on the screen.
+        AddChild(abilityCard);
     }
+
+    private void ShowAbilityCard(Control button, string text)
+    {
+        abilityCardText.Text = text;
+        abilityCard.Visible = true;
+        abilityCard.ResetSize();
+        // Its height is known only after layout: placed on the next frame.
+        Callable.From(() =>
+        {
+            if (!IsInstanceValid(button) || !abilityCard.Visible) return;
+            var r = button.GetGlobalRect();
+            var size = abilityCard.Size;
+            float x = Mathf.Clamp(r.Position.X, 8, GetViewportRect().Size.X - size.X - 8);
+            abilityCard.GlobalPosition = new Vector2(x, r.Position.Y - size.Y - 8);
+        }).CallDeferred();
+    }
+
+    private void HideAbilityCard() => abilityCard.Visible = false;
 
     private static ScrollContainer Scrolled(Control inner)
     {
@@ -191,8 +227,15 @@ public partial class BattleScreen : Control
         GetViewport().SetInputAsHandled();
     }
 
+    /// <summary>
+    /// Picks an ability, or puts it down. It can be picked with nobody in reach, to see how
+    /// far it goes; only one that cannot be used at all (points, cooldown, silence) cannot.
+    /// </summary>
     private void Select(string abilityId)
     {
+        if (session.Active is not { } hero) return;
+        var ability = session.Content.GetAbility(abilityId);
+        if (session.SelectedAbility != abilityId && !Legal.AbilityAvailability(session.Battle, hero, ability, session.Content).Ok) return;
         session.SelectedAbility = session.SelectedAbility == abilityId ? null : abilityId;
         shown = "";
     }
@@ -280,6 +323,7 @@ public partial class BattleScreen : Control
     private void RefreshAbilities()
     {
         foreach (var child in abilityBar.GetChildren()) child.QueueFree();
+        HideAbilityCard();
         var hero = session.Active;
         if (hero is null)
         {
@@ -305,10 +349,14 @@ public partial class BattleScreen : Control
             };
             var availability = Legal.AbilityAvailability(session.Battle, hero, ability, session.Content);
             bool noTarget = availability.Ok && Legal.TargetsFor(session.Battle, hero, ability, session.Content).Count == 0;
-            button.Disabled = !mine || !availability.Ok || noTarget;
-            button.TooltipText = Describe.DescribeAbility(ability, hero, session.Content, session.Battle)
-                + (availability.Reason is { } reason ? $"\n\n{Texts.Reason(reason)}" + (cooldown > 0 ? $" ({cooldown})" : "") : "")
-                + (noTarget ? "\n\nНекого задеть отсюда" : "");
+            // Nobody in reach does not lock it: picked anyway, it shows how far it goes.
+            button.Disabled = !mine || !availability.Ok;
+            string card = $"[b]{ability.Name}[/b]\n[color=#{Palette.TextDim.ToHtml(false)}]{cost} {Texts.Ap} · {Texts.Range} {Legal.AbilityRange(session.Battle, hero, ability, session.Content)} · {cooldownText}[/color]\n\n"
+                + Describe.DescribeAbility(ability, hero, session.Content, session.Battle)
+                + (availability.Reason is { } reason ? $"\n\n[color=#{Palette.HpLow.ToHtml(false)}]{Texts.Reason(reason)}" + (cooldown > 0 ? $" ({cooldown})" : "") + "[/color]" : "")
+                + (noTarget && mine ? $"\n\n[color=#{Palette.TextDim.ToHtml(false)}]{Texts.NoTargetInReach}[/color]" : "");
+            button.MouseEntered += () => ShowAbilityCard(button, card);
+            button.MouseExited += HideAbilityCard;
             string id = ability.Id;
             button.Pressed += () => Select(id);
             abilityBar.AddChild(button);

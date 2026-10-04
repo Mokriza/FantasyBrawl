@@ -531,7 +531,7 @@ public static class BattleRules
         var run = new Run(state);
         if (run.State.ActiveHeroId is null || run.State.Outcome is not null) return run;
         var hero = Query.HeroById(run.State, run.State.ActiveHeroId);
-        bool hasSomethingToDo = hero.IsAlive && run.State.ApLeft > 0 && Legal.Actions(run.State, content).Any(a => a is not EndTurnAction);
+        bool hasSomethingToDo = hero.IsAlive && run.State.ApLeft > 0 && Legal.HasActionBesidesEndTurn(run.State, content);
         if (hasSomethingToDo) return run;
         run.Take(FinishTurn(run.State, content, mode));
         run.Take(BeginNextTurn(run.State, content, mode));

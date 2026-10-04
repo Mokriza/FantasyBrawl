@@ -17,6 +17,7 @@ public static partial class Texts
     public const string Quit = "Выход";
     public const string ToMenu = "В меню";
     public const string SoundButton = "Звук";
+    public const string NoTargetInReach = "Сейчас некого задеть — выберите, чтобы увидеть дальность";
     public const string SoundHint = "Включить или выключить звуки боя";
     public const string Round = "Раунд";
     public const string YourTurn = "Ваш ход";

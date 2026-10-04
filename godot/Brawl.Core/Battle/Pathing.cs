@@ -44,7 +44,18 @@ public static class Pathing
     /// </summary>
     public static OrderedMap<Reachable> ReachableHexes(BattleState state, BattleHero hero, double apBudget, ContentRegistry content)
     {
-        var labels = OrderedMap<Label>.Empty.Set(hero.Hex.Key, new Label(0, [], [], []));
+        // The labels behave exactly like the TypeScript record they port: a replaced key keeps
+        // its place, a new one goes last, and each pass walks a snapshot in that order. Kept
+        // in a local list with an index rather than an immutable map, which copied itself on
+        // every new hex: the search runs thousands of times while the AI thinks.
+        var keys = new List<string> { hero.Hex.Key };
+        var values = new List<Label> { new(0, [], [], []) };
+        var index = new Dictionary<string, int> { [hero.Hex.Key] = 0 };
+
+        // Neither changes during the search: worked out once, not for every step.
+        double baseCost = content.Config.Battle.MoveCost;
+        double pitSurcharge = PitImmune(state, hero, content) ? 0 : content.Config.Arena.Pit.ExtraApCost;
+        var potential = Opportunity.PotentialReactors(state, hero, content);
 
         bool changed = true;
         int guard = 0;
@@ -52,34 +63,53 @@ public static class Pathing
         {
             changed = false;
             guard++;
-            foreach (var (key, label) in labels.ToList())
+            int count = keys.Count;
+            var snapshotKeys = keys.ToArray();
+            var snapshotValues = values.ToArray();
+            for (int s = 0; s < count; s++)
             {
+                var label = snapshotValues[s];
                 var from = label.Path.Count == 0 ? hero.Hex : label.Path[^1];
-                if (from.Key != key) continue;
+                if (from.Key != snapshotKeys[s]) continue;
 
                 for (int dir = 0; dir < HexMath.Directions.Count; dir++)
                 {
                     var to = from + HexMath.Directions[dir];
                     if (!IsPassable(state, to)) continue;
 
-                    double cost = label.Cost + StepCost(state, content, to, hero);
+                    double cost = label.Cost + baseCost + (Terrain.IsPit(state.Arena, to) ? pitSurcharge : 0);
                     if (cost > apBudget) continue;
 
-                    var already = hero.ReactedThisTurn.Concat(label.Provokes).ToList();
-                    var reacting = Opportunity.ReactorsForStep(state, hero, from, to, already, content).Select(e => e.Id);
+                    var reacting = potential.Count == 0
+                        ? []
+                        : Opportunity.ReactingAmong(potential, from, to, hero.ReactedThisTurn.Concat(label.Provokes).ToList(), content).Select(e => e.Id);
 
                     var candidate = new Label(cost, [.. label.Path, to], [.. label.Provokes, .. reacting], [.. label.Dirs, dir]);
-                    if (IsBetter(candidate, labels.Get(to.Key)))
+                    string toKey = to.Key;
+                    bool known = index.TryGetValue(toKey, out int at);
+                    if (IsBetter(candidate, known ? values[at] : null))
                     {
-                        labels = labels.Set(to.Key, candidate);
+                        if (known) values[at] = candidate;
+                        else
+                        {
+                            index[toKey] = keys.Count;
+                            keys.Add(toKey);
+                            values.Add(candidate);
+                        }
                         changed = true;
                     }
                 }
             }
         }
 
-        labels = labels.Remove(hero.Hex.Key);
-        return OrderedMap<Reachable>.From(labels.Select(p => new KeyValuePair<string, Reachable>(p.Key, new Reachable(p.Value.Cost, p.Value.Path, p.Value.Provokes))));
+        var output = new List<KeyValuePair<string, Reachable>>(keys.Count);
+        for (int i = 0; i < keys.Count; i++)
+        {
+            if (keys[i] == hero.Hex.Key) continue;
+            var l = values[i];
+            output.Add(new(keys[i], new Reachable(l.Cost, l.Path, l.Provokes)));
+        }
+        return OrderedMap<Reachable>.From(output);
     }
 
     /// <summary>Cost of a path the caller already has, or null when it is not walkable.</summary>

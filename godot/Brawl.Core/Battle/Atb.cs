@@ -100,19 +100,34 @@ public static class Opportunity
 
     /// <summary>Which enemies react to `mover` stepping from `from` to `to`.</summary>
     public static List<BattleHero> ReactorsForStep(
-        BattleState state, BattleHero mover, Hex from, Hex to, IReadOnlyList<string> already, ContentRegistry content)
+        BattleState state, BattleHero mover, Hex from, Hex to, IReadOnlyList<string> already, ContentRegistry content) =>
+        ReactingAmong(PotentialReactors(state, mover, content), from, to, already, content);
+
+    /// <summary>
+    /// The enemies that could swing at `mover` on some step, in the order they would fire:
+    /// everything about a reaction that does not depend on where the step goes. Path search
+    /// works this out once and tries thousands of steps against it (ReactingAmong).
+    /// </summary>
+    public static List<BattleHero> PotentialReactors(BattleState state, BattleHero mover, ContentRegistry content)
     {
         if (!content.Config.Battle.OpportunityAttack.Enabled) return [];
         if (Modifiers.FreeDisengage(state, mover, content)) return [];
         // "Невидимость": nobody can pick the mover out to swing at.
         if (Statuses.HasFlag(mover, content, Statuses.Untargetable)) return [];
-        bool oncePerTurn = content.Config.Battle.OpportunityAttack.OncePerEnemyPerTurn;
+        return Query.EnemiesOf(state, mover)
+            .Where(enemy => !Statuses.HasStatus(enemy, Statuses.Stun) && HoldsZoneOfControl(enemy, content))
+            .ToList();
+    }
 
-        return Query.EnemiesOf(state, mover).Where(enemy =>
+    /// <summary>Of the potential reactors, those this one step provokes.</summary>
+    public static List<BattleHero> ReactingAmong(
+        IReadOnlyList<BattleHero> potential, Hex from, Hex to, IReadOnlyList<string> already, ContentRegistry content)
+    {
+        if (potential.Count == 0) return [];
+        bool oncePerTurn = content.Config.Battle.OpportunityAttack.OncePerEnemyPerTurn;
+        return potential.Where(enemy =>
         {
             if (oncePerTurn && already.Contains(enemy.Id)) return false;
-            if (Statuses.HasStatus(enemy, Statuses.Stun)) return false;
-            if (!HoldsZoneOfControl(enemy, content)) return false;
             // Was in contact and no longer is. Shuffling inside the zone does not provoke.
             return HexMath.Distance(enemy.Hex, from) == 1 && HexMath.Distance(enemy.Hex, to) > 1;
         }).ToList();

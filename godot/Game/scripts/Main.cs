@@ -51,6 +51,7 @@ public partial class Main : Control
             if (arg == "--autoplay") autoplay = true;
             if (arg == "--run") runArg = true;
             if (arg == "--fxgallery") galleryArg = true;
+            if (arg.StartsWith("--difficulty=")) difficulty = Value("--difficulty=");
             if (arg == "--menu") menuArg = true;
             if (arg == "--expand") expandArg = true;
             if (arg.StartsWith("--seed=")) seedText = Value("--seed=");
@@ -64,6 +65,11 @@ public partial class Main : Control
                 var parts = Value("--click=").Split(':').Select(int.Parse).ToArray();
                 clicks.Add((parts[0], new Vector2(parts[1], parts[2])));
             }
+            if (arg.StartsWith("--hover="))
+            {
+                var parts = Value("--hover=").Split(':').Select(int.Parse).ToArray();
+                hovers.Add((parts[0], new Vector2(parts[1], parts[2])));
+            }
         }
         if (galleryArg) ShowGallery();
         else if (menuArg) ShowMenu();
@@ -75,6 +81,8 @@ public partial class Main : Control
 
     /// <summary>`--click=frame:x:y`: a left click at that point of the window on that frame, for checking a screen's buttons without a person.</summary>
     private readonly List<(int Frame, Vector2 At)> clicks = [];
+    /// <summary>`--hover=frame:x:y`: the mouse moves to that point on that frame, for checking tooltips.</summary>
+    private readonly List<(int Frame, Vector2 At)> hovers = [];
     private int frame;
 
     private void Click(Vector2 at)
@@ -89,6 +97,12 @@ public partial class Main : Control
         frame++;
         foreach (var (at, point) in clicks)
             if (at == frame) Click(point);
+        foreach (var (at, point) in hovers)
+            if (at == frame)
+            {
+                GetViewport().WarpMouse(point);
+                Input.ParseInputEvent(new InputEventMouseMotion { Position = point, GlobalPosition = point });
+            }
         if (framesLeft < 0) return;
         if (--framesLeft > 0) return;
         var image = GetViewport().GetTexture().GetImage();

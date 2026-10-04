@@ -12,8 +12,11 @@ public partial class Sounds : Node
 {
     private const int Voices = 10;
     private readonly List<AudioStreamPlayer> players = [];
-    private readonly Dictionary<string, AudioStreamWav?> loaded = [];
+    private readonly Dictionary<string, AudioStream?> loaded = [];
     private int next;
+
+    /// <summary>`-- --soundlog`: every sound played is printed, to check a build without listening.</summary>
+    private static readonly bool Logged = OS.GetCmdlineUserArgs().Contains("--soundlog");
 
     /// <summary>Whether sound is on; the battle screen's button switches it.</summary>
     public static bool Enabled { get; set; } = true;
@@ -28,11 +31,17 @@ public partial class Sounds : Node
         }
     }
 
-    private AudioStreamWav? Recording(string url)
+    /// <summary>
+    /// The recording as Godot imported it. An exported build carries only the imported
+    /// copy, not the .wav itself, so the file is read raw only when nothing imported it.
+    /// </summary>
+    private AudioStream? Recording(string url)
     {
         if (loaded.TryGetValue(url, out var stream)) return stream;
         string path = "res://content/sounds/" + url[(url.LastIndexOf('/') + 1)..];
-        stream = Godot.FileAccess.FileExists(path) ? AudioStreamWav.LoadFromBuffer(Godot.FileAccess.GetFileAsBytes(path)) : null;
+        if (ResourceLoader.Exists(path)) stream = GD.Load<AudioStream>(path);
+        else if (Godot.FileAccess.FileExists(path)) stream = AudioStreamWav.LoadFromBuffer(Godot.FileAccess.GetFileAsBytes(path));
+        if (stream is null) GD.PushWarning($"Sounds: no recording at {path}");
         loaded[url] = stream;
         return stream;
     }
@@ -55,5 +64,6 @@ public partial class Sounds : Node
         player.PitchScale = pitch;
         player.VolumeDb = Mathf.LinearToDb((float)info.Volume * volume);
         player.Play();
+        if (Logged) GD.Print($"sound {name}: {info.Url}");
     }
 }
