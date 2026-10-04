@@ -75,7 +75,15 @@ dotnet build godot/Game/Game.csproj          # собрать C# и скопир
 
 Пример: `--screen=upgrade --match=3 --expand --seed=7 --screenshot=up.png --frames=30`.
 
-Экспорт не настроен: при настройке в фильтр ресурсов надо добавить `*.json`, иначе контент не попадёт в сборку. Деплоя нет, по решению пользователя.
+**Сборка в .exe для Windows** (локальная, никуда не публикуется — деплоя нет, по решению пользователя):
+
+```bash
+node godot/tools/fetch-export-templates.mjs     # один раз: шаблоны экспорта, только для Windows (~38 МБ из архива на 1.2 ГБ)
+dotnet build godot/Game/Game.csproj               # копирует контент, vfx.json и звуки в res://content
+"$GODOT" --headless --path godot/Game --export-release "Windows Desktop" "$(pwd)/build/godot/FantasyBrawl.exe"
+```
+
+Получается один файл `build/godot/FantasyBrawl.exe` (~190 МБ): игра, ресурсы и среда .NET внутри, рядом ничего не нужно. Настройки — `godot/Game/export_presets.cfg`: в сборку явно включены `content/*` (JSON и звуки читаются как файлы, а не как ресурсы Godot) и `assets/board3d.json`. В `project.godot` указано, что решение .NET лежит уровнем выше (`solution_directory`), иначе экспорт не соберёт C#. Папка `build/` не коммитится.
 
 Модели героев обрезаны: в каждой оставлены только анимации, которые называет `godot/Game/assets/board3d.json` (стойка, удар, заклинание класса и общие бег, удар, смерть). Скрипт — `node godot/tools/trim-animations.mjs`. Новая анимация в `board3d.json` требует заново скачанной модели: вырезанное из файла не вернуть.
 
