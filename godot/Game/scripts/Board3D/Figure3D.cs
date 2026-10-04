@@ -17,6 +17,14 @@ public partial class Figure3D : Node3D
     private MeshInstance3D? activeRing;
     private string looping = "";
     private bool dead;
+    private double diedAt;
+    private Vector3 knock;
+    private double knockAt = double.NegativeInfinity;
+
+    /// <summary>How long a blow pushes the figure back, and how long a fallen figure lies before it sinks.</summary>
+    private const double KnockMs = 220;
+    private const double LieMs = 1800;
+    private const double SinkMs = 900;
 
     /// <summary>Where the figure looks, as an angle round the vertical.</summary>
     public float Facing { get; set; }
@@ -110,10 +118,36 @@ public partial class Figure3D : Node3D
 
     public void Die()
     {
-        if (dead || player is null) return;
+        if (dead) return;
         Once(Art3D.Moves.Death, 1.2f);
         dead = true;
+        diedAt = Time.GetTicksMsec();
     }
+
+    /// <summary>A blow from this direction: the figure rocks back and returns.</summary>
+    public void Knock(Vector3 away)
+    {
+        away.Y = 0;
+        knock = away.LengthSquared() > 1e-4f ? away.Normalized() * 0.22f : Vector3.Zero;
+        knockAt = Time.GetTicksMsec();
+    }
+
+    /// <summary>Where the figure stands now relative to its hex: pushed back by a blow, or sunk after falling.</summary>
+    public Vector3 Offset(double now)
+    {
+        var offset = Vector3.Zero;
+        double k = (now - knockAt) / KnockMs;
+        if (k >= 0 && k < 1) offset += knock * (float)Math.Sin(k * Math.PI);
+        if (dead)
+        {
+            double sink = (now - diedAt - LieMs) / SinkMs;
+            if (sink > 0) offset += Vector3.Down * (float)Math.Min(1, sink) * 1.6f;
+        }
+        return offset;
+    }
+
+    /// <summary>A fallen figure that has sunk away: the board can drop it.</summary>
+    public bool Gone(double now) => dead && now - diedAt > LieMs + SinkMs;
 
     public bool Dead => dead;
 

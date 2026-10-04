@@ -35,6 +35,10 @@ public partial class Board3D : Control
     private MeshInstance3D? powerRing;
 
     private Vector3 focus;
+    /// <summary>The middle of the arena: the camera's home, which it leans away from towards the action.</summary>
+    private Vector3 home;
+    /// <summary>How far the camera leans from the middle of the arena towards what is happening, 0 to 1.</summary>
+    private const float Lean = 0.35f;
     private float yaw;
     private float pitch = Mathf.DegToRad(44);
     private float distance = 24;
@@ -58,6 +62,7 @@ public partial class Board3D : Control
 
         var centres = Terrain.AllHexes(value.Battle.Arena).Select(h => HexSpace.Centre(h)).ToList();
         focus = new Vector3(centres.Average(c => c.X), 0, centres.Average(c => c.Z));
+        home = focus;
         // Far enough back that the whole arena is in view at the start; the wheel zooms in.
         float across = centres.Max(c => Mathf.Max(Mathf.Abs(c.X - focus.X), Mathf.Abs(c.Z - focus.Z))) + HexSpace.Radius;
         distance = across / Mathf.Tan(Mathf.DegToRad(camera.Fov / 2)) * 0.92f;
@@ -331,12 +336,28 @@ public partial class Board3D : Control
         if (!ReferenceEquals(battle.Arena, builtArena)) BuildArena(battle);
         double now = Time.GetTicksMsec();
 
+        LeanTowardsAction(battle, delta);
         PlaceCamera(now);
         PaintMarks();
         MoveFigures(battle, now);
         StartCasting();
         effects.Show(source.Display.Effects, now);
         overlay.QueueRedraw();
+    }
+
+    /// <summary>
+    /// The camera drifts a little towards what is happening — the hero whose turn it is, or
+    /// the middle of a cast between caster and target — so a move reads without hunting
+    /// for it, while the whole arena stays in view.
+    /// </summary>
+    private void LeanTowardsAction(BattleState battle, double delta)
+    {
+        if (source is null) return;
+        Vector3? action = null;
+        if (source.Display.Casting is { } cast) action = (Top(cast.From) + Top(cast.Target)) / 2;
+        else if (battle.ActiveHeroId is { } id && lastSpot.TryGetValue(id, out var spot)) action = spot;
+        var goal = action is { } a ? home.Lerp(new Vector3(a.X, 0, a.Z), Lean) : home;
+        focus = focus.Lerp(goal, 1 - Mathf.Exp(-2.5f * (float)delta));
     }
 
     private void PlaceCamera(double now)
@@ -416,13 +437,17 @@ public partial class Board3D : Control
                     running = true;
                 }
             }
-            figure.Position = spot;
+            figure.Position = spot + figure.Offset(now);
+            figure.Visible = !figure.Gone(now);
             lastSpot[id] = spot;
 
             if (shown.HitAt > double.NegativeInfinity && (!seenHits.TryGetValue(id, out var seen) || seen != shown.HitAt))
             {
                 seenHits[id] = shown.HitAt;
                 if (shown.Hp > 0) figure.Flinch();
+                // Pushed back away from whoever cast the blow, when that is known.
+                if (source.Display.Casting is { } blow && blow.From != shown.Hex)
+                    figure.Knock(HexSpace.Centre(shown.Hex) - HexSpace.Centre(blow.From));
             }
             if (shown.Hp <= 0 && !figure.Dead) figure.Die();
             figure.Pose(running, battle.ActiveHeroId == id, now);
