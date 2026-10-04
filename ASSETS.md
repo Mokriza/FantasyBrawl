@@ -15,6 +15,10 @@
 | Оружие классов: меч, молот, саи, дубина, лук | Ninja Adventure, `Items/Weapons/<оружие>/Sprite.png` | CC0 1.0 | Нет |
 | Снаряды: огненный шар, шары энергии, ледяной шип, кунай, стрела | Ninja Adventure, `FX/Projectile` и `Items/Weapons/Bow/Arrow.png` | CC0 1.0 | Нет |
 | Звуки ударов и заклинаний (25 WAV) | Ninja Adventure, `Audio/Sounds` (Slash, Sword, Whoosh, Hit, Impact, Explosion, Fireball, Fire, Water, Magic, Heal, Spirit, Fx…) | CC0 1.0 | Нет |
+| Godot: 3D-герои (Barbarian, Knight, Mage, Rogue, Rogue_Hooded) с анимациями и оружием | [Kay Lousberg — KayKit Adventurers](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0) | CC0 1.0 | Нет (автор просит упоминание — оно здесь) |
+| Godot: 3D-скелеты (Mage, Minion, Rogue, Warrior) | [KayKit Skeletons](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0) | CC0 1.0 | Нет |
+| Godot: 3D-гексы, горы, деревья, холмы, камни | [KayKit Medieval Hexagon Pack](https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0) | CC0 1.0 | Нет |
+| Godot: колонна, плитка с шипами, обломки | [KayKit Dungeon Remastered](https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0) | CC0 1.0 | Нет |
 | Иконки способностей (83 SVG) | [game-icons.net](https://game-icons.net), репозиторий [game-icons/icons](https://github.com/game-icons/icons) | CC BY 3.0 | **Да**, по авторам — см. ниже |
 
 ### Фигурки героев

@@ -28,7 +28,7 @@ public partial class BattleScreen : Control
     private readonly Label activeLabel = new();
     private readonly Label hintLabel = new();
     private readonly Label queueLabel = new();
-    private readonly BoardView board = new();
+    private readonly Board3D board = new();
     private Control? overlay;
     private string shown = "";
     private int logShown;
@@ -72,9 +72,7 @@ public partial class BattleScreen : Control
         middle.AddChild(Scrolled(ours));
 
         board.Bind(session);
-        var boardHolder = new CenterContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        boardHolder.AddChild(board);
-        middle.AddChild(boardHolder);
+        middle.AddChild(board);
 
         var right = new VBoxContainer { CustomMinimumSize = new Vector2(300, 0) };
         right.AddChild(theirs);

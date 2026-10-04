@@ -81,7 +81,7 @@ public partial class PlacementScreen : Control
     private readonly VBoxContainer top = Ui.Column(8);
     private readonly VBoxContainer ours = Ui.Column(6);
     private readonly VBoxContainer theirs = Ui.Column(6);
-    private readonly BoardView board = new();
+    private readonly Board3D board = new();
     private int shown = -1;
 
     public PlacementScreen(RunSession session, Action toMenu)
@@ -113,9 +113,7 @@ public partial class PlacementScreen : Control
         theirs.CustomMinimumSize = new Vector2(250, 0);
         main.AddChild(ours);
         board.Bind(new PlacementBoard(session));
-        var holder = new CenterContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        holder.AddChild(board);
-        main.AddChild(holder);
+        main.AddChild(board);
         main.AddChild(theirs);
     }
 
